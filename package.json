@@ -9,19 +9,26 @@
     "lint": "eslint"
   },
   "dependencies": {
-    "@prisma/client": "^7.2.0",
+    "@clerk/nextjs": "^6.36.3",
+    "@prisma/client": "^5.22.0",
     "clsx": "^2.1.1",
     "lucide-react": "^0.561.0",
     "next": "16.0.10",
+    "prisma": "^5.22.0",
+    "razorpay": "^2.9.6",
     "react": "19.2.1",
     "react-dom": "19.2.1",
-    "tailwind-merge": "^3.4.0"
+    "sonner": "^2.0.7",
+    "tailwind-merge": "^3.4.0",
+    "zustand": "^5.0.9"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "eslint": "^9",
     "eslint-config-next": "16.0.10",
-    "prisma": "^7.2.0",
     "tailwindcss": "^4"
+  },
+  "prisma": {
+    "seed": "node prisma/seed.cjs"
   }
 }
