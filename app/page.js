@@ -9,41 +9,40 @@ const LandingPage = () => {
 
         {/* Japanese philosophy, and Matsuo Basho's philosophy */}
         <div>
-          <div>
+          <div className="heading">
             <h2>The Beauty of Impermanence</h2>
             <p>Philosophy & Aesthetics</p>
           </div>
           <p>
-            At the heart of Japanese culture lies <span className="italic">Wabi-sabi</span>—a 
+            At the heart of Japanese culture lies <i>Wabi-sabi</i>—a 
             worldview centered on the acceptance of transience and imperfection. 
-            It is a beauty that is "imperfect, impermanent, and incomplete."
+            It is a beauty that is <i>imperfect, impermanent, and incomplete</i>.
           </p>
           <p>
             In our pottery, this manifests as a celebration of the artisan’s touch. 
             The slight asymmetry of a hand-thrown bowl or the unpredictable crackle 
             of a kiln’s glaze are not flaws, but the marks of a living object.
           </p>
-
-          <h2>The Way of the Wanderer</h2>
-          <p>The Spirit of Matsuo Bashō</p>
+          
+          <div className="heading">
+            <h2>The Way of the Wanderer</h2>
+            <p>The Spirit of Matsuo Bashō</p>
+          </div>
 
           <p>
-            Matsuo Bashō, the 17th-century haiku master, viewed life as a journey 
-            and art as a bridge to the eternal. His philosophy, <span className="italic">Fueki-Ryuko</span>, 
+            <i>Matsuo Bashō</i>, the 17th-century haiku master, viewed life as a journey 
+            and art as a bridge to the eternal.
+          </p>
+          <p>
+            His philosophy, <i>Fueki-Ryuko</i>, 
             reminds us that true art balances the timeless with the ephemeral.
           </p>
           <p>
-            He taught the concept of <span className="italic">Karumi</span> (lightness)—finding 
-            the profound within the ordinary. It is the same "lightness" we aim to 
-            bring to your table: vessels that feel effortless yet carry the weight 
-            of history.
+            He taught the concept of <i>Karumi</i> (lightness)—finding 
+            the profound within the ordinary. It is the <i>same lightness we aim to 
+            bring to your table</i>.
           </p>
-          <blockquote className="border-l-2 border-stone-300 pl-6 py-2 my-8 italic text-stone-600">
-            "The temple bell stops— <br />
-            but the sound keeps coming <br />
-            out of the flowers."
-          </blockquote>
-          <p className="text-base font-sans leading-snug italic text-stone-500">
+          <p>
             Through Bashō’s eyes, we learn that a simple morning tea is a 
             poem in motion, and every cup is a sanctuary.
           </p>
@@ -51,7 +50,19 @@ const LandingPage = () => {
 
         {/* Basho Founders image and their names, Basho logo and brand philosophy */}
         <div>
+          <div className="brand-logo">
+            <img src="/brand/logo-basho-byy-shivangi.png" />
+            <div>
+              Basho is a pottery and tableware brand inspired by Japanese culture and the philosophy of the Japanese poet Matsuo Bashō. The brand focuses on handcrafted, raw, earthy ceramic pieces including custom and ready-made tableware, workshops, studio experiences, and curated cultural events
+            </div>  
+          </div>
+          <div className="brand-founder">
+            <img src="/brand/founder.jpg" />
+            <p>The founder - Shivangi</p>
+          </div>
+          <div>
 
+          </div>
         </div>
       </section>
       
