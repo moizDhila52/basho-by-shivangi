@@ -2,20 +2,37 @@
 import { useCart } from "@/hooks/use-cart";
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { ShoppingBag, Menu, X, User } from "lucide-react"; // Ensure lucide-react is installed
+import { usePathname, useRouter } from "next/navigation";
+import { ShoppingBag, Menu, X, LogOut } from "lucide-react"; 
 import { Button } from "@/components/ui/Button";
-import { SignedIn, SignedOut, SignInButton, UserButton } from "@clerk/nextjs";
+import { useAuth } from "@/components/AuthProvider";
+import { signOut } from "firebase/auth";
+import { auth } from "@/lib/firebase"; // Fixed import
 
 export default function Header() {
   const pathname = usePathname();
+  const router = useRouter();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const cart = useCart();
   const [isMounted, setIsMounted] = useState(false);
+  
+  // Get Auth state
+  const { user, loading } = useAuth();
 
   useEffect(() => {
     setIsMounted(true);
   }, []);
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      router.push("/");
+      router.refresh();
+    } catch (error) {
+      console.error("Logout failed", error);
+    }
+  };
+
   const navLinks = [
     { href: "/products", label: "Shop" },
     { href: "/workshops", label: "Workshops" },
@@ -23,12 +40,9 @@ export default function Header() {
     { href: "/media", label: "Testimonials" },
     { href: "/connect", label: "Connect" },
   ];
-  if (pathname && pathname.startsWith("/api/admin")) {
-    return null;
-  }
-  if (pathname && pathname.startsWith("/admin")) {
-    return null;
-  }
+
+  if (pathname && pathname.startsWith("/api/admin")) return null;
+  if (pathname && pathname.startsWith("/admin")) return null;
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-stone-200 bg-white/80 backdrop-blur-md">
@@ -49,7 +63,9 @@ export default function Header() {
         </div>
 
         {/* Logo */}
-        <img src="/brand/logo-basho.png" className="h-8" />
+        <Link href="/">
+           <img src="/brand/logo-basho.png" className="h-8 cursor-pointer" alt="Basho Logo" />
+        </Link>
 
         {/* Desktop Nav */}
         <nav className="hidden md:flex gap-8">
@@ -69,28 +85,46 @@ export default function Header() {
           <Link href="/cart">
             <Button variant="ghost" size="icon" className="relative">
               <ShoppingBag className="h-5 w-5 text-basho-earth" />
-              {/* Cart Count Badge */}
-              <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-basho-clay"></span>
+              {cart.items.length > 0 && (
+                 <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-basho-clay"></span>
+              )}
             </Button>
           </Link>
 
-          <SignedOut>
-            <SignInButton mode="modal">
-              <Button variant="outline" size="sm" className="hidden md:flex">
-                Sign In
-              </Button>
-            </SignInButton>
-          </SignedOut>
-
-          <SignedIn>
-            <UserButton afterSignOutUrl="/" />
-          </SignedIn>
+          {loading ? (
+             <div className="h-8 w-8 bg-gray-200 rounded-full animate-pulse"></div>
+          ) : (
+            <>
+              {!user ? (
+                <Link href="/login">
+                  <Button variant="outline" size="sm" className="hidden md:flex">
+                    Sign In
+                  </Button>
+                </Link>
+              ) : (
+                <div className="flex items-center gap-2">
+                    {/* Optional: Show User Avatar if available from Google */}
+                    {user.photoURL && (
+                        <img src={user.photoURL} className="w-8 h-8 rounded-full border border-gray-200" alt="Profile" />
+                    )}
+                    <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    onClick={handleLogout}
+                    title="Sign Out"
+                    >
+                    <LogOut className="h-5 w-5 text-stone-600 hover:text-red-500" />
+                    </Button>
+                </div>
+              )}
+            </>
+          )}
         </div>
       </div>
 
-      {/* Mobile Menu Overlay */}
+      {/* Mobile Menu */}
       {isMobileMenuOpen && (
-        <div className="md:hidden absolute top-16 left-0 w-full h-[calc(100vh-4rem)] bg-basho-minimal p-6 flex flex-col gap-6 animate-fade-in">
+        <div className="md:hidden absolute top-16 left-0 w-full h-[calc(100vh-4rem)] bg-white p-6 flex flex-col gap-6 z-40">
           <nav className="flex flex-col gap-4">
             {navLinks.map((link) => (
               <Link
@@ -104,11 +138,15 @@ export default function Header() {
             ))}
           </nav>
           <div className="mt-4">
-            <SignedOut>
-              <SignInButton mode="modal">
-                <Button className="w-full">Sign In</Button>
-              </SignInButton>
-            </SignedOut>
+            {!user ? (
+               <Link href="/login" onClick={() => setIsMobileMenuOpen(false)}>
+                 <Button className="w-full">Sign In</Button>
+               </Link>
+            ) : (
+               <Button onClick={handleLogout} variant="outline" className="w-full border-red-200 text-red-600">
+                 Sign Out
+               </Button>
+            )}
           </div>
         </div>
       )}

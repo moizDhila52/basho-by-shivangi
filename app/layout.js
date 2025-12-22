@@ -1,5 +1,5 @@
 import { Inter, Noto_Serif_JP } from 'next/font/google'
-import { ClerkProvider } from '@clerk/nextjs'
+import { AuthProvider } from "@/components/AuthProvider";
 import './globals.css'
 import Header from '@/components/layout/Header'
 import { Toaster } from 'sonner' 
@@ -24,16 +24,16 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <ClerkProvider>
       <html lang="en" className={`${inter.variable} ${notoSerif.variable}`}>
         <body className="antialiased font-sans">
+          <AuthProvider>
           <Header />
           <main className="min-h-screen">
             {children}
           </main>
           <Toaster richColors />
+          </AuthProvider>
         </body>
       </html>
-    </ClerkProvider>
   )
 }
