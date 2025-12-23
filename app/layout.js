@@ -1,4 +1,4 @@
-import { Inter, Noto_Serif_JP } from 'next/font/google';
+//import { Inter, Noto_Serif_JP } from 'next/font/google';
 import { AuthProvider } from "@/components/AuthProvider";
 import Header from '@/components/layout/Header';
 import { Toaster } from 'sonner';
@@ -7,6 +7,7 @@ import "./globals.css";
 import "../public/fonts/fonts.css";
 import "../public/icons/material-symbols.css";
 
+/*
 const inter = Inter({ 
   subsets: ['latin'],
   variable: '--font-inter',
@@ -19,7 +20,7 @@ const notoSerif = Noto_Serif_JP({
   variable: '--font-noto-serif',
   display: 'swap',
 });
-
+*/
 export const metadata = {
   title: 'Basho Pottery | Handcrafted Japanese Ceramics',
   description: 'Artisanal pottery by Shivangi.',
@@ -27,7 +28,7 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en" className={`${inter.variable} ${notoSerif.variable}`}>
+    <html lang="en">
       <body className="antialiased font-sans">
         <AuthProvider>
           {/* Header is inside AuthProvider so it can check login state */}

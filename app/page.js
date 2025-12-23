@@ -451,7 +451,7 @@ export default function LandingPage() {
                 Material & Care
               </h3>
               
-              <div className="grid grid-cols-2 gap-8 mb-12">
+              <div className="grid grid-cols-1 gap-8 mb-12">
                 <CareFeature 
                   icon={<Utensils className="w-6 h-6" />}
                   title="Food Safe"
