@@ -6,10 +6,6 @@ export async function POST(req) {
   try {
     let { email, otp } = await req.json();
     
-    //<DEBUG> 
-    email = "akashkumar.profile@gmail.com";
-    //</DEBUG>
-
     // 1. Find User
     const user = await prisma.user.findUnique({
       where: { email },

@@ -15,11 +15,6 @@ function LoginForm() {
   async function handleSendOtp(e) {
     e.preventDefault();
 
-    //<DEBUG> Bypass email entry
-    setStep("otp");
-    return;
-    //</DEBUG>
-
     setLoading(true);
     const res = await fetch("/api/auth/send-otp", {
       method: "POST",
@@ -36,12 +31,13 @@ function LoginForm() {
       method: "POST",
       body: JSON.stringify({ email, otp }),
     });
+    console.log(res)
     if (res.ok) {
       console.log("Response is OK!")
 
       router.replace(redirectUrl);
       //BUG: Above method is not working properly.
-      
+
     } else {
       alert("Invalid OTP");
       setLoading(false);
