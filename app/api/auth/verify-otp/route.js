@@ -4,21 +4,30 @@ import { createSession } from "@/lib/session";
 
 export async function POST(req) {
   try {
-    const { email, otp } = await req.json();
+    let { email, otp } = await req.json();
+    
+    //<DEBUG> 
+    email = "akashkumar.profile@gmail.com";
+    //</DEBUG>
 
     // 1. Find User
     const user = await prisma.user.findUnique({
       where: { email },
     });
-
+    
+    console.log(otp, " ", user.otp, " ", user.email.length, email.length);
+    
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 400 });
     }
-
+    
     // 2. Validate OTP
     // Check if OTP matches AND is not expired
-    if (user.otp !== otp || !user.otpExpiresAt || new Date() > new Date(user.otpExpiresAt)) {
-      return NextResponse.json({ error: "Invalid or expired OTP" }, { status: 400 });
+    if (user.otp != otp) {
+      return NextResponse.json({ error: "Wrong OTP!"});
+    }
+    if (Date(user.otpExpiresAt) <= Date.now()) {
+      return NextResponse.json({ error: "OTP expired, try again!"})
     }
 
     // 3. Clear OTP (Security best practice)
