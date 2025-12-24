@@ -34,36 +34,36 @@ enum WorkshopStatus {
 // --- Models ---
 
 model User {
-  id        String    @id @default(cuid())
-  email     String    @unique
+  id        String  @id @default(cuid())
+  email     String  @unique
   name      String?
-  phone     String?   // New: For checkout contact
-  gstNumber String?   // New: Optional GST for B2B
-  role      Role      @default(CUSTOMER)
-  
+  phone     String? // New: For checkout contact
+  gstNumber String? // New: Optional GST for B2B
+  role      Role    @default(CUSTOMER)
+
   // --- OTP Fields ---
-  otp           String?   // Stores the 6-digit code
-  otpExpiresAt  DateTime? // When the code expires (e.g., 5 mins)
+  otp          String? // Stores the 6-digit code
+  otpExpiresAt DateTime? // When the code expires (e.g., 5 mins)
 
   // Relations
   addresses Address[] // New: Saved addresses
   orders    Order[]
-  
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Address {
-  id        String   @id @default(cuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id])
-  
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
   street    String
   city      String
   state     String
   pincode   String
-  country   String   @default("India")
-  isDefault Boolean  @default(false)
+  country   String  @default("India")
+  isDefault Boolean @default(false)
 }
 
 model Category {
@@ -76,117 +76,117 @@ model Category {
 }
 
 model Product {
-  id          String      @id @default(cuid())
+  id          String   @id @default(cuid())
   name        String
-  slug        String      @unique
+  slug        String   @unique
   description String
   price       Float
-  stock       Int         @default(0)
+  stock       Int      @default(0)
   images      String[]
-  isFeatured  Boolean     @default(false)
-  
-  categoryId  String
-  category    Category    @relation(fields: [categoryId], references: [id])
-  
-  orderItems  OrderItem[]
+  isFeatured  Boolean  @default(false)
 
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+  categoryId String
+  category   Category @relation(fields: [categoryId], references: [id])
+
+  orderItems OrderItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([categoryId])
   @@index([slug])
 }
 
 model Order {
-  id              String      @id @default(cuid())
-  orderNumber     String?     @unique // Optional initially, generated after payment
-  
-  userId          String?
-  user            User?       @relation(fields: [userId], references: [id])
-  
-  // Snapshot details at time of order
-  customerName    String?     // Made optional to support guest checkout initially
-  customerEmail   String?
-  address         Json        // Snapshot of shipping address
-  
-  // Costs
-  total           Float
-  shippingCost    Float       @default(0) // New: Track shipping separately
-  
-  status          OrderStatus @default(PENDING)
-  
-  // Payment Details
-  razorpayOrderId String?     // New: For Razorpay tracking
-  paymentId       String?
-  
-  items           OrderItem[]
+  id          String  @id @default(cuid())
+  orderNumber String? @unique // Optional initially, generated after payment
 
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id])
+
+  // Snapshot details at time of order
+  customerName  String? // Made optional to support guest checkout initially
+  customerEmail String?
+  address       Json // Snapshot of shipping address
+
+  // Costs
+  total        Float
+  shippingCost Float @default(0) // New: Track shipping separately
+
+  status OrderStatus @default(PENDING)
+
+  // Payment Details
+  razorpayOrderId String? // New: For Razorpay tracking
+  paymentId       String?
+
+  items OrderItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model OrderItem {
-  id        String  @id @default(cuid())
-  orderId   String
-  order     Order   @relation(fields: [orderId], references: [id])
-  
+  id      String @id @default(cuid())
+  orderId String
+  order   Order  @relation(fields: [orderId], references: [id])
+
   productId String
   product   Product @relation(fields: [productId], references: [id])
-  
-  quantity  Int
-  price     Float   // Price at the time of purchase
+
+  quantity Int
+  price    Float // Price at the time of purchase
 }
 
 // --- WORKSHOP SECTION (Kept Exactly as is) ---
 
 model Workshop {
-  id              String    @id @default(cuid())
-  title           String
-  slug            String    @unique
-  description     String
-  price           Float
-  image           String
-  gallery         String[]
-  
-  duration        String
-  maxStudents     Int
-  location        String
-  language        String
-  level           String
-  
+  id          String   @id @default(cuid())
+  title       String
+  slug        String   @unique
+  description String
+  price       Float
+  image       String
+  gallery     String[]
+
+  duration    String
+  maxStudents Int
+  location    String
+  language    String
+  level       String
+
   instructorName  String
   instructorRole  String
   instructorImage String
 
-  status          WorkshopStatus @default(UPCOMING)
-  
-  sessions        WorkshopSession[]
-  
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  status WorkshopStatus @default(UPCOMING)
+
+  sessions WorkshopSession[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model WorkshopSession {
-  id            String    @id @default(cuid())
-  date          DateTime 
-  time          String
-  spotsTotal    Int
-  spotsBooked   Int       @default(0)
-  
-  workshopId    String
-  workshop      Workshop  @relation(fields: [workshopId], references: [id])
-  
+  id          String   @id @default(cuid())
+  date        DateTime
+  time        String
+  spotsTotal  Int
+  spotsBooked Int      @default(0)
+
+  workshopId String
+  workshop   Workshop @relation(fields: [workshopId], references: [id])
+
   registrations WorkshopRegistration[]
 }
 
 model WorkshopRegistration {
-  id            String    @id @default(cuid())
+  id            String @id @default(cuid())
   customerName  String
   customerEmail String
   amountPaid    Float
-  
-  sessionId     String
-  session       WorkshopSession @relation(fields: [sessionId], references: [id])
-  
-  createdAt     DateTime @default(now())
+
+  sessionId String
+  session   WorkshopSession @relation(fields: [sessionId], references: [id])
+
+  createdAt DateTime @default(now())
 }
