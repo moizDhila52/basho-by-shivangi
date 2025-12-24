@@ -11,9 +11,15 @@ function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectUrl = searchParams.get("redirect") || "/admin/dashboard";
-
+   
   async function handleSendOtp(e) {
     e.preventDefault();
+
+    //<DEBUG> Bypass email entry
+    setStep("otp");
+    return;
+    //</DEBUG>
+
     setLoading(true);
     const res = await fetch("/api/auth/send-otp", {
       method: "POST",
@@ -26,15 +32,16 @@ function LoginForm() {
 
   async function handleVerifyOtp(e) {
     e.preventDefault();
-    setLoading(true);
     const res = await fetch("/api/auth/verify-otp", {
       method: "POST",
       body: JSON.stringify({ email, otp }),
     });
-    
     if (res.ok) {
-      router.push(redirectUrl);
-      router.refresh();
+      console.log("Response is OK!")
+
+      router.replace(redirectUrl);
+      //BUG: Above method is not working properly.
+      
     } else {
       alert("Invalid OTP");
       setLoading(false);
@@ -56,7 +63,7 @@ function LoginForm() {
             <input
               type="email"
               placeholder="name@example.com"
-              required
+              required={false}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="w-full p-3 border border-[#EDD8B4] rounded-lg focus:outline-none focus:border-[#C85428]"
@@ -79,6 +86,7 @@ function LoginForm() {
               className="w-full p-3 border border-[#EDD8B4] rounded-lg text-center text-2xl tracking-widest focus:outline-none focus:border-[#C85428]"
             />
             <button
+              type="submit"
               disabled={loading}
               className="w-full bg-[#442D1C] text-white py-3 rounded-lg hover:bg-[#C85428] transition-colors disabled:opacity-50"
             >
