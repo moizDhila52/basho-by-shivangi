@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import { Suspense } from "react";
 
 function LoginForm() {
@@ -9,12 +9,10 @@ function LoginForm() {
   const [otp, setOtp] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const redirectUrl = searchParams.get("redirect") || "/admin/dashboard";
    
   async function handleSendOtp(e) {
     e.preventDefault();
-
+    
     setLoading(true);
     const res = await fetch("/api/auth/send-otp", {
       method: "POST",
@@ -31,15 +29,23 @@ function LoginForm() {
       method: "POST",
       body: JSON.stringify({ email, otp }),
     });
-    console.log(res)
+    const resBody = await res.json()
     if (res.ok) {
-      console.log("Response is OK!")
-
-      router.replace(redirectUrl);
-      //BUG: Above method is not working properly.
-
-    } else {
-      alert("Invalid OTP");
+      switch (resBody.role) {
+        case "CUSTOMER":
+          router.replace("/");
+          break;
+        case "ADMIN":
+          router.replace("/admin/dashboard");
+          break;
+        default:
+          alert(`Role : ${role}; is not implemented`)
+      }
+    }
+    else {
+      setOtp("")
+      setStep("email");
+      alert(resBody.error);
       setLoading(false);
     }
   }
@@ -59,7 +65,7 @@ function LoginForm() {
             <input
               type="email"
               placeholder="name@example.com"
-              required={false}
+              required={true}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="w-full p-3 border border-[#EDD8B4] rounded-lg focus:outline-none focus:border-[#C85428]"
@@ -76,7 +82,7 @@ function LoginForm() {
             <input
               type="text"
               placeholder="Enter 6-digit code"
-              required
+              required={true}
               value={otp}
               onChange={(e) => setOtp(e.target.value)}
               className="w-full p-3 border border-[#EDD8B4] rounded-lg text-center text-2xl tracking-widest focus:outline-none focus:border-[#C85428]"
