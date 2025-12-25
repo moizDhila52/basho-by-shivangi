@@ -1,56 +1,37 @@
+// middleware.js
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/session";
 
-// Define public routes that don't require authentication
-const publicRoutes = [
-  "/",
-  "/login",
-  "/signup",
-  "/api/auth/send-otp",
-  "/api/auth/verify-otp",
-  "/api/auth/signup",
-];
-const adminRoutes = ["/admin", "/admin/(.*)"];
+export async function middleware(req) {
+  const path = req.nextUrl.pathname;
+  const isPublicRoute = ["/login", "/signup"].includes(path);
+  const isAdminRoute = path.startsWith("/admin");
 
-export async function middleware(request) {
-  const { pathname } = request.nextUrl;
-
-  // Allow public routes
-  if (publicRoutes.includes(pathname) || pathname.startsWith("/api/auth/")) {
-    return NextResponse.next();
-  }
-
-  // Check session
+  // 1. Decrypt the session
   const session = await getSession();
 
-  // If no session, redirect to login
-  if (!session) {
-    const loginUrl = new URL("/login", request.url);
-    loginUrl.searchParams.set("redirect", pathname);
-    return NextResponse.redirect(loginUrl);
+  // --- DEBUGGING LOGS (Check your VS Code Terminal when you refresh) ---
+  console.log(`[Middleware] Path: ${path}`);
+  console.log(`[Middleware] User Role: ${session?.role}`);
+  console.log(`[Middleware] Is Admin Route? ${isAdminRoute}`);
+  // --------------------------------------------------------------------
+
+  // 2. Redirect Logged-in Users AWAY from Login
+  if (isPublicRoute && session?.userId) {
+    return NextResponse.redirect(new URL("/", req.nextUrl));
   }
 
-  // Check admin routes
-  if (
-    adminRoutes.some((route) => pathname.startsWith(route.replace("/(.*)", "")))
-  ) {
-    if (session.role !== "ADMIN") {
-      return NextResponse.redirect(new URL("/", request.url));
-    }
+  // 3. Protect Admin Routes (The likely cause of your loop)
+  if (isAdminRoute && (!session || session.role !== "ADMIN")) {
+    console.log("[Middleware] ACCESS DENIED: Redirecting to Login");
+    return NextResponse.redirect(
+      new URL("/login?redirect=" + path, req.nextUrl)
+    );
   }
 
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: [
-    /*
-     * Match all request paths except:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - public folder
-     */
-    "/((?!_next/static|_next/image|favicon.ico|public/).*)",
-  ],
+  matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"],
 };

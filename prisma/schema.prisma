@@ -34,19 +34,20 @@ enum WorkshopStatus {
 // --- Models ---
 
 model User {
-  id        String  @id @default(cuid())
-  email     String  @unique
-  name      String?
-  phone     String? // New: For checkout contact
-  gstNumber String? // New: Optional GST for B2B
-  role      Role    @default(CUSTOMER)
+  id           String  @id @default(cuid())
+  email        String  @unique
+  name         String?
+  passwordHash String? // <--- ADDED THIS (Critical for signup)
+  phone        String?
+  gstNumber    String?
+  role         Role    @default(CUSTOMER)
 
   // --- OTP Fields ---
-  otp          String? // Stores the 6-digit code
-  otpExpiresAt DateTime? // When the code expires (e.g., 5 mins)
+  otp          String?
+  otpExpiresAt DateTime?
 
   // Relations
-  addresses Address[] // New: Saved addresses
+  addresses Address[]
   orders    Order[]
 
   createdAt DateTime @default(now())
@@ -54,7 +55,7 @@ model User {
 }
 
 model Address {
-  id     String @id @default(cuid())
+  id     String @id @default(cuid()) // <--- FIXED (Removed @db.ObjectId)
   userId String
   user   User   @relation(fields: [userId], references: [id])
 
@@ -99,24 +100,24 @@ model Product {
 
 model Order {
   id          String  @id @default(cuid())
-  orderNumber String? @unique // Optional initially, generated after payment
+  orderNumber String? @unique
 
   userId String?
   user   User?   @relation(fields: [userId], references: [id])
 
   // Snapshot details at time of order
-  customerName  String? // Made optional to support guest checkout initially
+  customerName  String?
   customerEmail String?
-  address       Json // Snapshot of shipping address
+  address       Json
 
   // Costs
   total        Float
-  shippingCost Float @default(0) // New: Track shipping separately
+  shippingCost Float @default(0)
 
   status OrderStatus @default(PENDING)
 
   // Payment Details
-  razorpayOrderId String? // New: For Razorpay tracking
+  razorpayOrderId String?
   paymentId       String?
 
   items OrderItem[]
@@ -134,10 +135,10 @@ model OrderItem {
   product   Product @relation(fields: [productId], references: [id])
 
   quantity Int
-  price    Float // Price at the time of purchase
+  price    Float
 }
 
-// --- WORKSHOP SECTION (Kept Exactly as is) ---
+// --- WORKSHOP SECTION ---
 
 model Workshop {
   id          String   @id @default(cuid())

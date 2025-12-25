@@ -5,19 +5,10 @@ import { createSession } from "@/lib/session";
 
 export async function POST(req) {
   try {
-    const body = await req.json();
-    const { email, password, name, phone, address } = body;
+    const { email, password, name, phone } = await req.json();
 
-    if (!email || !password) {
-      return NextResponse.json(
-        { error: "Email and password are required" },
-        { status: 400 }
-      );
-    }
-
-    // 1. Validation: Check if user exists
+    // 1. Check Existing
     const existingUser = await prisma.user.findUnique({ where: { email } });
-
     if (existingUser) {
       return NextResponse.json(
         { error: "User already exists" },
@@ -25,10 +16,8 @@ export async function POST(req) {
       );
     }
 
-    // 2. Hash Password
+    // 2. Create User (No Address)
     const hashedPassword = await hashPassword(password);
-
-    // 3. Create User & Address
     const newUser = await prisma.user.create({
       data: {
         email,
@@ -36,29 +25,20 @@ export async function POST(req) {
         name,
         phone,
         role: "CUSTOMER",
-        addresses: {
-          create: {
-            street: address.street,
-            city: address.city,
-            state: address.state,
-            pincode: address.pincode,
-            isDefault: true,
-          },
-        },
       },
     });
 
-    // 4. Auto-Login
+    // 3. Auto-Login
     await createSession({
       userId: newUser.id,
       email: newUser.email,
       role: newUser.role,
       name: newUser.name,
     });
-
+    // console.log(userId + "  " + email + "  " + role + "  " + name);
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Signup Error:", error);
+    console.log(userId + "  " + email + "  " + role + "  " + name);
     return NextResponse.json({ error: "Signup failed" }, { status: 500 });
   }
 }
