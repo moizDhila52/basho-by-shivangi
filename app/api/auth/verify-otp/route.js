@@ -4,26 +4,35 @@ import { createSession } from "@/lib/session";
 
 export async function POST(req) {
   try {
-    let { email, otp } = await req.json();
-    
+    const { email, otp } = await req.json();
+
+    if (!email || !otp) {
+      return NextResponse.json(
+        { error: "Email and OTP are required" },
+        { status: 400 }
+      );
+    }
+
     // 1. Find User
     const user = await prisma.user.findUnique({
       where: { email },
     });
-    
-    console.log(otp, " ", user.otp, " ", user.email.length, email.length);
-    
+
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 400 });
     }
-    
+
     // 2. Validate OTP
-    // Check if OTP matches AND is not expired
-    if (user.otp != otp) {
-      return NextResponse.json({ error: "Wrong OTP!"});
+    // Check if OTP exists and matches
+    if (!user.otp || user.otp !== otp) {
+      return NextResponse.json({ error: "Invalid OTP" }, { status: 400 });
     }
-    if (Date(user.otpExpiresAt) <= Date.now()) {
-      return NextResponse.json({ error: "OTP expired, try again!"})
+
+    // Check if OTP is expired
+    const now = new Date();
+    const expiryDate = new Date(user.otpExpiresAt);
+    if (expiryDate <= now) {
+      return NextResponse.json({ error: "OTP expired" }, { status: 400 });
     }
 
     // 3. Clear OTP (Security best practice)
@@ -36,13 +45,16 @@ export async function POST(req) {
     await createSession({
       userId: user.id,
       email: user.email,
-      name: user.name,
-      role: user.role,
+      name: user.name || "",
+      role: user.role || "CUSTOMER",
     });
 
     return NextResponse.json({ success: true, role: user.role });
   } catch (error) {
     console.error("Verify OTP Error:", error);
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Internal Server Error" },
+      { status: 500 }
+    );
   }
 }

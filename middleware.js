@@ -1,31 +1,41 @@
 import { NextResponse } from "next/server";
-import { jwtVerify } from "jose";
+import { getSession } from "@/lib/session";
 
-const secretKey = process.env.SESSION_SECRET || "fallback-secret-key-change-me";
-const encodedKey = new TextEncoder().encode(secretKey);
+// Define public routes that don't require authentication
+const publicRoutes = [
+  "/",
+  "/login",
+  "/signup",
+  "/api/auth/send-otp",
+  "/api/auth/verify-otp",
+  "/api/auth/signup",
+];
+const adminRoutes = ["/admin", "/admin/(.*)"];
 
-export async function middleware(req) {
-  const sessionCookie = req.cookies.get("basho_session")?.value;
-  const { pathname } = req.nextUrl;
+export async function middleware(request) {
+  const { pathname } = request.nextUrl;
 
-  // 1. If trying to access Admin routes
-  if (pathname.startsWith("/admin")) {
-    if (!sessionCookie) {
-      // Not logged in -> Go to Login
-      return NextResponse.redirect(new URL(`/login?redirect=${pathname}`, req.url));
-    }
+  // Allow public routes
+  if (publicRoutes.includes(pathname) || pathname.startsWith("/api/auth/")) {
+    return NextResponse.next();
+  }
 
-    try {
-      // Verify Token & Check Role
-      const { payload } = await jwtVerify(sessionCookie, encodedKey, { algorithms: ["HS256"] });
-      
-      if (payload.role !== "ADMIN") {
-        // Logged in but not Admin -> Go to Home
-        return NextResponse.redirect(new URL("/", req.url));
-      }
-    } catch (err) {
-      // Invalid token
-      return NextResponse.redirect(new URL("/login", req.url));
+  // Check session
+  const session = await getSession();
+
+  // If no session, redirect to login
+  if (!session) {
+    const loginUrl = new URL("/login", request.url);
+    loginUrl.searchParams.set("redirect", pathname);
+    return NextResponse.redirect(loginUrl);
+  }
+
+  // Check admin routes
+  if (
+    adminRoutes.some((route) => pathname.startsWith(route.replace("/(.*)", "")))
+  ) {
+    if (session.role !== "ADMIN") {
+      return NextResponse.redirect(new URL("/", request.url));
     }
   }
 
@@ -33,5 +43,14 @@ export async function middleware(req) {
 }
 
 export const config = {
-  matcher: ["/admin/:path*"], // Apply only to admin routes
+  matcher: [
+    /*
+     * Match all request paths except:
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     * - public folder
+     */
+    "/((?!_next/static|_next/image|favicon.ico|public/).*)",
+  ],
 };
