@@ -1,13 +1,6 @@
 "use client";
 
-import React, {
-  useState,
-  useCallback,
-  memo,
-  useRef,
-  useEffect,
-  Suspense,
-} from "react";
+import React, { useState, useCallback, memo, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Filter,
@@ -23,27 +16,10 @@ import {
   TrendingUp,
   Clock,
   DollarSign,
-  Loader2,
-  AlertCircle,
 } from "lucide-react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
 import CartSlider from "@/components/CartSlider";
 import { useCart } from "@/context/CartContext";
-import { useAuth } from "@/context/AuthContext";
-import toast from "react-hot-toast";
-import {
-  collection,
-  query,
-  where,
-  getDocs,
-  addDoc,
-  deleteDoc,
-  doc,
-  getDoc,
-  setDoc,
-} from "firebase/firestore";
-import { db } from "@/lib/firebase";
 
 // --- Brand Colors from Palette ---
 const COLORS = {
@@ -79,113 +55,149 @@ const staggerContainer = {
   },
 };
 
-// Fetch products function
-async function fetchProducts(params = {}) {
-  const {
-    category = "all",
-    sort = "featured",
-    minPrice,
-    maxPrice,
-    search,
-    material,
-    features,
-    page = 1,
-    limit = 20,
-  } = params;
+// --- Sample Products Data ---
+const PRODUCTS = [
+  {
+    id: 1,
+    slug: "kintsugi-tea-bowl",
+    name: "Kintsugi Tea Bowl",
+    category: "Tea Ware",
+    price: 245,
+    originalPrice: 295,
+    description: "Hand-thrown matcha bowl with gold repair accents",
+    material: "Stoneware with kintsugi-inspired glaze",
+    dimensions: "Ø12cm × H8cm",
+    color: "Terracotta with gold",
+    inStock: true,
+    isNew: true,
+    isBestseller: true,
+    rating: 4.9,
+    reviewCount: 42,
+    images: [
+      "/showcase/products/1.png",
+      "/showcase/products/2.png",
+      "/showcase/products/3.png",
+    ],
+    features: ["Microwave Safe", "Dishwasher Safe", "Food Safe"],
+    care: "Hand wash recommended to preserve gold accents",
+    leadTime: "Ships in 3-5 days",
+  },
+  {
+    id: 2,
+    slug: "wabi-sabi-dinner-set",
+    name: "Wabi-sabi Dinner Set",
+    category: "Dinnerware",
+    price: 420,
+    originalPrice: 480,
+    description: "Set of 6 plates & bowls celebrating natural imperfections",
+    material: "High-fire stoneware",
+    dimensions: "Plate: Ø25cm, Bowl: Ø18cm × H7cm",
+    color: "Charcoal & Cream",
+    inStock: true,
+    isNew: false,
+    isBestseller: true,
+    rating: 4.8,
+    reviewCount: 67,
+    images: ["/showcase/products/2.png", "/showcase/products/1.png"],
+    features: ["Oven Safe", "Freezer Safe", "Stackable"],
+    care: "Dishwasher safe, but air drying preserves glaze",
+    leadTime: "Ships in 5-7 days",
+  },
+  {
+    id: 3,
+    slug: "mountain-vase",
+    name: "Mountain Vase",
+    category: "Home Decor",
+    price: 180,
+    originalPrice: null,
+    description: "Sculptural vase inspired by Japanese mountains",
+    material: "Unglazed stoneware",
+    dimensions: "H35cm × W20cm × D15cm",
+    color: "Natural Clay",
+    inStock: true,
+    isNew: true,
+    isBestseller: false,
+    rating: 4.7,
+    reviewCount: 23,
+    images: ["/showcase/products/3.png"],
+    features: ["Water Tight", "UV Resistant", "Indoor/Outdoor"],
+    care: "Wipe clean with damp cloth",
+    leadTime: "Ships in 7-10 days",
+  },
+  {
+    id: 4,
+    slug: "zen-sake-set",
+    name: "Zen Sake Set",
+    category: "Drinkware",
+    price: 165,
+    originalPrice: 195,
+    description: "2 cups & carafe for traditional sake service",
+    material: "Porcelain with ash glaze",
+    dimensions: "Carafe: H12cm, Cups: Ø6cm",
+    color: "Celadon Green",
+    inStock: false,
+    isNew: false,
+    isBestseller: true,
+    rating: 4.9,
+    reviewCount: 38,
+    images: ["/showcase/products/1.png"],
+    features: ["Food Safe", "Delicate Hand Wash", "Heat Resistant"],
+    care: "Hand wash with mild detergent",
+    leadTime: "Restocking in 2 weeks",
+  },
+  {
+    id: 5,
+    slug: "raku-incense-holder",
+    name: "Raku Incense Holder",
+    category: "Ritual Objects",
+    price: 85,
+    originalPrice: null,
+    description: "Hand-fired raku ware for meditation rituals",
+    material: "Raku pottery with crackle glaze",
+    dimensions: "H5cm × W8cm × D8cm",
+    color: "Metallic Copper & Black",
+    inStock: true,
+    isNew: true,
+    isBestseller: false,
+    rating: 4.6,
+    reviewCount: 19,
+    images: ["/showcase/products/2.png"],
+    features: ["Handmade", "Unique Patterns", "Smoke Resistant"],
+    care: "Wipe with dry cloth only",
+    leadTime: "Ships in 1-2 days",
+  },
+  {
+    id: 6,
+    slug: "bamboo-sushi-plates",
+    name: "Bamboo Sushi Plates",
+    category: "Dinnerware",
+    price: 320,
+    originalPrice: 360,
+    description: "Set of 4 oval plates with bamboo-inspired texture",
+    material: "Stoneware with matte glaze",
+    dimensions: "25cm × 18cm × H3cm",
+    color: "Bamboo Green & White",
+    inStock: true,
+    isNew: false,
+    isBestseller: true,
+    rating: 4.8,
+    reviewCount: 51,
+    images: ["/showcase/products/3.png"],
+    features: ["Microwave Safe", "Dishwasher Safe", "Stackable"],
+    care: "Dishwasher safe up to 60°C",
+    leadTime: "Ships in 4-6 days",
+  },
+];
 
-  const queryParams = new URLSearchParams({
-    category,
-    sort,
-    page: page.toString(),
-    limit: limit.toString(),
-    ...(search && { search }),
-    ...(minPrice && { minPrice }),
-    ...(maxPrice && { maxPrice }),
-    ...(material && {
-      material: Array.isArray(material) ? material.join(",") : material,
-    }),
-    ...(features && {
-      features: Array.isArray(features) ? features.join(",") : features,
-    }),
-  });
-
-  const response = await fetch(`/api/products?${queryParams}`);
-  if (!response.ok) {
-    throw new Error("Failed to fetch products");
-  }
-  return response.json();
-}
-
-// Fetch categories function
-async function fetchCategories() {
-  const response = await fetch("/api/categories");
-  if (!response.ok) {
-    throw new Error("Failed to fetch categories");
-  }
-  return response.json();
-}
-
-// Firebase wishlist functions
-async function getWishlist(userId) {
-  try {
-    if (!userId) return [];
-
-    const wishlistRef = collection(db, "wishlists");
-    const q = query(wishlistRef, where("userId", "==", userId));
-    const querySnapshot = await getDocs(q);
-
-    const wishlist = [];
-    querySnapshot.forEach((doc) => {
-      wishlist.push({
-        id: doc.id,
-        ...doc.data(),
-      });
-    });
-
-    return wishlist;
-  } catch (error) {
-    console.error("Error fetching wishlist:", error);
-    throw error;
-  }
-}
-
-async function toggleWishlistItem(userId, productId, productData) {
-  try {
-    if (!userId) throw new Error("User not authenticated");
-
-    const wishlistRef = collection(db, "wishlists");
-    const q = query(
-      wishlistRef,
-      where("userId", "==", userId),
-      where("productId", "==", productId)
-    );
-    const querySnapshot = await getDocs(q);
-
-    if (!querySnapshot.empty) {
-      // Remove from wishlist
-      const docId = querySnapshot.docs[0].id;
-      await deleteDoc(doc(db, "wishlists", docId));
-      return { action: "removed" };
-    } else {
-      // Add to wishlist
-      const wishlistData = {
-        userId,
-        productId,
-        productName: productData.name,
-        productImage: productData.images?.[0] || "",
-        productPrice: productData.price,
-        productSlug: productData.slug,
-        createdAt: new Date().toISOString(),
-      };
-
-      await addDoc(wishlistRef, wishlistData);
-      return { action: "added" };
-    }
-  } catch (error) {
-    console.error("Error toggling wishlist:", error);
-    throw error;
-  }
-}
+const CATEGORIES = [
+  "All Categories",
+  "Tea Ware",
+  "Dinnerware",
+  "Drinkware",
+  "Home Decor",
+  "Ritual Objects",
+  "Seasonal",
+];
 
 const SORT_OPTIONS = [
   {
@@ -209,6 +221,11 @@ const SORT_OPTIONS = [
     icon: <DollarSign className="w-4 h-4" />,
   },
   {
+    value: "rating",
+    label: "Highest Rated",
+    icon: <Star className="w-4 h-4" />,
+  },
+  {
     value: "bestseller",
     label: "Bestsellers",
     icon: <TrendingUp className="w-4 h-4" />,
@@ -223,6 +240,8 @@ const FILTERS = {
     "Microwave Safe",
     "Oven Safe",
     "Hand Wash Only",
+    "New Arrival",
+    "Bestseller",
   ],
 };
 
@@ -235,12 +254,9 @@ const ProductCard = memo(
     cartItems,
     onAddToCart,
     onUpdateQuantity,
-    isWishlistLoading,
   }) {
     const quantityInCart =
       cartItems.find((item) => item.id === product.id)?.quantity || 0;
-    const rating = product.averageRating || 0;
-    const reviewCount = product._count?.reviews || 0;
 
     return (
       <motion.div
@@ -274,43 +290,27 @@ const ProductCard = memo(
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
-            onWishlistToggle(product.id, product);
+            onWishlistToggle(product.id);
           }}
-          disabled={isWishlistLoading}
-          className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center shadow-md hover:shadow-lg transition-all hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center shadow-md hover:shadow-lg transition-all hover:scale-110"
         >
-          {isWishlistLoading ? (
-            <Loader2 className="w-5 h-5 text-[#C85428] animate-spin" />
-          ) : (
-            <Heart
-              className={`w-5 h-5 transition-colors ${
-                wishlist.has(product.id)
-                  ? "fill-[#C85428] text-[#C85428]"
-                  : "text-stone-400"
-              }`}
-            />
-          )}
+          <Heart
+            className={`w-5 h-5 transition-colors ${
+              wishlist.has(product.id)
+                ? "fill-[#C85428] text-[#C85428]"
+                : "text-stone-400"
+            }`}
+          />
         </button>
 
         {/* Product Image */}
         <Link href={`/products/${product.slug}`}>
           <div className="relative h-80 overflow-hidden bg-gradient-to-b from-stone-100 to-stone-50 cursor-pointer">
-            {product.images?.[0] ? (
-              <img
-                src={product.images[0]}
-                alt={product.name}
-                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                onError={(e) => {
-                  e.target.src = "/placeholder-image.jpg";
-                }}
-              />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center bg-stone-100">
-                <div className="w-20 h-20 rounded-full bg-stone-200 flex items-center justify-center">
-                  <ShoppingBag className="w-10 h-10 text-stone-400" />
-                </div>
-              </div>
-            )}
+            <img
+              src={product.images[0]}
+              alt={product.name}
+              className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+            />
             <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent" />
           </div>
         </Link>
@@ -320,7 +320,7 @@ const ProductCard = memo(
           <Link href={`/products/${product.slug}`}>
             <div className="cursor-pointer">
               <span className="text-sm text-[#8E5022] font-medium uppercase tracking-wider">
-                {product.category?.name}
+                {product.category}
               </span>
               <h3 className="font-serif text-2xl text-[#442D1C] mt-1 mb-2 group-hover:text-[#C85428] transition-colors">
                 {product.name}
@@ -333,55 +333,50 @@ const ProductCard = memo(
           </p>
 
           {/* Rating */}
-          {reviewCount > 0 && (
-            <div className="flex items-center gap-2 mb-4">
-              <div className="flex items-center">
-                {[...Array(5)].map((_, i) => (
-                  <Star
-                    key={i}
-                    className={`w-4 h-4 ${
-                      i < Math.floor(rating)
-                        ? "fill-[#C85428] text-[#C85428]"
-                        : "text-stone-300"
-                    }`}
-                  />
-                ))}
-              </div>
-              <span className="text-sm text-stone-500">
-                {rating.toFixed(1)} ({reviewCount})
-              </span>
+          <div className="flex items-center gap-2 mb-4">
+            <div className="flex items-center">
+              {[...Array(5)].map((_, i) => (
+                <Star
+                  key={i}
+                  className={`w-4 h-4 ${
+                    i < Math.floor(product.rating)
+                      ? "fill-[#C85428] text-[#C85428]"
+                      : "text-stone-300"
+                  }`}
+                />
+              ))}
             </div>
-          )}
+            <span className="text-sm text-stone-500">
+              {product.rating} ({product.reviewCount})
+            </span>
+          </div>
 
           {/* Price */}
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-baseline gap-2">
               <span className="font-serif text-3xl text-[#442D1C]">
-                ${product.price.toFixed(2)}
+                ${product.price}
               </span>
-              {product.originalPrice &&
-                product.originalPrice > product.price && (
-                  <span className="text-stone-400 line-through">
-                    ${product.originalPrice.toFixed(2)}
-                  </span>
-                )}
+              {product.originalPrice && (
+                <span className="text-stone-400 line-through">
+                  ${product.originalPrice}
+                </span>
+              )}
             </div>
           </div>
 
           {/* Quick Features */}
-          {product.features && product.features.length > 0 && (
-            <div className="grid grid-cols-2 gap-2 mb-6">
-              {product.features.slice(0, 2).map((feature, idx) => (
-                <div
-                  key={idx}
-                  className="flex items-center gap-1 text-xs text-stone-600"
-                >
-                  <div className="w-2 h-2 rounded-full bg-[#8E5022]" />
-                  {feature}
-                </div>
-              ))}
-            </div>
-          )}
+          <div className="grid grid-cols-2 gap-2 mb-6">
+            {product.features.slice(0, 2).map((feature, idx) => (
+              <div
+                key={idx}
+                className="flex items-center gap-1 text-xs text-stone-600"
+              >
+                <div className="w-2 h-2 rounded-full bg-[#8E5022]" />
+                {feature}
+              </div>
+            ))}
+          </div>
 
           {/* Action Buttons */}
           <div className="flex gap-3">
@@ -391,7 +386,7 @@ const ProductCard = memo(
               </button>
             </Link>
 
-            {/* Cart Button */}
+            {/* Cart Button - Changes based on quantity in cart */}
             {quantityInCart > 0 ? (
               <div className="flex-1">
                 <div className="flex items-center justify-between bg-[#EDD8B4] rounded-xl p-1">
@@ -412,7 +407,7 @@ const ProductCard = memo(
                   </div>
 
                   <button
-                    onClick={() => onAddToCart(product)}
+                    onClick={() => onAddToCart({ ...product, quantity: 1 })}
                     className="w-10 h-10 flex items-center justify-center rounded-lg hover:bg-[#E8D0A0] transition-colors"
                   >
                     <Plus className="w-4 h-4 text-[#442D1C]" />
@@ -421,7 +416,7 @@ const ProductCard = memo(
               </div>
             ) : (
               <button
-                onClick={() => onAddToCart(product)}
+                onClick={() => onAddToCart({ ...product, quantity: 1 })}
                 disabled={!product.inStock}
                 className={`flex-1 py-3 rounded-xl font-medium transition-all flex items-center justify-center gap-2 ${
                   product.inStock
@@ -439,6 +434,7 @@ const ProductCard = memo(
     );
   },
   (prevProps, nextProps) => {
+    // Custom comparison function to prevent unnecessary re-renders
     const prevWishlisted = prevProps.wishlist.has(prevProps.product.id);
     const nextWishlisted = nextProps.wishlist.has(nextProps.product.id);
     const prevQuantity =
@@ -451,8 +447,7 @@ const ProductCard = memo(
     return (
       prevProps.product.id === nextProps.product.id &&
       prevWishlisted === nextWishlisted &&
-      prevQuantity === nextQuantity &&
-      prevProps.isWishlistLoading === nextProps.isWishlistLoading
+      prevQuantity === nextQuantity
     );
   }
 );
@@ -538,251 +533,93 @@ const CustomDropdown = ({ value, options, onChange }) => {
   );
 };
 
-// Main Products Page Component
-function ProductsPageContent() {
-  const searchParams = useSearchParams();
-  const router = useRouter();
-  const { user, loading: authLoading } = useAuth();
-
-  const [products, setProducts] = useState([]);
-  const [categories, setCategories] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [productsLoading, setProductsLoading] = useState(true);
-  const [wishlistLoading, setWishlistLoading] = useState(false);
-  const [error, setError] = useState(null);
-
-  const [selectedCategory, setSelectedCategory] = useState(
-    searchParams.get("category") || "all"
-  );
+export default function ProductsPage() {
+  const [selectedCategory, setSelectedCategory] = useState("All Categories");
   const [showFilters, setShowFilters] = useState(false);
   const [selectedFilters, setSelectedFilters] = useState({
     price: [],
     material: [],
     features: [],
   });
-  const [sortBy, setSortBy] = useState(searchParams.get("sort") || "featured");
-  const [searchQuery, setSearchQuery] = useState(
-    searchParams.get("search") || ""
-  );
+  const [sortBy, setSortBy] = useState("featured");
+  const [searchQuery, setSearchQuery] = useState("");
   const [wishlist, setWishlist] = useState(new Set());
-  const { addToCart, updateQuantity, removeFromCart, cartItems } = useCart();
+  const { addToCart, updateQuantity, cartItems } = useCart();
 
-  // Prepare categories for display
-  const displayCategories = [
-    { slug: "all", name: "All Categories", productCount: products.length },
-    ...categories.map((cat) => ({
-      slug: cat.slug,
-      name: cat.name,
-      productCount: cat._count?.products || 0,
-    })),
-  ];
+  // Filter products based on selections
+  const filteredProducts = PRODUCTS.filter((product) => {
+    // Category filter
+    if (
+      selectedCategory !== "All Categories" &&
+      product.category !== selectedCategory
+    ) {
+      return false;
+    }
 
-  // Fetch initial data
-  useEffect(() => {
-    async function loadInitialData() {
-      try {
-        setLoading(true);
-        setError(null);
+    // Search filter
+    if (
+      searchQuery &&
+      !product.name.toLowerCase().includes(searchQuery.toLowerCase()) &&
+      !product.description.toLowerCase().includes(searchQuery.toLowerCase())
+    ) {
+      return false;
+    }
 
-        // Fetch categories
-        const categoriesData = await fetchCategories();
-        setCategories(categoriesData);
+    // Price filter
+    if (selectedFilters.price.length > 0) {
+      const priceInRange = selectedFilters.price.some((range) => {
+        if (range === "Under $100") return product.price < 100;
+        if (range === "$100 - $250")
+          return product.price >= 100 && product.price <= 250;
+        if (range === "$250 - $500")
+          return product.price >= 250 && product.price <= 500;
+        if (range === "Over $500") return product.price > 500;
+        return true;
+      });
+      if (!priceInRange) return false;
+    }
 
-        // Fetch wishlist if user is logged in
-        if (user) {
-          await loadWishlist();
-        }
-      } catch (err) {
-        console.error("Error loading initial data:", err);
-        setError("Failed to load data. Please try again.");
-        toast.error("Failed to load data");
-      } finally {
-        setLoading(false);
+    // Material filter
+    if (selectedFilters.material.length > 0) {
+      if (
+        !selectedFilters.material.some((material) =>
+          product.material.toLowerCase().includes(material.toLowerCase())
+        )
+      ) {
+        return false;
       }
     }
 
-    loadInitialData();
-  }, [user]);
-
-  // Load wishlist
-  const loadWishlist = async () => {
-    if (!user?.uid) return;
-
-    try {
-      const wishlistData = await getWishlist(user.uid);
-      const wishlistSet = new Set(wishlistData.map((item) => item.productId));
-      setWishlist(wishlistSet);
-    } catch (err) {
-      console.error("Error loading wishlist:", err);
+    // Features filter
+    if (selectedFilters.features.length > 0) {
+      const hasFeatures = selectedFilters.features.every((feature) => {
+        if (feature === "New Arrival") return product.isNew;
+        if (feature === "Bestseller") return product.isBestseller;
+        return product.features.includes(feature);
+      });
+      if (!hasFeatures) return false;
     }
-  };
 
-  // Fetch products when filters change
-  useEffect(() => {
-    const loadProducts = async () => {
-      setProductsLoading(true);
-      setError(null);
+    return true;
+  });
 
-      try {
-        // Build query parameters
-        const params = {
-          category: selectedCategory,
-          sort: sortBy,
-          search: searchQuery || undefined,
-          page: 1,
-          limit: 20,
-        };
-
-        // Add price filters
-        if (selectedFilters.price.length > 0) {
-          selectedFilters.price.forEach((priceRange) => {
-            if (priceRange === "Under $100") {
-              params.maxPrice = "100";
-            } else if (priceRange === "$100 - $250") {
-              params.minPrice = "100";
-              params.maxPrice = "250";
-            } else if (priceRange === "$250 - $500") {
-              params.minPrice = "250";
-              params.maxPrice = "500";
-            } else if (priceRange === "Over $500") {
-              params.minPrice = "500";
-            }
-          });
-        }
-
-        // Add material filters
-        if (selectedFilters.material.length > 0) {
-          params.material = selectedFilters.material;
-        }
-
-        // Add feature filters
-        if (selectedFilters.features.length > 0) {
-          params.features = selectedFilters.features;
-        }
-
-        const data = await fetchProducts(params);
-        setProducts(data.products || []);
-      } catch (err) {
-        console.error("Error loading products:", err);
-        setError("Failed to load products. Please try again.");
-        toast.error("Failed to load products");
-      } finally {
-        setProductsLoading(false);
-      }
-    };
-
-    // Add debounce to search
-    const timeoutId = setTimeout(() => {
-      loadProducts();
-    }, 300);
-
-    return () => clearTimeout(timeoutId);
-  }, [selectedCategory, sortBy, searchQuery, selectedFilters]);
-
-  // Update URL when filters change
-  useEffect(() => {
-    const params = new URLSearchParams();
-
-    if (selectedCategory !== "all") params.set("category", selectedCategory);
-    if (sortBy !== "featured") params.set("sort", sortBy);
-    if (searchQuery) params.set("search", searchQuery);
-
-    // Update URL without page reload
-    const newUrl = `${window.location.pathname}?${params.toString()}`;
-    router.replace(newUrl, { scroll: false });
-  }, [selectedCategory, sortBy, searchQuery, router]);
-
-  // Toggle wishlist with authentication check
-  const toggleWishlistHandler = useCallback(
-    async (productId, product) => {
-      if (!user) {
-        toast.error("Please login to add to wishlist");
-        router.push("/login?returnUrl=/products");
-        return;
-      }
-
-      if (authLoading) {
-        toast.loading("Checking authentication...");
-        return;
-      }
-
-      setWishlistLoading(true);
-
-      try {
-        const result = await toggleWishlistItem(user.uid, productId, product);
-
-        setWishlist((prev) => {
-          const newSet = new Set(prev);
-          if (newSet.has(productId)) {
-            newSet.delete(productId);
-            toast.success("Removed from wishlist");
-          } else {
-            newSet.add(productId);
-            toast.success("Added to wishlist");
-          }
-          return newSet;
-        });
-      } catch (err) {
-        console.error("Error toggling wishlist:", err);
-        toast.error("Failed to update wishlist");
-      } finally {
-        setWishlistLoading(false);
-      }
-    },
-    [user, authLoading, router]
-  );
-
-  // Add to cart handler
-  const handleAddToCart = useCallback(
-    (product) => {
-      const cartProduct = {
-        id: product.id,
-        name: product.name,
-        slug: product.slug,
-        price: product.price,
-        originalPrice: product.originalPrice,
-        image: product.images?.[0] || "/placeholder-image.jpg",
-        inStock: product.inStock,
-        category: product.category?.name,
-        quantity: 1,
-      };
-
-      addToCart(cartProduct);
-      toast.success("Added to cart!");
-    },
-    [addToCart]
-  );
-
-  // Update quantity handler
-  const handleUpdateQuantity = useCallback(
-    (productId, quantity) => {
-      if (quantity <= 0) {
-        removeFromCart(productId);
-        toast.success("Removed from cart");
-      } else {
-        updateQuantity(productId, quantity);
-      }
-    },
-    [updateQuantity, removeFromCart]
-  );
-
-  // Clear filters
-  const clearFilters = useCallback(() => {
-    setSelectedFilters({
-      price: [],
-      material: [],
-      features: [],
-    });
-    setSelectedCategory("all");
-    setSearchQuery("");
-    setSortBy("featured");
-    toast.success("Filters cleared");
-  }, []);
-
-  // Clear search
-  const clearSearch = () => {
-    setSearchQuery("");
-  };
+  // Sort products
+  const sortedProducts = [...filteredProducts].sort((a, b) => {
+    switch (sortBy) {
+      case "price-low":
+        return a.price - b.price;
+      case "price-high":
+        return b.price - a.price;
+      case "rating":
+        return b.rating - a.rating;
+      case "newest":
+        return b.isNew - a.isNew;
+      case "bestseller":
+        return b.isBestseller - a.isBestseller;
+      default: // featured
+        return b.isBestseller - a.isBestseller;
+    }
+  });
 
   const toggleFilter = (type, value) => {
     setSelectedFilters((prev) => ({
@@ -793,35 +630,43 @@ function ProductsPageContent() {
     }));
   };
 
-  // Handle loading and error states
-  if (loading) {
-    return (
-      <main className="min-h-screen bg-[#FDFBF7] flex items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <Loader2 className="w-8 h-8 text-[#8E5022] animate-spin" />
-          <p className="text-stone-600">Loading products...</p>
-        </div>
-      </main>
-    );
-  }
+  const clearFilters = useCallback(() => {
+    setSelectedFilters({
+      price: [],
+      material: [],
+      features: [],
+    });
+  }, []);
 
-  if (error && !productsLoading) {
-    return (
-      <main className="min-h-screen bg-[#FDFBF7] flex items-center justify-center">
-        <div className="text-center max-w-md mx-auto">
-          <AlertCircle className="w-16 h-16 text-[#C85428] mx-auto mb-4" />
-          <h2 className="font-serif text-3xl text-[#442D1C] mb-2">Oops!</h2>
-          <p className="text-stone-600 mb-6">{error}</p>
-          <button
-            onClick={() => window.location.reload()}
-            className="bg-[#8E5022] text-white px-6 py-3 rounded-xl font-medium hover:bg-[#652810] transition-colors"
-          >
-            Try Again
-          </button>
-        </div>
-      </main>
-    );
-  }
+  const toggleWishlist = useCallback((productId) => {
+    setWishlist((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(productId)) {
+        newSet.delete(productId);
+      } else {
+        newSet.add(productId);
+      }
+      return newSet;
+    });
+  }, []);
+
+  const handleAddToCart = useCallback(
+    (product) => {
+      addToCart(product);
+    },
+    [addToCart]
+  );
+
+  const handleUpdateQuantity = useCallback(
+    (productId, quantity) => {
+      updateQuantity(productId, quantity);
+    },
+    [updateQuantity]
+  );
+
+  const clearSearch = () => {
+    setSearchQuery("");
+  };
 
   return (
     <main className="min-h-screen bg-[#FDFBF7] text-stone-800 font-sans">
@@ -899,32 +744,31 @@ function ProductsPageContent() {
         <div className="max-w-7xl mx-auto">
           {/* Filters & Controls */}
           <div className="flex flex-col lg:flex-row gap-6 mb-12 pt-8">
+            {" "}
+            {/* Added pt-8 for top padding */}
             {/* Category Filter */}
             <div className="flex-1 overflow-x-auto pt-2 pb-4">
+              {" "}
+              {/* Added padding for better spacing */}
               <div className="flex gap-2">
-                {displayCategories.map((category) => (
+                {CATEGORIES.map((category) => (
                   <button
-                    key={category.slug}
-                    onClick={() => setSelectedCategory(category.slug)}
+                    key={category}
+                    onClick={() => setSelectedCategory(category)}
                     className={`px-6 py-3 rounded-full font-medium whitespace-nowrap transition-all flex-shrink-0 ${
-                      selectedCategory === category.slug
+                      selectedCategory === category
                         ? "bg-[#442D1C] text-white shadow-md"
                         : "bg-white text-stone-600 hover:bg-stone-100 shadow-sm"
                     }`}
                   >
-                    {category.name}
-                    {category.productCount > 0 && (
-                      <span className="ml-2 text-xs opacity-75">
-                        ({category.productCount})
-                      </span>
-                    )}
+                    {category}
                   </button>
                 ))}
               </div>
             </div>
-
             {/* Sort & Filter Controls */}
             <div className="flex items-center gap-4">
+              {/* Custom Dropdown */}
               <CustomDropdown
                 value={sortBy}
                 options={SORT_OPTIONS}
@@ -1088,66 +932,37 @@ function ProductsPageContent() {
             )}
           </AnimatePresence>
 
-          {/* Results Count & Loading State */}
+          {/* Results Count */}
           <div className="mb-8">
-            {productsLoading ? (
-              <div className="flex items-center gap-3">
-                <Loader2 className="w-5 h-5 text-[#8E5022] animate-spin" />
-                <p className="text-stone-600">Loading products...</p>
-              </div>
-            ) : (
-              <p className="text-stone-600">
-                Showing{" "}
-                <span className="font-medium text-[#442D1C]">
-                  {products.length}
-                </span>{" "}
-                products
-                {selectedCategory !== "all" &&
-                  ` in ${
-                    displayCategories.find((c) => c.slug === selectedCategory)
-                      ?.name
-                  }`}
-                {searchQuery && ` for "${searchQuery}"`}
-              </p>
-            )}
+            <p className="text-stone-600">
+              Showing{" "}
+              <span className="font-medium text-[#442D1C]">
+                {sortedProducts.length}
+              </span>{" "}
+              products
+              {selectedCategory !== "All Categories" &&
+                ` in ${selectedCategory}`}
+              {searchQuery && ` for "${searchQuery}"`}
+            </p>
           </div>
 
           {/* Product Grid */}
-          {productsLoading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {[...Array(6)].map((_, i) => (
-                <div
-                  key={i}
-                  className="bg-white rounded-3xl overflow-hidden shadow-lg animate-pulse"
-                >
-                  <div className="h-80 bg-stone-200" />
-                  <div className="p-6 space-y-4">
-                    <div className="h-4 bg-stone-200 rounded w-1/4" />
-                    <div className="h-6 bg-stone-200 rounded w-3/4" />
-                    <div className="h-4 bg-stone-200 rounded w-full" />
-                    <div className="h-4 bg-stone-200 rounded w-2/3" />
-                    <div className="h-10 bg-stone-200 rounded" />
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : products.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {products.map((product) => (
-                <ProductCard
-                  key={product.id}
-                  product={product}
-                  wishlist={wishlist}
-                  cartItems={cartItems}
-                  onWishlistToggle={toggleWishlistHandler}
-                  onAddToCart={handleAddToCart}
-                  onUpdateQuantity={handleUpdateQuantity}
-                  isWishlistLoading={wishlistLoading}
-                />
-              ))}
-            </div>
-          ) : (
-            /* Empty State */
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {sortedProducts.map((product) => (
+              <ProductCard
+                key={product.id}
+                product={product}
+                wishlist={wishlist}
+                cartItems={cartItems}
+                onWishlistToggle={toggleWishlist}
+                onAddToCart={handleAddToCart}
+                onUpdateQuantity={handleUpdateQuantity}
+              />
+            ))}
+          </div>
+
+          {/* Empty State */}
+          {sortedProducts.length === 0 && (
             <div className="text-center py-20">
               <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-stone-100 flex items-center justify-center">
                 <Search className="w-12 h-12 text-stone-400" />
@@ -1181,23 +996,5 @@ function ProductsPageContent() {
       {/* Cart Slider */}
       <CartSlider />
     </main>
-  );
-}
-
-// Main export with Suspense wrapper
-export default function ProductsPage() {
-  return (
-    <Suspense
-      fallback={
-        <main className="min-h-screen bg-[#FDFBF7] flex items-center justify-center">
-          <div className="flex flex-col items-center gap-4">
-            <Loader2 className="w-8 h-8 text-[#8E5022] animate-spin" />
-            <p className="text-stone-600">Loading page...</p>
-          </div>
-        </main>
-      }
-    >
-      <ProductsPageContent />
-    </Suspense>
   );
 }

@@ -1,11 +1,13 @@
 //import { Inter, Noto_Serif_JP } from 'next/font/google';
 import { AuthProvider } from "@/components/AuthProvider";
-import Header from '@/components/layout/Header';
-import { Toaster } from 'sonner';
+import { CartProvider } from "@/context/CartContext";
+import Header from "@/components/layout/Header";
+import { Toaster } from "sonner";
 import "./globals.css";
 // These appear to be custom local fonts/icons you added
 import "../public/fonts/fonts.css";
 import "../public/icons/material-symbols.css";
+import { Car } from "lucide-react";
 
 /*
 const inter = Inter({ 
@@ -22,8 +24,8 @@ const notoSerif = Noto_Serif_JP({
 });
 */
 export const metadata = {
-  title: 'Basho Pottery | Handcrafted Japanese Ceramics',
-  description: 'Artisanal pottery by Shivangi.',
+  title: "Basho Pottery | Handcrafted Japanese Ceramics",
+  description: "Artisanal pottery by Shivangi.",
 };
 
 export default function RootLayout({ children }) {
@@ -33,11 +35,13 @@ export default function RootLayout({ children }) {
         <AuthProvider>
           {/* Header is inside AuthProvider so it can check login state */}
           <Header />
-          
+
           <main className="min-h-screen">
-            {children}
+            <AuthProvider>
+              <CartProvider>{children}</CartProvider>
+            </AuthProvider>
           </main>
-          
+
           <Toaster richColors />
         </AuthProvider>
       </body>
