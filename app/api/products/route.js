@@ -24,7 +24,8 @@ export async function GET(request) {
 
     // Category filter (only apply if not 'all')
     if (category && category !== "all") {
-      where.category = {
+      where.Category = {
+        // Changed from 'category' to 'Category'
         slug: category,
       };
     }
@@ -93,20 +94,23 @@ export async function GET(request) {
         skip,
         take: limit,
         include: {
-          category: {
+          Category: {
+            // Changed from 'category' to 'Category'
             select: {
               id: true,
               name: true,
               slug: true,
             },
           },
-          reviews: {
+          Review: {
+            // Changed from 'reviews' to 'Review'
             select: {
               rating: true,
             },
           },
           // For wishlist functionality
-          wishlistItems: {
+          WishlistItem: {
+            // Changed from 'wishlistItems' to 'WishlistItem'
             select: {
               userId: true,
             },
@@ -120,12 +124,12 @@ export async function GET(request) {
     const transformedProducts = products.map((product) => ({
       ...product,
       _count: {
-        reviews: product.reviews.length,
+        reviews: product.Review.length, // Changed to match relation name
       },
       averageRating:
-        product.reviews.length > 0
-          ? product.reviews.reduce((sum, review) => sum + review.rating, 0) /
-            product.reviews.length
+        product.Review.length > 0
+          ? product.Review.reduce((sum, review) => sum + review.rating, 0) /
+            product.Review.length
           : 0,
     }));
 

@@ -10,7 +10,7 @@ export async function GET() {
       include: {
         _count: {
           select: {
-            products: true,
+            Product: true, // Changed from 'products' to 'Product'
           },
         },
       },
