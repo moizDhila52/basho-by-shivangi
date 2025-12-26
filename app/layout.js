@@ -2,7 +2,7 @@
 import { AuthProvider } from "@/components/AuthProvider";
 import { CartProvider } from "@/context/CartContext";
 import Header from "@/components/layout/Header";
-import { Toaster } from "sonner";
+import { Toaster } from "react-hot-toast";
 import "./globals.css";
 // These appear to be custom local fonts/icons you added
 import "../public/fonts/fonts.css";
@@ -41,9 +41,35 @@ export default function RootLayout({ children }) {
               <CartProvider>{children}</CartProvider>
             </AuthProvider>
           </main>
-
-          <Toaster richColors />
         </AuthProvider>
+        <Toaster
+          position="top-right"
+          toastOptions={{
+            duration: 3000,
+            style: {
+              background: "#442D1C",
+              color: "#EDD8B4",
+              borderRadius: "12px",
+              padding: "16px 24px",
+              fontSize: "14px",
+              fontWeight: "500",
+            },
+            success: {
+              duration: 3000,
+              iconTheme: {
+                primary: "#EDD8B4",
+                secondary: "#10B981",
+              },
+            },
+            error: {
+              duration: 4000,
+              iconTheme: {
+                primary: "#EDD8B4",
+                secondary: "#EF4444",
+              },
+            },
+          }}
+        />
       </body>
     </html>
   );

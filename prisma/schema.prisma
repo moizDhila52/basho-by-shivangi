@@ -33,6 +33,40 @@ enum WorkshopStatus {
 
 // --- Models ---
 
+// Add to your existing models, before or after the WishlistItem model
+model Cart {
+  id        String    @id @default(cuid())
+  userId    String    @unique // One cart per user
+  items     CartItem[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  
+  // Optional: For guest carts
+  sessionId String?   @unique // For guest users (stored in cookies)
+  
+  @@index([userId])
+  @@index([sessionId])
+}
+
+model CartItem {
+  id         String   @id @default(cuid())
+  cartId     String
+  cart       Cart     @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  productId  String
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  quantity   Int      @default(1)
+  
+  // Price snapshot at time of adding
+  price      Float
+    
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  
+  @@unique([cartId, productId]) // Prevent duplicate items in cart
+  @@index([cartId])
+  @@index([productId])
+}
+
 model User {
   id           String  @id @default(cuid())
   email        String  @unique
@@ -45,6 +79,8 @@ model User {
   // --- OTP Fields ---
   otp          String?
   otpExpiresAt DateTime?
+
+  cart      Cart?
 
   // Relations
   addresses Address[]

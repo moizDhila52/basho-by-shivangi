@@ -130,9 +130,12 @@ export default function CartSlider() {
                         >
                           <div className="w-20 h-20 rounded-xl overflow-hidden flex-shrink-0">
                             <img
-                              src={item.images[0]}
+                              src={item.image || "/placeholder-image.jpg"} // Changed to item.image with fallback
                               alt={item.name}
                               className="w-full h-full object-cover"
+                              onError={(e) => {
+                                e.target.src = "/placeholder-image.jpg";
+                              }}
                             />
                           </div>
 
