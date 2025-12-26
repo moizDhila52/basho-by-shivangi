@@ -11,10 +11,10 @@ export async function GET(request, { params }) {
     let product = await prisma.product.findUnique({
       where: { slug },
       include: {
-        category: true,
-        reviews: {
+        Category: true,
+        Review: {
           include: {
-            user: {
+            User: {
               select: {
                 name: true,
                 email: true,
@@ -30,8 +30,8 @@ export async function GET(request, { params }) {
         },
         _count: {
           select: {
-            reviews: true,
-            wishlistItems: true,
+            Review: true,
+            WishlistItem: true,
           },
         },
       },
@@ -42,10 +42,11 @@ export async function GET(request, { params }) {
       product = await prisma.product.findUnique({
         where: { id: slug },
         include: {
-          category: true,
-          reviews: {
+          Category: true,
+          Review: {
             include: {
-              user: {
+              User: {
+                // Changed from 'user' to 'User'
                 select: {
                   name: true,
                   email: true,
@@ -61,8 +62,8 @@ export async function GET(request, { params }) {
           },
           _count: {
             select: {
-              reviews: true,
-              wishlistItems: true,
+              Review: true,
+              WishlistItem: true,
             },
           },
         },
@@ -75,12 +76,13 @@ export async function GET(request, { params }) {
 
     // Calculate average rating
     let averageRating = 0;
-    if (product.reviews.length > 0) {
-      const totalRating = product.reviews.reduce(
+    if (product.Review.length > 0) {
+      // Changed from 'reviews' to 'Review'
+      const totalRating = product.Review.reduce(
         (sum, review) => sum + review.rating,
         0
       );
-      averageRating = totalRating / product.reviews.length;
+      averageRating = totalRating / product.Review.length;
     }
 
     // Get related products (same category, excluding current product)
@@ -94,8 +96,8 @@ export async function GET(request, { params }) {
       },
       take: 3,
       include: {
-        category: true,
-        reviews: true,
+        Category: true, // Changed from 'category' to 'Category'
+        Review: true, // Changed from 'reviews' to 'Review'
       },
     });
 
@@ -121,10 +123,10 @@ export async function GET(request, { params }) {
       isFeatured: product.isFeatured,
       inStock: product.inStock,
       averageRating,
-      reviewCount: product._count.reviews,
-      wishlistCount: product._count.wishlistItems,
-      category: product.category,
-      reviews: product.reviews,
+      reviewCount: product._count.Review, // Changed from 'reviews' to 'Review'
+      wishlistCount: product._count.WishlistItem, // Changed from 'wishlistItems' to 'WishlistItem'
+      category: product.Category, // Changed from 'category' to 'Category'
+      reviews: product.Review, // Changed from 'reviews' to 'Review'
     };
 
     // Format related products
@@ -132,7 +134,7 @@ export async function GET(request, { params }) {
       id: p.id,
       slug: p.slug,
       name: p.name,
-      category: p.category.name,
+      category: p.Category.name, // Changed from 'category' to 'Category'
       price: p.price,
       originalPrice: p.originalPrice,
       image: p.images?.[0] || "/placeholder-image.jpg",
@@ -140,10 +142,10 @@ export async function GET(request, { params }) {
       isNew: p.isNew,
       isBestseller: p.isBestseller,
       rating:
-        p.reviews.length > 0
-          ? p.reviews.reduce((sum, r) => sum + r.rating, 0) / p.reviews.length
+        p.Review.length > 0 // Changed from 'reviews' to 'Review'
+          ? p.Review.reduce((sum, r) => sum + r.rating, 0) / p.Review.length
           : 0,
-      reviewCount: p.reviews.length,
+      reviewCount: p.Review.length, // Changed from 'reviews' to 'Review'
     }));
 
     return NextResponse.json({
