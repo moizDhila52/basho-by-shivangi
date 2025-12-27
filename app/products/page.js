@@ -178,7 +178,7 @@ const ProductCard = memo(
     const quantityInCart =
       cartItems.find((item) => item.id === product.id)?.quantity || 0;
     const rating = product.averageRating || 0;
-    const reviewCount = product._count?.reviews || 0;
+    const reviewCount = product._count?.Review || 0;
     const isInWishlist = wishlist.has(product.id);
 
     return (
@@ -261,7 +261,7 @@ const ProductCard = memo(
           <Link href={`/products/${product.slug}`}>
             <div className="cursor-pointer">
               <span className="text-sm text-[#8E5022] font-medium uppercase tracking-wider">
-                {product.category?.name}
+                {product.Category?.name}
               </span>
               <h3 className="font-serif text-2xl text-[#442D1C] mt-1 mb-2 group-hover:text-[#C85428] transition-colors">
                 {product.name}
@@ -510,11 +510,18 @@ function ProductsPageContent() {
 
   // Prepare categories for display
   const displayCategories = [
-    { slug: "all", name: "All Categories", productCount: products.length },
+    {
+      slug: "all",
+      name: "All Categories",
+      productCount: categories.reduce(
+        (sum, cat) => sum + (cat._count?.Product || 0),
+        0
+      ),
+    },
     ...categories.map((cat) => ({
       slug: cat.slug,
       name: cat.name,
-      productCount: cat._count?.products || 0,
+      productCount: cat._count?.Product || 0,
     })),
   ];
 
@@ -720,7 +727,7 @@ function ProductsPageContent() {
         originalPrice: product.originalPrice,
         image: product.images?.[0] || "/placeholder-image.jpg",
         inStock: product.inStock,
-        category: product.category?.name,
+        category: product.Category?.name,
         quantity: 1,
       };
 

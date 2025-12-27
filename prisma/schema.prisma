@@ -18,7 +18,7 @@ model Address {
   country   String   @default("India")
   isDefault Boolean  @default(false)
   createdAt DateTime @default(now())
-  updatedAt DateTime
+  updatedAt DateTime @updatedAt
   User      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
@@ -29,7 +29,7 @@ model Cart {
   userId    String?    @unique
   sessionId String?    @unique
   createdAt DateTime   @default(now())
-  updatedAt DateTime
+  updatedAt DateTime   @updatedAt
   User      User?      @relation(fields: [userId], references: [id], onDelete: Cascade)
   CartItem  CartItem[]
 
@@ -44,7 +44,7 @@ model CartItem {
   quantity  Int      @default(1)
   price     Float
   createdAt DateTime @default(now())
-  updatedAt DateTime
+  updatedAt DateTime @updatedAt
   Cart      Cart     @relation(fields: [cartId], references: [id], onDelete: Cascade)
   Product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
 
@@ -59,7 +59,7 @@ model Category {
   slug        String    @unique
   description String?
   createdAt   DateTime  @default(now())
-  updatedAt   DateTime
+  updatedAt   DateTime  @updatedAt
   Product     Product[]
 
   @@index([slug])
@@ -76,7 +76,7 @@ model Order {
   status          OrderStatus @default(PENDING)
   paymentId       String?
   createdAt       DateTime    @default(now())
-  updatedAt       DateTime
+  updatedAt       DateTime    @updatedAt
   adminNotes      String?
   customerNotes   String?
   customerPhone   String?
@@ -125,7 +125,7 @@ model Product {
   isFeatured      Boolean        @default(false)
   categoryId      String
   createdAt       DateTime       @default(now())
-  updatedAt       DateTime
+  updatedAt       DateTime       @updatedAt
   care            String?
   color           String?
   dimensions      String?
@@ -159,7 +159,7 @@ model Review {
   userId     String
   isVerified Boolean  @default(false)
   createdAt  DateTime @default(now())
-  updatedAt  DateTime
+  updatedAt  DateTime @updatedAt
   Product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
   User       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -174,7 +174,7 @@ model User {
   name         String?
   role         Role           @default(CUSTOMER)
   createdAt    DateTime       @default(now())
-  updatedAt    DateTime
+  updatedAt    DateTime       @updatedAt
   gstNumber    String?
   otp          String?
   otpExpiresAt DateTime?
@@ -218,7 +218,7 @@ model Workshop {
   instructorImage String
   status          WorkshopStatus    @default(UPCOMING)
   createdAt       DateTime          @default(now())
-  updatedAt       DateTime
+  updatedAt       DateTime          @updatedAt
   instructorBio   String?
   WorkshopSession WorkshopSession[]
 
@@ -251,7 +251,7 @@ model WorkshopSession {
   spotsBooked          Int                    @default(0)
   workshopId           String
   createdAt            DateTime               @default(now())
-  updatedAt            DateTime
+  updatedAt            DateTime               @updatedAt
   WorkshopRegistration WorkshopRegistration[]
   Workshop             Workshop               @relation(fields: [workshopId], references: [id], onDelete: Cascade)
 

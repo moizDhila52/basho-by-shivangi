@@ -25,7 +25,6 @@ export async function GET(request) {
     // Category filter (only apply if not 'all')
     if (category && category !== "all") {
       where.Category = {
-        // Changed from 'category' to 'Category'
         slug: category,
       };
     }
@@ -95,7 +94,6 @@ export async function GET(request) {
         take: limit,
         include: {
           Category: {
-            // Changed from 'category' to 'Category'
             select: {
               id: true,
               name: true,
@@ -103,14 +101,11 @@ export async function GET(request) {
             },
           },
           Review: {
-            // Changed from 'reviews' to 'Review'
             select: {
               rating: true,
             },
           },
-          // For wishlist functionality
           WishlistItem: {
-            // Changed from 'wishlistItems' to 'WishlistItem'
             select: {
               userId: true,
             },
@@ -121,17 +116,23 @@ export async function GET(request) {
     ]);
 
     // Transform products to include aggregated rating
-    const transformedProducts = products.map((product) => ({
-      ...product,
-      _count: {
-        reviews: product.Review.length, // Changed to match relation name
-      },
-      averageRating:
-        product.Review.length > 0
+    const transformedProducts = products.map((product) => {
+      const reviewCount = product.Review?.length || 0;
+      const averageRating =
+        reviewCount > 0
           ? product.Review.reduce((sum, review) => sum + review.rating, 0) /
-            product.Review.length
-          : 0,
-    }));
+            reviewCount
+          : 0;
+
+      // Spread the product and override specific fields
+      return {
+        ...product,
+        _count: {
+          Review: reviewCount,
+        },
+        averageRating: averageRating,
+      };
+    });
 
     return NextResponse.json({
       products: transformedProducts,
@@ -145,7 +146,7 @@ export async function GET(request) {
   } catch (error) {
     console.error("Error fetching products:", error);
     return NextResponse.json(
-      { error: "Failed to fetch products" },
+      { error: "Failed to fetch products", details: error.message },
       { status: 500 }
     );
   } finally {
