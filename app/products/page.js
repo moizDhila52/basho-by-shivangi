@@ -557,7 +557,7 @@ function ProductsPageContent() {
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [productsLoading, setProductsLoading] = useState(true);
-  const [wishlistLoading, setWishlistLoading] = useState(false);
+  const [wishlistLoading, setWishlistLoading] = useState(new Set());
   const [error, setError] = useState(null);
 
   const [selectedCategory, setSelectedCategory] = useState(
@@ -705,7 +705,6 @@ function ProductsPageContent() {
   }, [selectedCategory, sortBy, searchQuery, router]);
 
   // Toggle wishlist handler
-  // Toggle wishlist handler
   const toggleWishlistHandler = useCallback(
     async (productId, product) => {
       console.log("🔵 toggleWishlistHandler called with productId:", productId);
@@ -728,7 +727,7 @@ function ProductsPageContent() {
       console.log("✅ User authenticated, proceeding with wishlist toggle");
 
       // Set loading state
-      setWishlistLoading(true);
+      setWishlistLoading((prev) => new Set([...prev, productId]));
 
       try {
         const isInWishlist = wishlist.has(productId);
@@ -780,7 +779,11 @@ function ProductsPageContent() {
           toast.error(err.message || "Failed to update wishlist");
         }
       } finally {
-        setWishlistLoading(false);
+        setWishlistLoading((prev) => {
+          const newSet = new Set(prev);
+          newSet.delete(productId);
+          return newSet;
+        });
       }
     },
     [user, authLoading, router, wishlist]
@@ -1196,7 +1199,7 @@ function ProductsPageContent() {
                   onWishlistToggle={toggleWishlistHandler}
                   onAddToCart={handleAddToCart}
                   onUpdateQuantity={handleUpdateQuantity}
-                  isWishlistLoading={wishlistLoading}
+                  isWishlistLoading={wishlistLoading.has(product.id)}
                   authLoading={authLoading}
                 />
               ))}
