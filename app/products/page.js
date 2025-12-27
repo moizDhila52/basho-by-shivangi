@@ -441,17 +441,10 @@ const ProductCard = memo(
                     : "bg-stone-200 text-stone-400 cursor-not-allowed"
                 } ${isUpdating ? "opacity-75" : ""}`}
               >
-                {isUpdating ? (
-                  <>
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                    Adding...
-                  </>
-                ) : (
-                  <>
-                    <ShoppingBag className="w-5 h-5" />
-                    Add to Cart
-                  </>
-                )}
+                <>
+                  <ShoppingBag className="w-5 h-5" />
+                  Add to Cart
+                </>
               </button>
             )}
           </div>
