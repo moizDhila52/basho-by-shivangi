@@ -1,75 +1,292 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect } from "react";
+import { useAuth } from "@/components/AuthProvider";
+import toast from "react-hot-toast";
 
 const CartContext = createContext();
 
 export function CartProvider({ children }) {
+  const { user, loading: authLoading } = useAuth();
   const [cartItems, setCartItems] = useState([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [isUpdating, setIsUpdating] = useState(false);
 
-  // Load cart from localStorage on mount
+  // Load cart on mount and when user changes
   useEffect(() => {
-    try {
-      const savedCart = localStorage.getItem("basho-cart");
-      if (savedCart) {
-        setCartItems(JSON.parse(savedCart));
+    const loadCart = async () => {
+      if (authLoading) return; // Wait for auth to finish loading
+
+      setLoading(true);
+
+      try {
+        if (user) {
+          // User is logged in - fetch from database
+          await fetchCartFromDB();
+
+          // Check for guest cart in localStorage and merge
+          const guestCart = getGuestCart();
+          if (guestCart.length > 0) {
+            await mergeGuestCart(guestCart);
+            clearGuestCart();
+          }
+        } else {
+          // User is not logged in - load from localStorage
+          const guestCart = getGuestCart();
+          setCartItems(guestCart);
+        }
+      } catch (error) {
+        console.error("Error loading cart:", error);
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      console.error("Error loading cart from localStorage:", error);
-      setCartItems([]);
-    }
-  }, []);
+    };
 
-  // Save cart to localStorage whenever it changes
+    loadCart();
+  }, [user, authLoading]);
+
+  // Save guest cart to localStorage whenever it changes
   useEffect(() => {
-    try {
-      localStorage.setItem("basho-cart", JSON.stringify(cartItems));
-    } catch (error) {
-      console.error("Error saving cart to localStorage:", error);
+    if (!user && cartItems.length > 0) {
+      saveGuestCart(cartItems);
     }
-  }, [cartItems]);
+  }, [cartItems, user]);
 
-  const addToCart = (product) => {
-    setCartItems((prevItems) => {
-      const existingItem = prevItems.find((item) => item.id === product.id);
+  // ===== Guest Cart Functions (localStorage) =====
+  const getGuestCart = () => {
+    try {
+      const savedCart = localStorage.getItem("basho-guest-cart");
+      return savedCart ? JSON.parse(savedCart) : [];
+    } catch (error) {
+      console.error("Error loading guest cart:", error);
+      return [];
+    }
+  };
 
-      if (existingItem) {
-        return prevItems.map((item) =>
-          item.id === product.id
-            ? { ...item, quantity: item.quantity + (product.quantity || 1) }
-            : item
+  const saveGuestCart = (cart) => {
+    try {
+      localStorage.setItem("basho-guest-cart", JSON.stringify(cart));
+    } catch (error) {
+      console.error("Error saving guest cart:", error);
+    }
+  };
+
+  const clearGuestCart = () => {
+    try {
+      localStorage.removeItem("basho-guest-cart");
+    } catch (error) {
+      console.error("Error clearing guest cart:", error);
+    }
+  };
+
+  // ===== Database Cart Functions =====
+  const fetchCartFromDB = async () => {
+    try {
+      const response = await fetch("/api/cart", {
+        credentials: "include",
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch cart");
+      }
+
+      const data = await response.json();
+      setCartItems(data.cartItems || []);
+    } catch (error) {
+      console.error("Error fetching cart from DB:", error);
+      toast.error("Failed to load cart");
+    }
+  };
+
+  const mergeGuestCart = async (guestCart) => {
+    try {
+      const response = await fetch("/api/cart/merge", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({ guestCart }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to merge cart");
+      }
+
+      const data = await response.json();
+      setCartItems(data.cartItems || []);
+      toast.success("Cart synced successfully!");
+    } catch (error) {
+      console.error("Error merging cart:", error);
+    }
+  };
+
+  // ===== Cart Actions =====
+  const addToCart = async (product) => {
+    if (user) {
+      // Logged in - add to database
+      setIsUpdating(true);
+      try {
+        const response = await fetch("/api/cart/add", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+          body: JSON.stringify({
+            productId: product.id,
+            quantity: product.quantity || 1,
+          }),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || "Failed to add to cart");
+        }
+
+        setCartItems(data.cartItems);
+        setIsCartOpen(true);
+        toast.success("Added to cart!");
+      } catch (error) {
+        console.error("Error adding to cart:", error);
+        toast.error(error.message || "Failed to add to cart");
+      } finally {
+        setIsUpdating(false);
+      }
+    } else {
+      // Guest - add to localStorage
+      setCartItems((prevItems) => {
+        const existingItem = prevItems.find((item) => item.id === product.id);
+
+        if (existingItem) {
+          return prevItems.map((item) =>
+            item.id === product.id
+              ? { ...item, quantity: item.quantity + (product.quantity || 1) }
+              : item
+          );
+        } else {
+          return [
+            ...prevItems,
+            { ...product, quantity: product.quantity || 1 },
+          ];
+        }
+      });
+      setIsCartOpen(true);
+      toast.success("Added to cart!");
+    }
+  };
+
+  const removeFromCart = async (productId) => {
+    if (user) {
+      // Logged in - remove from database
+      setIsUpdating(true);
+      try {
+        const response = await fetch(
+          `/api/cart/remove?productId=${productId}`,
+          {
+            method: "DELETE",
+            credentials: "include",
+          }
         );
-      } else {
-        return [...prevItems, { ...product, quantity: product.quantity || 1 }];
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || "Failed to remove from cart");
+        }
+
+        setCartItems(data.cartItems);
+        toast.success("Removed from cart");
+      } catch (error) {
+        console.error("Error removing from cart:", error);
+        toast.error("Failed to remove from cart");
+      } finally {
+        setIsUpdating(false);
       }
-    });
-    setIsCartOpen(true);
+    } else {
+      // Guest - remove from localStorage
+      setCartItems((prevItems) =>
+        prevItems.filter((item) => item.id !== productId)
+      );
+      toast.success("Removed from cart");
+    }
   };
 
-  const removeFromCart = (productId) => {
-    setCartItems((prevItems) =>
-      prevItems.filter((item) => item.id !== productId)
-    );
-  };
-
-  const updateQuantity = (productId, quantity) => {
+  const updateQuantity = async (productId, quantity) => {
     if (quantity < 1) {
       removeFromCart(productId);
       return;
     }
 
-    setCartItems((prevItems) =>
-      prevItems.map((item) =>
-        item.id === productId ? { ...item, quantity } : item
-      )
-    );
+    if (user) {
+      // Logged in - update in database
+      setIsUpdating(true);
+      try {
+        const response = await fetch("/api/cart/update", {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+          body: JSON.stringify({ productId, quantity }),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || "Failed to update quantity");
+        }
+
+        setCartItems(data.cartItems);
+      } catch (error) {
+        console.error("Error updating quantity:", error);
+        toast.error(error.message || "Failed to update quantity");
+      } finally {
+        setIsUpdating(false);
+      }
+    } else {
+      // Guest - update in localStorage
+      setCartItems((prevItems) =>
+        prevItems.map((item) =>
+          item.id === productId ? { ...item, quantity } : item
+        )
+      );
+    }
   };
 
-  const clearCart = () => {
-    setCartItems([]);
+  const clearCart = async () => {
+    if (user) {
+      // Logged in - clear database cart
+      setIsUpdating(true);
+      try {
+        const response = await fetch("/api/cart/clear", {
+          method: "DELETE",
+          credentials: "include",
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to clear cart");
+        }
+
+        setCartItems([]);
+        toast.success("Cart cleared");
+      } catch (error) {
+        console.error("Error clearing cart:", error);
+        toast.error("Failed to clear cart");
+      } finally {
+        setIsUpdating(false);
+      }
+    } else {
+      // Guest - clear localStorage
+      setCartItems([]);
+      clearGuestCart();
+      toast.success("Cart cleared");
+    }
   };
 
+  // ===== Helper Functions =====
   const getTotalPrice = () => {
     return cartItems.reduce(
       (total, item) => total + item.price * item.quantity,
@@ -99,6 +316,8 @@ export function CartProvider({ children }) {
         getItemQuantity,
         isCartOpen,
         setIsCartOpen,
+        loading,
+        isUpdating,
       }}
     >
       {children}

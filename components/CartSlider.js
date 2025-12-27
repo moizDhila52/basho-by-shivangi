@@ -2,7 +2,15 @@
 
 import React from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, ShoppingBag, Trash2, Plus, Minus, ArrowRight } from "lucide-react";
+import {
+  X,
+  ShoppingBag,
+  Trash2,
+  Plus,
+  Minus,
+  ArrowRight,
+  Loader2,
+} from "lucide-react";
 import Link from "next/link";
 import { useCart } from "@/context/CartContext";
 
@@ -14,6 +22,8 @@ export default function CartSlider() {
     getTotalPrice,
     getTotalItems,
     isCartOpen,
+    isUpdating,
+    loading,
     setIsCartOpen,
   } = useCart();
 
@@ -73,6 +83,16 @@ export default function CartSlider() {
               transition={{ type: "spring", damping: 25 }}
               className="fixed top-0 right-0 h-full w-full md:w-[480px] bg-white z-50 shadow-2xl"
             >
+              {/* Loading Overlay - INSIDE the cart panel */}
+              {isUpdating && (
+                <div className="absolute inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center z-[60]">
+                  <div className="flex flex-col items-center gap-3">
+                    <Loader2 className="w-8 h-8 text-[#8E5022] animate-spin" />
+                    <p className="text-sm text-stone-600">Updating cart...</p>
+                  </div>
+                </div>
+              )}
+
               <div className="h-full flex flex-col">
                 {/* Header */}
                 <div className="p-6 border-b border-stone-200">
@@ -99,7 +119,13 @@ export default function CartSlider() {
 
                 {/* Cart Items */}
                 <div className="flex-1 overflow-y-auto p-6">
-                  {cartItems.length === 0 ? (
+                  {loading ? (
+                    // Loading state while fetching cart
+                    <div className="h-full flex flex-col items-center justify-center">
+                      <Loader2 className="w-8 h-8 text-[#8E5022] animate-spin mb-4" />
+                      <p className="text-stone-600">Loading cart...</p>
+                    </div>
+                  ) : cartItems.length === 0 ? (
                     <div className="h-full flex flex-col items-center justify-center text-center">
                       <div className="w-24 h-24 rounded-full bg-stone-100 flex items-center justify-center mb-6">
                         <ShoppingBag className="w-12 h-12 text-stone-400" />
@@ -129,14 +155,19 @@ export default function CartSlider() {
                           className="flex gap-4 p-4 bg-stone-50 rounded-2xl"
                         >
                           <div className="w-20 h-20 rounded-xl overflow-hidden flex-shrink-0">
-                            <img
-                              src={item.image || "/placeholder-image.jpg"} // Changed to item.image with fallback
-                              alt={item.name}
-                              className="w-full h-full object-cover"
-                              onError={(e) => {
-                                e.target.src = "/placeholder-image.jpg";
-                              }}
-                            />
+                            {item.image ? (
+                              <img
+                                src={item.image}
+                                alt={item.name}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center bg-stone-100">
+                                <div className="w-20 h-20 rounded-full bg-stone-200 flex items-center justify-center">
+                                  <ShoppingBag className="w-10 h-10 text-stone-400" />
+                                </div>
+                              </div>
+                            )}
                           </div>
 
                           <div className="flex-1">
@@ -154,7 +185,8 @@ export default function CartSlider() {
                               </div>
                               <button
                                 onClick={() => removeFromCart(item.id)}
-                                className="text-stone-400 hover:text-red-500 transition-colors"
+                                disabled={isUpdating}
+                                className="text-stone-400 hover:text-red-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                               >
                                 <Trash2 className="w-4 h-4" />
                               </button>
@@ -166,7 +198,8 @@ export default function CartSlider() {
                                   onClick={() =>
                                     updateQuantity(item.id, item.quantity - 1)
                                   }
-                                  className="w-8 h-8 flex items-center justify-center hover:bg-stone-100 transition-colors"
+                                  disabled={isUpdating}
+                                  className="w-8 h-8 flex items-center justify-center hover:bg-stone-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                   <Minus className="w-3 h-3" />
                                 </button>
@@ -177,14 +210,15 @@ export default function CartSlider() {
                                   onClick={() =>
                                     updateQuantity(item.id, item.quantity + 1)
                                   }
-                                  className="w-8 h-8 flex items-center justify-center hover:bg-stone-100 transition-colors"
+                                  disabled={isUpdating}
+                                  className="w-8 h-8 flex items-center justify-center hover:bg-stone-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                   <Plus className="w-3 h-3" />
                                 </button>
                               </div>
 
                               <div className="font-serif text-lg text-[#442D1C]">
-                                ${item.price * item.quantity}
+                                ${(item.price * item.quantity).toFixed(2)}
                               </div>
                             </div>
                           </div>
@@ -195,7 +229,7 @@ export default function CartSlider() {
                 </div>
 
                 {/* Footer */}
-                {cartItems.length > 0 && (
+                {cartItems.length > 0 && !loading && (
                   <div className="border-t border-stone-200 p-6">
                     <div className="space-y-4 mb-8">
                       <div className="flex justify-between text-stone-600">
@@ -221,17 +255,18 @@ export default function CartSlider() {
                       </div>
                     </div>
 
-                    <div className="space-y-3">
+                    <div className="space-y-2">
                       <Link href="/checkout">
                         <button
                           onClick={() => setIsCartOpen(false)}
-                          className="w-full bg-[#8E5022] text-white py-4 rounded-xl font-medium hover:bg-[#652810] transition-colors flex items-center justify-center gap-3"
+                          disabled={isUpdating}
+                          className="w-full bg-[#8E5022] text-white py-4 rounded-xl font-medium hover:bg-[#652810] transition-colors flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           Proceed to Checkout
                           <ArrowRight className="w-5 h-5" />
                         </button>
                       </Link>
-                      <div className="space-y-0.5"></div>
+                      <div></div>
                       <button
                         onClick={() => setIsCartOpen(false)}
                         className="w-full bg-transparent border-2 border-stone-300 text-stone-700 py-4 rounded-xl font-medium hover:border-[#8E5022] hover:text-[#8E5022] transition-colors"

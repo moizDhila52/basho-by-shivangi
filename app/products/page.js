@@ -235,6 +235,7 @@ const ProductCard = memo(
     onUpdateQuantity,
     isWishlistLoading,
     authLoading,
+    isUpdating,
   }) {
     const quantityInCart =
       cartItems.find((item) => item.id === product.id)?.quantity || 0;
@@ -408,9 +409,14 @@ const ProductCard = memo(
                     onClick={() =>
                       onUpdateQuantity(product.id, quantityInCart - 1)
                     }
-                    className="w-10 h-10 flex items-center justify-center rounded-lg hover:bg-[#E8D0A0] transition-colors"
+                    disabled={isUpdating}
+                    className="w-10 h-10 flex items-center justify-center rounded-lg hover:bg-[#E8D0A0] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <Minus className="w-4 h-4 text-[#442D1C]" />
+                    {isUpdating ? (
+                      <Loader2 className="w-4 h-4 text-[#442D1C] animate-spin" />
+                    ) : (
+                      <Minus className="w-4 h-4 text-[#442D1C]" />
+                    )}
                   </button>
 
                   <div className="flex items-center gap-2">
@@ -422,9 +428,14 @@ const ProductCard = memo(
 
                   <button
                     onClick={() => onAddToCart(product)}
-                    className="w-10 h-10 flex items-center justify-center rounded-lg hover:bg-[#E8D0A0] transition-colors"
+                    disabled={isUpdating}
+                    className="w-10 h-10 flex items-center justify-center rounded-lg hover:bg-[#E8D0A0] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <Plus className="w-4 h-4 text-[#442D1C]" />
+                    {isUpdating ? (
+                      <Loader2 className="w-4 h-4 text-[#442D1C] animate-spin" />
+                    ) : (
+                      <Plus className="w-4 h-4 text-[#442D1C]" />
+                    )}
                   </button>
                 </div>
               </div>
@@ -574,7 +585,8 @@ function ProductsPageContent() {
     searchParams.get("search") || ""
   );
   const [wishlist, setWishlist] = useState(new Set());
-  const { addToCart, updateQuantity, removeFromCart, cartItems } = useCart();
+  const { addToCart, updateQuantity, removeFromCart, cartItems, isUpdating } =
+    useCart();
 
   // Prepare categories for display
   const displayCategories = [
@@ -805,7 +817,7 @@ function ProductsPageContent() {
       };
 
       addToCart(cartProduct);
-      toast.success("Added to cart!");
+      // toast.success("Added to cart!");
     },
     [addToCart]
   );
@@ -815,7 +827,7 @@ function ProductsPageContent() {
     (productId, quantity) => {
       if (quantity <= 0) {
         removeFromCart(productId);
-        toast.success("Removed from cart");
+        // toast.success("Removed from cart");
       } else {
         updateQuantity(productId, quantity);
       }
@@ -1201,6 +1213,7 @@ function ProductsPageContent() {
                   onUpdateQuantity={handleUpdateQuantity}
                   isWishlistLoading={wishlistLoading.has(product.id)}
                   authLoading={authLoading}
+                  isUpdating={isUpdating}
                 />
               ))}
             </div>
