@@ -1,121 +1,532 @@
-'use client'
+"use client";
 
-import { useEffect, useState } from 'react'
-import { useCart } from '@/hooks/use-cart'
-import { Button } from '@/components/ui/Button'
-import Image from 'next/image'
-import Link from 'next/link'
-import { Trash2, ArrowRight } from 'lucide-react'
+import React, { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  ArrowLeft,
+  ShoppingBag,
+  Trash2,
+  Plus,
+  Minus,
+  ArrowRight,
+  Loader2,
+  Heart,
+  Tag,
+  Truck,
+  X,
+  AlertTriangle,
+} from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useCart } from "@/context/CartContext";
+import { useAuth } from "@/components/AuthProvider";
+import toast from "react-hot-toast";
+
+const fadeInUp = {
+  hidden: { opacity: 0, y: 40 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.5,
+      ease: [0.22, 1, 0.36, 1],
+    },
+  },
+};
+
+const staggerContainer = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.08,
+      delayChildren: 0.1,
+    },
+  },
+};
+
+// Custom Confirmation Dialog Component
+function ConfirmDialog({ isOpen, onClose, onConfirm, title, message }) {
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <>
+          {/* Overlay */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={onClose}
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50"
+          />
+
+          {/* Dialog */}
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              transition={{ duration: 0.2 }}
+              className="bg-white rounded-3xl shadow-2xl max-w-md w-full overflow-hidden"
+            >
+              {/* Header */}
+              <div className="bg-gradient-to-br from-red-50 to-orange-50 p-6 border-b border-red-100">
+                <div className="flex items-start gap-4">
+                  <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
+                    <AlertTriangle className="w-6 h-6 text-red-600" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="font-serif text-2xl text-[#442D1C] mb-2">
+                      {title}
+                    </h3>
+                    <p className="text-stone-600">{message}</p>
+                  </div>
+                  <button
+                    onClick={onClose}
+                    className="w-8 h-8 rounded-full hover:bg-red-100 flex items-center justify-center transition-colors"
+                  >
+                    <X className="w-5 h-5 text-stone-400" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="p-6 flex gap-3">
+                <button
+                  onClick={onClose}
+                  className="flex-1 py-3 rounded-xl border-2 border-stone-300 text-stone-700 font-medium hover:bg-stone-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => {
+                    onConfirm();
+                    onClose();
+                  }}
+                  className="flex-1 py-3 rounded-xl bg-red-500 text-white font-medium hover:bg-red-600 transition-colors"
+                >
+                  Clear Cart
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        </>
+      )}
+    </AnimatePresence>
+  );
+}
 
 export default function CartPage() {
-  const cart = useCart()
-  const [isMounted, setIsMounted] = useState(false)
+  const router = useRouter();
+  const { user } = useAuth();
+  const {
+    cartItems,
+    removeFromCart,
+    updateQuantity,
+    clearCart,
+    getTotalPrice,
+    getTotalItems,
+    loading,
+    isUpdating,
+  } = useCart();
 
-  // Avoid Hydration Mismatch
-  useEffect(() => {
-    setIsMounted(true)
-  }, [])
+  const [showClearDialog, setShowClearDialog] = useState(false);
 
-  if (!isMounted) return null
+  const subtotal = getTotalPrice();
+  const shipping = subtotal > 200 ? 0 : 15;
+  const tax = subtotal * 0.08; // 8% tax
+  const total = subtotal + shipping + tax;
 
-  // Calculate Total
-  const total = cart.items.reduce((sum, item) => {
-    return sum + Number(item.price)
-  }, 0)
+  // Handle checkout
+  const handleCheckout = () => {
+    if (!user) {
+      toast.error("Please login to checkout");
+      router.push(`/login?returnUrl=/checkout`);
+      return;
+    }
 
-  if (cart.items.length === 0) {
+    if (cartItems.length === 0) {
+      toast.error("Your cart is empty");
+      return;
+    }
+
+    router.push("/checkout");
+  };
+
+  // Handle clear cart
+  const handleClearCart = () => {
+    clearCart();
+  };
+
+  // Loading state
+  if (loading) {
     return (
-      <div className="min-h-[60vh] flex flex-col items-center justify-center space-y-4">
-        <h2 className="text-2xl font-serif text-basho-earth">Your cart is empty</h2>
-        <p className="text-stone-500">Looks like you haven't added any pottery yet.</p>
-        <Link href="/products">
-          <Button className="bg-basho-earth text-white hover:bg-basho-clay mt-4">
-            Browse Collection
-          </Button>
-        </Link>
-      </div>
-    )
+      <main className="min-h-screen bg-[#FDFBF7] flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="w-8 h-8 text-[#8E5022] animate-spin" />
+          <p className="text-stone-600">Loading your cart...</p>
+        </div>
+      </main>
+    );
+  }
+
+  // Empty cart state
+  if (cartItems.length === 0) {
+    return (
+      <main className="min-h-screen bg-[#FDFBF7]">
+        {/* Back Button */}
+        <div className="fixed top-26 left-6 z-50">
+          <Link href="/products">
+            <motion.button
+              whileHover={{ x: -4 }}
+              className="flex items-center gap-2 bg-white/90 backdrop-blur-sm px-4 py-3 rounded-full shadow-lg hover:shadow-xl transition-all"
+            >
+              <ArrowLeft className="w-5 h-5" />
+              <span className="font-medium">Back to Products</span>
+            </motion.button>
+          </Link>
+        </div>
+
+        {/* Empty State */}
+        <div className="max-w-7xl mx-auto px-4 py-32 flex items-center justify-center min-h-screen">
+          <motion.div
+            initial="hidden"
+            animate="visible"
+            variants={staggerContainer}
+            className="text-center max-w-md"
+          >
+            <motion.div
+              variants={fadeInUp}
+              className="w-32 h-32 mx-auto mb-8 rounded-full bg-gradient-to-br from-[#EDD8B4] to-[#C85428]/20 flex items-center justify-center"
+            >
+              <ShoppingBag className="w-16 h-16 text-[#8E5022]" />
+            </motion.div>
+
+            <motion.h1
+              variants={fadeInUp}
+              className="font-serif text-4xl md:text-5xl text-[#442D1C] mb-4"
+            >
+              Your cart is empty
+            </motion.h1>
+
+            <motion.p
+              variants={fadeInUp}
+              className="text-stone-600 text-lg mb-8"
+            >
+              Discover our handcrafted ceramics and add some beautiful pieces to
+              your collection
+            </motion.p>
+
+            <motion.div variants={fadeInUp}>
+              <Link href="/products">
+                <button className="bg-[#8E5022] text-white px-8 py-4 rounded-xl font-medium hover:bg-[#652810] transition-colors inline-flex items-center gap-3">
+                  <ShoppingBag className="w-5 h-5" />
+                  Browse Collections
+                </button>
+              </Link>
+            </motion.div>
+          </motion.div>
+        </div>
+      </main>
+    );
   }
 
   return (
-    <div className="container mx-auto px-4 py-16">
-      <h1 className="text-3xl font-serif text-basho-earth mb-8">Shopping Cart</h1>
+    <main className="min-h-screen bg-[#FDFBF7]">
+      {/* Loading Overlay */}
+      {isUpdating && (
+        <div className="fixed inset-0 bg-black/20 backdrop-blur-sm z-50 flex items-center justify-center">
+          <div className="bg-white rounded-2xl p-6 shadow-2xl flex flex-col items-center gap-3">
+            <Loader2 className="w-8 h-8 text-[#8E5022] animate-spin" />
+            <p className="text-stone-600 font-medium">Updating cart...</p>
+          </div>
+        </div>
+      )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
-        
-        {/* LEFT: Cart Items List */}
-        <div className="lg:col-span-7">
-          <ul className="divide-y divide-stone-100 border-t border-b border-stone-100">
-            {cart.items.map((item) => (
-              <li key={item.id} className="flex py-6">
-                {/* Image */}
-                <div className="relative h-24 w-24 rounded-md overflow-hidden border border-stone-100 sm:h-32 sm:w-32 bg-stone-50">
-                  <Image
-                    src={item.images?.[0] || '/placeholder.jpg'} // Fallback if image missing
-                    alt={item.name}
-                    fill
-                    className="object-cover"
-                  />
-                </div>
+      {/* Clear Cart Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={showClearDialog}
+        onClose={() => setShowClearDialog(false)}
+        onConfirm={handleClearCart}
+        title="Clear Cart?"
+        message={`Are you sure you want to remove all ${getTotalItems()} items from your cart?`}
+      />
 
-                {/* Details */}
-                <div className="ml-4 flex flex-1 flex-col justify-between sm:ml-6">
-                  <div className="relative pr-9 sm:grid sm:grid-cols-2 sm:gap-x-6 sm:pr-0">
-                    <div>
-                      <h3 className="text-lg font-medium text-basho-earth">
-                        <Link href={`/products/${item.slug || ''}`}>{item.name}</Link>
-                      </h3>
-                      <p className="mt-1 text-sm text-stone-500">{item.category?.name || 'Tableware'}</p>
-                      <p className="mt-2 font-medium text-stone-900">₹{item.price.toLocaleString('en-IN')}</p>
+      {/* Main Content */}
+      <div className="max-w-7xl mx-auto px-4 py-24">
+        {/* Header */}
+        <motion.div
+          initial="hidden"
+          animate="visible"
+          variants={staggerContainer}
+          className="mb-12"
+        >
+          <div className="flex items-center justify-between mb-4">
+            <motion.div variants={fadeInUp} className="flex items-center gap-4">
+              <ShoppingBag className="w-8 h-8 text-[#8E5022]" />
+              <h1 className="font-serif text-4xl md:text-5xl text-[#442D1C]">
+                Shopping Cart
+              </h1>
+            </motion.div>
+
+            {/* Clear Cart Button - Top Right */}
+            <motion.button
+              variants={fadeInUp}
+              onClick={() => setShowClearDialog(true)}
+              disabled={isUpdating}
+              className="group flex items-center gap-2 px-4 py-2 rounded-xl border-2 border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Trash2 className="w-4 h-4 group-hover:scale-110 transition-transform" />
+              <span className="font-medium hidden sm:inline">Clear Cart</span>
+            </motion.button>
+          </div>
+
+          <motion.p variants={fadeInUp} className="text-stone-600 text-lg">
+            {getTotalItems()} {getTotalItems() === 1 ? "item" : "items"} in your
+            cart
+          </motion.p>
+        </motion.div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          {/* Left Column - Cart Items */}
+          <motion.div
+            initial="hidden"
+            animate="visible"
+            variants={staggerContainer}
+            className="lg:col-span-7 space-y-4"
+          >
+            {cartItems.map((item, index) => (
+              <motion.div
+                key={item.id}
+                variants={fadeInUp}
+                custom={index}
+                className="bg-white rounded-3xl p-6 shadow-lg hover:shadow-xl transition-all"
+              >
+                <div className="flex gap-6">
+                  {/* Product Image */}
+                  <Link
+                    href={`/products/${item.slug}`}
+                    className="flex-shrink-0"
+                  >
+                    <div className="relative w-32 h-32 rounded-2xl overflow-hidden bg-gradient-to-br from-stone-100 to-stone-50 group cursor-pointer">
+                      <img
+                        src={item.image}
+                        alt={item.name}
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                        onError={(e) => {
+                          e.target.src = "/placeholder-image.jpg";
+                        }}
+                      />
                     </div>
+                  </Link>
 
-                    <div className="mt-4 sm:mt-0 sm:pr-9">
+                  {/* Product Details */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex justify-between items-start mb-3">
+                      <div className="flex-1 min-w-0">
+                        <Link href={`/products/${item.slug}`}>
+                          <h3 className="font-serif text-2xl text-[#442D1C] mb-1 hover:text-[#C85428] transition-colors cursor-pointer truncate">
+                            {item.name}
+                          </h3>
+                        </Link>
+                        <p className="text-sm text-stone-500 uppercase tracking-wider">
+                          {item.category}
+                        </p>
+                      </div>
+
                       {/* Remove Button */}
                       <button
-                        onClick={() => cart.removeItem(item.id)}
-                        className="absolute right-0 top-0 text-stone-400 hover:text-red-500 transition-colors"
+                        onClick={() => removeFromCart(item.id)}
+                        disabled={isUpdating}
+                        className="ml-4 w-10 h-10 rounded-full bg-stone-100 hover:bg-red-50 flex items-center justify-center transition-colors group disabled:opacity-50 disabled:cursor-not-allowed"
+                        title="Remove from cart"
                       >
-                        <Trash2 className="h-5 w-5" />
-                        <span className="sr-only">Remove</span>
+                        <Trash2 className="w-4 h-4 text-stone-400 group-hover:text-red-500 transition-colors" />
                       </button>
+                    </div>
+
+                    {/* Price and Stock */}
+                    <div className="flex items-center gap-4 mb-4">
+                      <div className="flex items-baseline gap-2">
+                        <span className="font-serif text-2xl text-[#8E5022]">
+                          ${item.price.toFixed(2)}
+                        </span>
+                        {item.originalPrice &&
+                          item.originalPrice > item.price && (
+                            <span className="text-stone-400 line-through text-sm">
+                              ${item.originalPrice.toFixed(2)}
+                            </span>
+                          )}
+                      </div>
+                      {item.stock && (
+                        <span
+                          className={`text-xs px-3 py-1 rounded-full ${
+                            item.stock > 10
+                              ? "bg-green-100 text-green-700"
+                              : "bg-orange-100 text-orange-700"
+                          }`}
+                        >
+                          {item.stock > 10
+                            ? "In Stock"
+                            : `Only ${item.stock} left`}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Quantity Controls */}
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center border-2 border-stone-200 rounded-2xl overflow-hidden">
+                        <button
+                          onClick={() =>
+                            updateQuantity(item.id, item.quantity - 1)
+                          }
+                          disabled={isUpdating}
+                          className="w-10 h-10 flex items-center justify-center hover:bg-stone-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          <Minus className="w-4 h-4 text-[#442D1C]" />
+                        </button>
+                        <span className="w-12 h-10 flex items-center justify-center font-medium text-[#442D1C]">
+                          {item.quantity}
+                        </span>
+                        <button
+                          onClick={() =>
+                            updateQuantity(item.id, item.quantity + 1)
+                          }
+                          disabled={isUpdating}
+                          className="w-10 h-10 flex items-center justify-center hover:bg-stone-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          <Plus className="w-4 h-4 text-[#442D1C]" />
+                        </button>
+                      </div>
+
+                      <div className="text-right">
+                        <div className="text-sm text-stone-500 mb-1">
+                          Subtotal
+                        </div>
+                        <div className="font-serif text-xl text-[#442D1C]">
+                          ${(item.price * item.quantity).toFixed(2)}
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </li>
+              </motion.div>
             ))}
-          </ul>
-        </div>
+          </motion.div>
 
-        {/* RIGHT: Order Summary */}
-        <div className="lg:col-span-5">
-          <div className="rounded-lg bg-stone-50 px-4 py-6 sm:p-6 lg:p-8">
-            <h2 className="text-lg font-medium text-basho-earth">Order Summary</h2>
+          {/* Right Column - Order Summary */}
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.3 }}
+            className="lg:col-span-5"
+          >
+            <div className="sticky top-24">
+              <div className="bg-white rounded-3xl p-8 shadow-xl">
+                <h2 className="font-serif text-2xl text-[#442D1C] mb-6">
+                  Order Summary
+                </h2>
 
-            <div className="mt-6 space-y-4">
-              <div className="flex items-center justify-between border-t border-stone-200 pt-4">
-                <div className="text-base font-medium text-stone-900">Order Total</div>
-                <div className="text-base font-medium text-stone-900">
-                  ₹{total.toLocaleString('en-IN')}
+                {/* Summary Items */}
+                <div className="space-y-4 mb-6">
+                  <div className="flex justify-between text-stone-600">
+                    <span>Subtotal ({getTotalItems()} items)</span>
+                    <span className="font-medium">${subtotal.toFixed(2)}</span>
+                  </div>
+
+                  <div className="flex justify-between text-stone-600">
+                    <span className="flex items-center gap-2">
+                      <Truck className="w-4 h-4" />
+                      Shipping
+                    </span>
+                    <span className="font-medium">
+                      {shipping === 0 ? (
+                        <span className="text-green-600">Free</span>
+                      ) : (
+                        `$${shipping.toFixed(2)}`
+                      )}
+                    </span>
+                  </div>
+
+                  {subtotal < 200 && (
+                    <div className="flex items-center gap-2 p-3 bg-[#EDD8B4]/30 rounded-xl text-sm text-stone-600">
+                      <Tag className="w-4 h-4 text-[#8E5022]" />
+                      Add ${(200 - subtotal).toFixed(2)} more for free shipping
+                    </div>
+                  )}
+
+                  <div className="flex justify-between text-stone-600">
+                    <span>Tax (8%)</span>
+                    <span className="font-medium">${tax.toFixed(2)}</span>
+                  </div>
+
+                  <div className="pt-4 border-t-2 border-stone-200">
+                    <div className="flex justify-between items-baseline">
+                      <span className="text-lg font-medium text-[#442D1C]">
+                        Total
+                      </span>
+                      <span className="font-serif text-3xl text-[#442D1C]">
+                        ${total.toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Checkout Button */}
+                <button
+                  onClick={handleCheckout}
+                  disabled={isUpdating}
+                  className="w-full bg-[#8E5022] text-white py-5 rounded-2xl font-medium text-lg hover:bg-[#652810] transition-colors flex items-center justify-center gap-3 mb-4 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isUpdating ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      Processing...
+                    </>
+                  ) : (
+                    <>
+                      Proceed to Checkout
+                      <ArrowRight className="w-5 h-5" />
+                    </>
+                  )}
+                </button>
+                <Link href="/products">
+                  <button className="w-full bg-transparent border-2 border-stone-300 text-stone-700 py-5 rounded-2xl font-medium hover:border-[#8E5022] hover:text-[#8E5022] transition-colors">
+                    Continue Shopping
+                  </button>
+                </Link>
+
+                {/* Trust Badges */}
+                <div className="mt-6 pt-6 border-t border-stone-200 space-y-3">
+                  <div className="flex items-center gap-3 text-sm text-stone-600">
+                    <div className="w-8 h-8 rounded-full bg-[#EDD8B4]/50 flex items-center justify-center">
+                      <Truck className="w-4 h-4 text-[#8E5022]" />
+                    </div>
+                    <span>Free shipping on orders over $200</span>
+                  </div>
+                  <div className="flex items-center gap-3 text-sm text-stone-600">
+                    <div className="w-8 h-8 rounded-full bg-[#EDD8B4]/50 flex items-center justify-center">
+                      <Heart className="w-4 h-4 text-[#8E5022]" />
+                    </div>
+                    <span>Handcrafted with love</span>
+                  </div>
+                  <div className="flex items-center gap-3 text-sm text-stone-600">
+                    <div className="w-8 h-8 rounded-full bg-[#EDD8B4]/50 flex items-center justify-center">
+                      <ShoppingBag className="w-4 h-4 text-[#8E5022]" />
+                    </div>
+                    <span>30-day return policy</span>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <div className="mt-6">
-              {/* This button will trigger Checkout later */}
-             <Link href="/checkout">
-  <Button className="w-full bg-basho-earth hover:bg-basho-clay text-white py-6 text-lg">
-    Proceed to Checkout <ArrowRight className="ml-2 h-4 w-4" />
-  </Button>
-</Link>
+              {/* Security Note */}
+              <div className="mt-4 text-center text-xs text-stone-500">
+                Secure checkout powered by Razorpay
+              </div>
             </div>
-            
-            <p className="mt-4 text-xs text-center text-stone-500">
-              Shipping & taxes calculated at checkout.
-            </p>
-          </div>
+          </motion.div>
         </div>
-
       </div>
-    </div>
-  )
+    </main>
+  );
 }
