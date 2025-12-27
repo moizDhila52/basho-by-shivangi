@@ -412,11 +412,7 @@ const ProductCard = memo(
                     disabled={isUpdating}
                     className="w-10 h-10 flex items-center justify-center rounded-lg hover:bg-[#E8D0A0] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {isUpdating ? (
-                      <Loader2 className="w-4 h-4 text-[#442D1C] animate-spin" />
-                    ) : (
-                      <Minus className="w-4 h-4 text-[#442D1C]" />
-                    )}
+                    <Minus className="w-4 h-4 text-[#442D1C]" />
                   </button>
 
                   <div className="flex items-center gap-2">
@@ -431,26 +427,31 @@ const ProductCard = memo(
                     disabled={isUpdating}
                     className="w-10 h-10 flex items-center justify-center rounded-lg hover:bg-[#E8D0A0] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {isUpdating ? (
-                      <Loader2 className="w-4 h-4 text-[#442D1C] animate-spin" />
-                    ) : (
-                      <Plus className="w-4 h-4 text-[#442D1C]" />
-                    )}
+                    <Plus className="w-4 h-4 text-[#442D1C]" />
                   </button>
                 </div>
               </div>
             ) : (
               <button
                 onClick={() => onAddToCart(product)}
-                disabled={!product.inStock}
+                disabled={!product.inStock || isUpdating}
                 className={`flex-1 py-3 rounded-xl font-medium transition-all flex items-center justify-center gap-2 ${
                   product.inStock
                     ? "bg-[#8E5022] text-white hover:bg-[#652810]"
                     : "bg-stone-200 text-stone-400 cursor-not-allowed"
-                }`}
+                } ${isUpdating ? "opacity-75" : ""}`}
               >
-                <ShoppingBag className="w-5 h-5" />
-                Add to Cart
+                {isUpdating ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    Adding...
+                  </>
+                ) : (
+                  <>
+                    <ShoppingBag className="w-5 h-5" />
+                    Add to Cart
+                  </>
+                )}
               </button>
             )}
           </div>
@@ -472,7 +473,8 @@ const ProductCard = memo(
       prevProps.product.id === nextProps.product.id &&
       prevWishlisted === nextWishlisted &&
       prevQuantity === nextQuantity &&
-      prevProps.isWishlistLoading === nextProps.isWishlistLoading
+      prevProps.isWishlistLoading === nextProps.isWishlistLoading &&
+      prevProps.isUpdating === nextProps.isUpdating
     );
   }
 );
@@ -817,7 +819,6 @@ function ProductsPageContent() {
       };
 
       addToCart(cartProduct);
-      // toast.success("Added to cart!");
     },
     [addToCart]
   );
@@ -827,7 +828,6 @@ function ProductsPageContent() {
     (productId, quantity) => {
       if (quantity <= 0) {
         removeFromCart(productId);
-        // toast.success("Removed from cart");
       } else {
         updateQuantity(productId, quantity);
       }

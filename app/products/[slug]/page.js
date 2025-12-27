@@ -28,23 +28,80 @@ import { useCart } from "@/context/CartContext";
 import { useAuth } from "@/components/AuthProvider";
 import toast from "react-hot-toast";
 
-// Local wishlist functions
-const getLocalWishlist = () => {
-  if (typeof window === "undefined") return [];
-  const wishlist = localStorage.getItem("wishlist");
-  return wishlist ? JSON.parse(wishlist) : [];
+// Wishlist API functions
+const fetchWishlist = async () => {
+  try {
+    const response = await fetch("/api/wishlist", {
+      credentials: "include",
+    });
+
+    if (!response.ok) return [];
+    const data = await response.json();
+    return data.wishlist || [];
+  } catch (error) {
+    console.error("Error fetching wishlist:", error);
+    return [];
+  }
 };
 
-const saveLocalWishlist = (wishlist) => {
-  if (typeof window === "undefined") return;
-  localStorage.setItem("wishlist", JSON.stringify(wishlist));
+const addToWishlistAPI = async (productId) => {
+  try {
+    const response = await fetch("/api/wishlist/add", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: "include",
+      body: JSON.stringify({ productId }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      return {
+        success: false,
+        error: data.error || "Failed to add to wishlist",
+      };
+    }
+
+    return data;
+  } catch (error) {
+    console.error("Error in addToWishlistAPI:", error);
+    return { success: false, error: error.message || "Network error" };
+  }
+};
+
+const removeFromWishlistAPI = async (productId) => {
+  try {
+    const response = await fetch(
+      `/api/wishlist/remove?productId=${productId}`,
+      {
+        method: "DELETE",
+        credentials: "include",
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      return {
+        success: false,
+        error: data.error || "Failed to remove from wishlist",
+      };
+    }
+
+    return data;
+  } catch (error) {
+    console.error("Error in removeFromWishlistAPI:", error);
+    return { success: false, error: error.message || "Network error" };
+  }
 };
 
 export default function ProductDetailPage() {
   const params = useParams();
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
-  const { addToCart, updateQuantity, getItemQuantity } = useCart();
+  const { addToCart, updateQuantity, getItemQuantity, isUpdating } = useCart();
 
   const [product, setProduct] = useState(null);
   const [relatedProducts, setRelatedProducts] = useState([]);
@@ -96,82 +153,87 @@ export default function ProductDetailPage() {
 
   // Load wishlist
   useEffect(() => {
-    if (user) {
-      const wishlistData = getLocalWishlist();
-      const userWishlist = wishlistData.filter(
-        (item) => item.userId === (user.uid || user.id || user.email)
-      );
-      const wishlistSet = new Set(userWishlist.map((item) => item.productId));
-      setWishlist(wishlistSet);
-    } else {
-      setWishlist(new Set());
-    }
+    const loadWishlist = async () => {
+      if (user) {
+        const wishlistData = await fetchWishlist();
+        const wishlistSet = new Set(wishlistData.map((item) => item.productId));
+        setWishlist(wishlistSet);
+      } else {
+        setWishlist(new Set());
+      }
+    };
+
+    loadWishlist();
   }, [user]);
 
   // Toggle wishlist
   const toggleWishlist = useCallback(async () => {
     if (!product) return;
 
+    // Check if auth is still loading
+    if (authLoading) {
+      toast.error("Please wait...");
+      return;
+    }
+
+    // Check if user exists BEFORE calling any API
     if (!user) {
       toast.error("Please login to add to wishlist");
       router.push(`/login?returnUrl=/products/${productId}`);
       return;
     }
 
-    if (authLoading) {
-      return;
-    }
+    // Set loading state
+    setWishlistLoading(true);
 
     try {
-      setWishlistLoading(true);
-
-      const currentWishlist = getLocalWishlist();
-      const isInWishlist = currentWishlist.some(
-        (item) => item.productId === product.id
-      );
-
-      let updatedWishlist;
-      let message = "";
+      const isInWishlist = wishlist.has(product.id);
 
       if (isInWishlist) {
         // Remove from wishlist
-        updatedWishlist = currentWishlist.filter(
-          (item) => item.productId !== product.id
-        );
-        message = "Removed from wishlist";
+        const result = await removeFromWishlistAPI(product.id);
+
+        if (result.success) {
+          setWishlist((prev) => {
+            const newSet = new Set(prev);
+            newSet.delete(product.id);
+            return newSet;
+          });
+          toast.success("Removed from wishlist");
+        } else {
+          // Don't show "Authentication required" since we already checked
+          if (result.error && result.error !== "Authentication required") {
+            toast.error(result.error);
+          } else if (!result.error) {
+            toast.error("Failed to remove from wishlist");
+          }
+        }
       } else {
         // Add to wishlist
-        const wishlistItem = {
-          productId: product.id,
-          userId: user.uid || user.id || user.email,
-          productName: product.name,
-          productImage: product.images?.[0] || "",
-          productPrice: product.price,
-          productSlug: product.slug,
-          createdAt: new Date().toISOString(),
-        };
+        const result = await addToWishlistAPI(product.id);
 
-        updatedWishlist = [...currentWishlist, wishlistItem];
-        message = "Added to wishlist";
+        if (result.success) {
+          setWishlist((prev) => new Set([...prev, product.id]));
+          toast.success("Added to wishlist");
+        } else {
+          // Don't show "Authentication required" since we already checked
+          if (result.error && result.error !== "Authentication required") {
+            toast.error(result.error);
+          } else if (!result.error) {
+            toast.error("Failed to add to wishlist");
+          }
+        }
       }
-
-      // Save to localStorage
-      saveLocalWishlist(updatedWishlist);
-
-      // Update local state
-      const wishlistSet = new Set(
-        updatedWishlist.map((item) => item.productId)
-      );
-      setWishlist(wishlistSet);
-
-      toast.success(message);
     } catch (err) {
-      console.error("Error toggling wishlist:", err);
-      toast.error("Failed to update wishlist");
+      console.error("Error in toggleWishlist:", err);
+      // Don't show authentication errors since we handle login redirect above
+      if (err.message !== "Authentication required") {
+        toast.error(err.message || "Failed to update wishlist");
+      }
     } finally {
       setWishlistLoading(false);
     }
-  }, [product, user, authLoading, router, productId]);
+  }, [product, user, authLoading, router, productId, wishlist]);
 
   // Image navigation
   const nextImage = () => {
@@ -505,7 +567,8 @@ export default function ProductDetailPage() {
                       onClick={() =>
                         updateQuantity(product.id, quantityInCart - 1)
                       }
-                      className="w-12 h-12 flex items-center justify-center hover:bg-[#EDD8B4]/40 transition-colors"
+                      disabled={!product.inStock || isUpdating}
+                      className="w-12 h-12 flex items-center justify-center hover:bg-[#EDD8B4]/40 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <Minus className="w-4 h-4 text-[#442D1C]" />
                     </button>
@@ -522,7 +585,7 @@ export default function ProductDetailPage() {
                       onClick={() =>
                         updateQuantity(product.id, quantityInCart + 1)
                       }
-                      disabled={!product.inStock}
+                      disabled={!product.inStock || isUpdating}
                       className="w-12 h-12 flex items-center justify-center hover:bg-[#EDD8B4]/40 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <Plus className="w-4 h-4 text-[#442D1C]" />
@@ -560,6 +623,7 @@ export default function ProductDetailPage() {
             </div>
 
             {/* Action Buttons */}
+            {/* Action Buttons */}
             <div className="flex flex-col sm:flex-row gap-4 mb-12">
               {quantityInCart > 0 ? (
                 <>
@@ -567,14 +631,26 @@ export default function ProductDetailPage() {
                     onClick={() =>
                       updateQuantity(product.id, quantityInCart + quantity)
                     }
-                    disabled={!product.inStock}
+                    disabled={!product.inStock || isUpdating}
                     className="flex-1 py-5 rounded-2xl font-medium text-lg transition-all flex items-center justify-center gap-3 bg-[#8E5022] text-white hover:bg-[#652810] disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <Plus className="w-6 h-6" />
-                    Add {quantity} More
+                    {isUpdating ? (
+                      <>
+                        <Loader2 className="w-6 h-6 animate-spin" />
+                        Updating...
+                      </>
+                    ) : (
+                      <>
+                        <Plus className="w-6 h-6" />
+                        Add {quantity} More
+                      </>
+                    )}
                   </button>
                   <Link href="/cart" className="flex-1">
-                    <button className="w-full bg-transparent border-2 border-[#8E5022] text-[#8E5022] py-5 rounded-2xl font-medium text-lg hover:bg-[#8E5022]/10 transition-all flex items-center justify-center gap-3">
+                    <button
+                      disabled={isUpdating}
+                      className="w-full bg-transparent border-2 border-[#8E5022] text-[#8E5022] py-5 rounded-2xl font-medium text-lg hover:bg-[#8E5022]/10 transition-all flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
                       <ShoppingBag className="w-6 h-6" />
                       View Cart ({quantityInCart})
                     </button>
@@ -583,25 +659,38 @@ export default function ProductDetailPage() {
               ) : (
                 <button
                   onClick={addToCartHandler}
-                  disabled={!product.inStock}
+                  disabled={!product.inStock || isUpdating}
                   className={`flex-1 py-5 rounded-2xl font-medium text-lg transition-all flex items-center justify-center gap-3 ${
-                    product.inStock
+                    product.inStock && !isUpdating
                       ? "bg-[#8E5022] text-white hover:bg-[#652810]"
                       : "bg-stone-200 text-stone-400 cursor-not-allowed"
                   }`}
                 >
-                  <ShoppingBag className="w-6 h-6" />
-                  Add to Cart
+                  {isUpdating ? (
+                    <>
+                      <Loader2 className="w-6 h-6 animate-spin" />
+                      Adding...
+                    </>
+                  ) : (
+                    <>
+                      <ShoppingBag className="w-6 h-6" />
+                      Add to Cart
+                    </>
+                  )}
                 </button>
               )}
               <button
                 onClick={toggleWishlist}
-                disabled={wishlistLoading}
+                disabled={wishlistLoading || isUpdating}
                 className={`flex-1 py-5 rounded-2xl font-medium text-lg transition-all flex items-center justify-center gap-3 ${
                   isInWishlist
                     ? "bg-[#FDFBF7] border-2 border-[#C85428] text-[#C85428]"
                     : "bg-[#FDFBF7] border-2 border-stone-300 text-stone-700 hover:border-[#C85428]"
-                } ${wishlistLoading ? "opacity-50 cursor-not-allowed" : ""}`}
+                } ${
+                  wishlistLoading || isUpdating
+                    ? "opacity-50 cursor-not-allowed"
+                    : ""
+                }`}
               >
                 {wishlistLoading ? (
                   <Loader2 className="w-6 h-6 animate-spin" />
