@@ -33,11 +33,46 @@ enum WorkshopStatus {
 
 // --- Models ---
 
+// Add to your existing models, before or after the WishlistItem model
+model Cart {
+  id        String     @id @default(cuid())
+  userId    String     @unique // One cart per user
+  items     CartItem[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  // Optional: For guest carts
+  sessionId String? @unique // For guest users (stored in cookies)
+  User      User[]
+
+  @@index([userId])
+  @@index([sessionId])
+}
+
+model CartItem {
+  id        String  @id @default(cuid())
+  cartId    String
+  cart      Cart    @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  quantity  Int     @default(1)
+
+  // Price snapshot at time of adding
+  price Float
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([cartId, productId]) // Prevent duplicate items in cart
+  @@index([cartId])
+  @@index([productId])
+}
+
 model User {
   id           String  @id @default(cuid())
   email        String  @unique
   name         String?
-  passwordHash String? // <--- ADDED THIS (Critical for signup)
+  passwordHash String?
   phone        String?
   gstNumber    String?
   role         Role    @default(CUSTOMER)
@@ -46,18 +81,23 @@ model User {
   otp          String?
   otpExpiresAt DateTime?
 
+  cart Cart? @relation(fields: [cartId], references: [id])
+
   // Relations
   addresses Address[]
   orders    Order[]
+  reviews   Review[]
+  wishlist  WishlistItem[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  cartId    String?
 }
 
 model Address {
-  id     String @id @default(cuid()) // <--- FIXED (Removed @db.ObjectId)
+  id     String @id @default(cuid())
   userId String
-  user   User   @relation(fields: [userId], references: [id])
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   street    String
   city      String
@@ -65,6 +105,11 @@ model Address {
   pincode   String
   country   String  @default("India")
   isDefault Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
 }
 
 model Category {
@@ -74,28 +119,96 @@ model Category {
   description String?
   products    Product[]
   createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([slug])
 }
 
 model Product {
-  id          String   @id @default(cuid())
-  name        String
-  slug        String   @unique
-  description String
-  price       Float
-  stock       Int      @default(0)
-  images      String[]
-  isFeatured  Boolean  @default(false)
+  id            String   @id @default(cuid())
+  name          String
+  slug          String   @unique
+  description   String
+  price         Float
+  originalPrice Float? // For showing discounts
+  stock         Int      @default(0)
+  images        String[] // Array of image URLs
 
+  // Product Details
+  material   String?
+  dimensions String?
+  color      String?
+  care       String? // Care instructions
+  leadTime   String? // Shipping/production time
+
+  // Features & Flags
+  features     String[] // e.g., ["Microwave Safe", "Dishwasher Safe"]
+  isNew        Boolean  @default(false)
+  isBestseller Boolean  @default(false)
+  isFeatured   Boolean  @default(false)
+  inStock      Boolean  @default(true)
+
+  // SEO & Marketing
+  metaTitle       String?
+  metaDescription String?
+
+  // Category Relation
   categoryId String
   category   Category @relation(fields: [categoryId], references: [id])
 
-  orderItems OrderItem[]
+  // Relations
+  orderItems    OrderItem[]
+  reviews       Review[]
+  wishlistItems WishlistItem[]
+
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  CartItem  CartItem[]
+
+  @@index([categoryId])
+  @@index([slug])
+  @@index([isNew])
+  @@index([isBestseller])
+  @@index([isFeatured])
+}
+
+model Review {
+  id      String  @id @default(cuid())
+  rating  Float // 1.0 to 5.0
+  comment String?
+
+  // Relations
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Verification
+  isVerified Boolean @default(false) // Verified purchase
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@index([categoryId])
-  @@index([slug])
+  @@index([productId])
+  @@index([userId])
+  @@index([rating])
+}
+
+model WishlistItem {
+  id String @id @default(cuid())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, productId]) // Prevent duplicate wishlist entries
+  @@index([userId])
+  @@index([productId])
 }
 
 model Order {
@@ -105,37 +218,65 @@ model Order {
   userId String?
   user   User?   @relation(fields: [userId], references: [id])
 
-  // Snapshot details at time of order
+  // Customer snapshot at time of order
   customerName  String?
   customerEmail String?
+  customerPhone String?
   address       Json
 
   // Costs
-  total        Float
+  subtotal     Float
   shippingCost Float @default(0)
+  tax          Float @default(0)
+  discount     Float @default(0)
+  total        Float
 
   status OrderStatus @default(PENDING)
 
   // Payment Details
   razorpayOrderId String?
   paymentId       String?
+  paymentStatus   String? // "pending", "completed", "failed"
+
+  // Shipping
+  trackingNumber String?
+  shippedAt      DateTime?
+  deliveredAt    DateTime?
 
   items OrderItem[]
 
+  // Notes
+  customerNotes String?
+  adminNotes    String?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
 }
 
 model OrderItem {
   id      String @id @default(cuid())
   orderId String
-  order   Order  @relation(fields: [orderId], references: [id])
+  order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
   productId String
   product   Product @relation(fields: [productId], references: [id])
 
+  // Snapshot at time of purchase
+  productName  String
+  productImage String
+  productSlug  String
+
   quantity Int
-  price    Float
+  price    Float // Price per unit at time of purchase
+
+  createdAt DateTime @default(now())
+
+  @@index([orderId])
+  @@index([productId])
 }
 
 // --- WORKSHOP SECTION ---
@@ -158,6 +299,7 @@ model Workshop {
   instructorName  String
   instructorRole  String
   instructorImage String
+  instructorBio   String?
 
   status WorkshopStatus @default(UPCOMING)
 
@@ -165,6 +307,9 @@ model Workshop {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([slug])
+  @@index([status])
 }
 
 model WorkshopSession {
@@ -175,19 +320,34 @@ model WorkshopSession {
   spotsBooked Int      @default(0)
 
   workshopId String
-  workshop   Workshop @relation(fields: [workshopId], references: [id])
+  workshop   Workshop @relation(fields: [workshopId], references: [id], onDelete: Cascade)
 
   registrations WorkshopRegistration[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([workshopId])
+  @@index([date])
 }
 
 model WorkshopRegistration {
-  id            String @id @default(cuid())
+  id            String  @id @default(cuid())
   customerName  String
   customerEmail String
+  customerPhone String?
   amountPaid    Float
 
   sessionId String
-  session   WorkshopSession @relation(fields: [sessionId], references: [id])
+  session   WorkshopSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  // Payment tracking
+  razorpayOrderId String?
+  paymentId       String?
+  paymentStatus   String? @default("pending")
 
   createdAt DateTime @default(now())
+
+  @@index([sessionId])
+  @@index([customerEmail])
 }
