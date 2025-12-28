@@ -34,13 +34,13 @@ export default function RootLayout({ children }) {
       <body className="antialiased font-sans">
         <AuthProvider>
           {/* Header is inside AuthProvider so it can check login state */}
-          <Header />
+          <CartProvider>
+            <Header />
 
-          <main className="min-h-screen">
-            <AuthProvider>
-              <CartProvider>{children}</CartProvider>
-            </AuthProvider>
-          </main>
+            <main className="min-h-screen">
+              <AuthProvider>{children}</AuthProvider>
+            </main>
+          </CartProvider>
         </AuthProvider>
         <Toaster
           position="top-right"
