@@ -1,5 +1,3 @@
-// prisma/schema.prisma
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -10,10 +8,255 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
-// --- Enums ---
-enum Role {
-  CUSTOMER
-  ADMIN
+model Address {
+  id        String   @id
+  userId    String
+  street    String
+  city      String
+  state     String
+  pincode   String
+  country   String   @default("India")
+  isDefault Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  User      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Cart {
+  id        String     @id
+  userId    String?    @unique
+  sessionId String?    @unique
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  User      User?      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  CartItem  CartItem[]
+
+  @@index([sessionId])
+  @@index([userId])
+}
+
+model CartItem {
+  id        String   @id
+  cartId    String
+  productId String
+  quantity  Int      @default(1)
+  price     Float
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  Cart      Cart     @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  Product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([cartId, productId])
+  @@index([cartId])
+  @@index([productId])
+}
+
+model Category {
+  id          String    @id
+  name        String
+  slug        String    @unique
+  description String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  Product     Product[]
+
+  @@index([slug])
+}
+
+model Order {
+  id              String      @id
+  orderNumber     String?     @unique
+  userId          String?
+  customerName    String?
+  customerEmail   String?
+  address         Json
+  total           Float
+  status          OrderStatus @default(PENDING)
+  paymentId       String?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  adminNotes      String?
+  customerNotes   String?
+  customerPhone   String?
+  deliveredAt     DateTime?
+  discount        Float       @default(0)
+  paymentStatus   String?
+  razorpayOrderId String?
+  shippedAt       DateTime?
+  shippingCost    Float       @default(0)
+  subtotal        Float
+  tax             Float       @default(0)
+  trackingNumber  String?
+  User            User?       @relation(fields: [userId], references: [id])
+  OrderItem       OrderItem[]
+
+  @@index([createdAt])
+  @@index([status])
+  @@index([userId])
+}
+
+model OrderItem {
+  id           String   @id
+  orderId      String
+  productId    String
+  quantity     Int
+  price        Float
+  createdAt    DateTime @default(now())
+  productImage String
+  productName  String
+  productSlug  String
+  Order        Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  Product      Product  @relation(fields: [productId], references: [id])
+
+  @@index([orderId])
+  @@index([productId])
+}
+
+model Product {
+  id              String         @id
+  name            String
+  slug            String         @unique
+  description     String
+  price           Float
+  stock           Int            @default(0)
+  images          String[]
+  isFeatured      Boolean        @default(false)
+  categoryId      String
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  care            String?
+  color           String?
+  dimensions      String?
+  features        String[]
+  inStock         Boolean        @default(true)
+  isBestseller    Boolean        @default(false)
+  isNew           Boolean        @default(false)
+  leadTime        String?
+  material        String?
+  metaDescription String?
+  metaTitle       String?
+  originalPrice   Float?
+  CartItem        CartItem[]
+  OrderItem       OrderItem[]
+  Category        Category       @relation(fields: [categoryId], references: [id])
+  Review          Review[]
+  WishlistItem    WishlistItem[]
+
+  @@index([categoryId])
+  @@index([isBestseller])
+  @@index([isFeatured])
+  @@index([isNew])
+  @@index([slug])
+}
+
+model Review {
+  id         String   @id
+  rating     Float
+  comment    String?
+  productId  String
+  userId     String
+  isVerified Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  Product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  User       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+  @@index([rating])
+  @@index([userId])
+}
+
+model User {
+  id           String         @id @default(uuid())
+  email        String         @unique
+  name         String?
+  role         Role           @default(CUSTOMER)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  gstNumber    String?
+  otp          String?
+  otpExpiresAt DateTime?
+  passwordHash String?
+  phone        String?
+  Address      Address[]
+  Cart         Cart?
+  Order        Order[]
+  Review       Review[]
+  WishlistItem WishlistItem[]
+}
+
+model WishlistItem {
+  id        String   @id
+  userId    String
+  productId String
+  createdAt DateTime @default(now())
+  Product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  User      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, productId])
+  @@index([productId])
+  @@index([userId])
+}
+
+model Workshop {
+  id              String            @id
+  title           String
+  slug            String            @unique
+  description     String
+  price           Float
+  image           String
+  gallery         String[]
+  duration        String
+  maxStudents     Int
+  location        String
+  language        String
+  level           String
+  instructorName  String
+  instructorRole  String
+  instructorImage String
+  status          WorkshopStatus    @default(UPCOMING)
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  instructorBio   String?
+  WorkshopSession WorkshopSession[]
+
+  @@index([slug])
+  @@index([status])
+}
+
+model WorkshopRegistration {
+  id              String          @id
+  customerName    String
+  customerEmail   String
+  amountPaid      Float
+  sessionId       String
+  createdAt       DateTime        @default(now())
+  customerPhone   String?
+  paymentId       String?
+  paymentStatus   String?         @default("pending")
+  razorpayOrderId String?
+  WorkshopSession WorkshopSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([customerEmail])
+  @@index([sessionId])
+}
+
+model WorkshopSession {
+  id                   String                 @id
+  date                 DateTime
+  time                 String
+  spotsTotal           Int
+  spotsBooked          Int                    @default(0)
+  workshopId           String
+  createdAt            DateTime               @default(now())
+  updatedAt            DateTime               @updatedAt
+  WorkshopRegistration WorkshopRegistration[]
+  Workshop             Workshop               @relation(fields: [workshopId], references: [id], onDelete: Cascade)
+
+  @@index([date])
+  @@index([workshopId])
 }
 
 enum OrderStatus {
@@ -24,330 +267,14 @@ enum OrderStatus {
   CANCELLED
 }
 
+enum Role {
+  CUSTOMER
+  ADMIN
+}
+
 enum WorkshopStatus {
   UPCOMING
   ACTIVE
   COMPLETED
   CANCELLED
-}
-
-// --- Models ---
-
-// Add to your existing models, before or after the WishlistItem model
-model Cart {
-  id        String     @id @default(cuid())
-  userId    String     @unique // One cart per user
-  items     CartItem[]
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
-
-  // Optional: For guest carts
-  sessionId String? @unique // For guest users (stored in cookies)
-  User      User[]
-
-  @@index([userId])
-  @@index([sessionId])
-}
-
-model CartItem {
-  id        String  @id @default(cuid())
-  cartId    String
-  cart      Cart    @relation(fields: [cartId], references: [id], onDelete: Cascade)
-  productId String
-  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
-  quantity  Int     @default(1)
-
-  // Price snapshot at time of adding
-  price Float
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@unique([cartId, productId]) // Prevent duplicate items in cart
-  @@index([cartId])
-  @@index([productId])
-}
-
-model User {
-  id           String  @id @default(cuid())
-  email        String  @unique
-  name         String?
-  passwordHash String?
-  phone        String?
-  gstNumber    String?
-  role         Role    @default(CUSTOMER)
-
-  // --- OTP Fields ---
-  otp          String?
-  otpExpiresAt DateTime?
-
-  cart Cart? @relation(fields: [cartId], references: [id])
-
-  // Relations
-  addresses Address[]
-  orders    Order[]
-  reviews   Review[]
-  wishlist  WishlistItem[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  cartId    String?
-}
-
-model Address {
-  id     String @id @default(cuid())
-  userId String
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  street    String
-  city      String
-  state     String
-  pincode   String
-  country   String  @default("India")
-  isDefault Boolean @default(false)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([userId])
-}
-
-model Category {
-  id          String    @id @default(cuid())
-  name        String
-  slug        String    @unique
-  description String?
-  products    Product[]
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-
-  @@index([slug])
-}
-
-model Product {
-  id            String   @id @default(cuid())
-  name          String
-  slug          String   @unique
-  description   String
-  price         Float
-  originalPrice Float? // For showing discounts
-  stock         Int      @default(0)
-  images        String[] // Array of image URLs
-
-  // Product Details
-  material   String?
-  dimensions String?
-  color      String?
-  care       String? // Care instructions
-  leadTime   String? // Shipping/production time
-
-  // Features & Flags
-  features     String[] // e.g., ["Microwave Safe", "Dishwasher Safe"]
-  isNew        Boolean  @default(false)
-  isBestseller Boolean  @default(false)
-  isFeatured   Boolean  @default(false)
-  inStock      Boolean  @default(true)
-
-  // SEO & Marketing
-  metaTitle       String?
-  metaDescription String?
-
-  // Category Relation
-  categoryId String
-  category   Category @relation(fields: [categoryId], references: [id])
-
-  // Relations
-  orderItems    OrderItem[]
-  reviews       Review[]
-  wishlistItems WishlistItem[]
-
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
-  CartItem  CartItem[]
-
-  @@index([categoryId])
-  @@index([slug])
-  @@index([isNew])
-  @@index([isBestseller])
-  @@index([isFeatured])
-}
-
-model Review {
-  id      String  @id @default(cuid())
-  rating  Float // 1.0 to 5.0
-  comment String?
-
-  // Relations
-  productId String
-  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
-
-  userId String
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  // Verification
-  isVerified Boolean @default(false) // Verified purchase
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([productId])
-  @@index([userId])
-  @@index([rating])
-}
-
-model WishlistItem {
-  id String @id @default(cuid())
-
-  userId String
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  productId String
-  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime @default(now())
-
-  @@unique([userId, productId]) // Prevent duplicate wishlist entries
-  @@index([userId])
-  @@index([productId])
-}
-
-model Order {
-  id          String  @id @default(cuid())
-  orderNumber String? @unique
-
-  userId String?
-  user   User?   @relation(fields: [userId], references: [id])
-
-  // Customer snapshot at time of order
-  customerName  String?
-  customerEmail String?
-  customerPhone String?
-  address       Json
-
-  // Costs
-  subtotal     Float
-  shippingCost Float @default(0)
-  tax          Float @default(0)
-  discount     Float @default(0)
-  total        Float
-
-  status OrderStatus @default(PENDING)
-
-  // Payment Details
-  razorpayOrderId String?
-  paymentId       String?
-  paymentStatus   String? // "pending", "completed", "failed"
-
-  // Shipping
-  trackingNumber String?
-  shippedAt      DateTime?
-  deliveredAt    DateTime?
-
-  items OrderItem[]
-
-  // Notes
-  customerNotes String?
-  adminNotes    String?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([userId])
-  @@index([status])
-  @@index([createdAt])
-}
-
-model OrderItem {
-  id      String @id @default(cuid())
-  orderId String
-  order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
-
-  productId String
-  product   Product @relation(fields: [productId], references: [id])
-
-  // Snapshot at time of purchase
-  productName  String
-  productImage String
-  productSlug  String
-
-  quantity Int
-  price    Float // Price per unit at time of purchase
-
-  createdAt DateTime @default(now())
-
-  @@index([orderId])
-  @@index([productId])
-}
-
-// --- WORKSHOP SECTION ---
-
-model Workshop {
-  id          String   @id @default(cuid())
-  title       String
-  slug        String   @unique
-  description String
-  price       Float
-  image       String
-  gallery     String[]
-
-  duration    String
-  maxStudents Int
-  location    String
-  language    String
-  level       String
-
-  instructorName  String
-  instructorRole  String
-  instructorImage String
-  instructorBio   String?
-
-  status WorkshopStatus @default(UPCOMING)
-
-  sessions WorkshopSession[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([slug])
-  @@index([status])
-}
-
-model WorkshopSession {
-  id          String   @id @default(cuid())
-  date        DateTime
-  time        String
-  spotsTotal  Int
-  spotsBooked Int      @default(0)
-
-  workshopId String
-  workshop   Workshop @relation(fields: [workshopId], references: [id], onDelete: Cascade)
-
-  registrations WorkshopRegistration[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([workshopId])
-  @@index([date])
-}
-
-model WorkshopRegistration {
-  id            String  @id @default(cuid())
-  customerName  String
-  customerEmail String
-  customerPhone String?
-  amountPaid    Float
-
-  sessionId String
-  session   WorkshopSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-
-  // Payment tracking
-  razorpayOrderId String?
-  paymentId       String?
-  paymentStatus   String? @default("pending")
-
-  createdAt DateTime @default(now())
-
-  @@index([sessionId])
-  @@index([customerEmail])
 }

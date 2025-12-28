@@ -1,6 +1,5 @@
 "use client";
 
-import { useCart } from "@/hooks/use-cart";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -8,20 +7,21 @@ import {
   ShoppingBag,
   Menu,
   X,
-  Search,
   LayoutDashboard,
   LogOut,
+  Heart,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/components/AuthProvider";
 import { motion, AnimatePresence } from "framer-motion";
 import UserMenu from "@/components/UserMenu"; // <--- 1. IMPORT ADDED
+import { useCart } from "@/context/CartContext";
 
 export default function Header() {
   const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
-  const cart = useCart();
+  const { getTotalItems } = useCart();
 
   // Get Auth state
   const { user, loading } = useAuth();
@@ -102,7 +102,10 @@ export default function Header() {
           </div>
 
           {/* Logo */}
-          <Link href="/" className="z-50 relative group">
+          <Link
+            href="/"
+            className="z-50 relative group md:static absolute left-1/6 md:left-auto md:transform-none -translate-x-1/2"
+          >
             <motion.div
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
@@ -167,17 +170,25 @@ export default function Header() {
 
           {/* Right Side Icons */}
           <div className="flex items-center gap-3">
-            <Button
-              variant="ghost"
-              size="icon"
-              className={`rounded-full transition-all hidden md:flex ${
-                isHeaderWhite
-                  ? "hover:bg-[#EDD8B4]/20 text-[#442D1C]"
-                  : "bg-white/20 hover:bg-white/40 text-white"
-              }`}
-            >
-              <Search className="h-4 w-4" />
-            </Button>
+            <Link href="/wishlist">
+              <motion.div
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="relative"
+              >
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className={`rounded-full transition-all ${
+                    isHeaderWhite
+                      ? "hover:bg-[#EDD8B4]/20 text-[#442D1C]"
+                      : "bg-white/20 hover:bg-white/40 text-white"
+                  }`}
+                >
+                  <Heart className="h-5 w-5" />
+                </Button>
+              </motion.div>
+            </Link>
 
             {/* Cart */}
             <Link href="/cart">
@@ -196,9 +207,9 @@ export default function Header() {
                   }`}
                 >
                   <ShoppingBag className="h-5 w-5" />
-                  {cart?.items?.length > 0 && (
+                  {getTotalItems() > 0 && (
                     <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-[#C85428] flex items-center justify-center text-[10px] text-white font-bold">
-                      {cart.items.length}
+                      {getTotalItems()}
                     </span>
                   )}
                 </Button>

@@ -11,10 +11,10 @@ export default async function ProfilePage() {
   const user = await prisma.user.findUnique({
     where: { id: session.userId },
     include: {
-      orders: {
+      Order: {
         take: 5,
         orderBy: { createdAt: "desc" },
-        include: { items: true },
+        include: { OrderItem: true },
       },
     },
   });
@@ -40,7 +40,7 @@ export default async function ProfilePage() {
             Recent Activity
           </h2>
 
-          {user.orders.length === 0 ? (
+          {user.Order.length === 0 ? (
             <div className="bg-[#FDFBF7] p-6 rounded-lg border border-dashed border-[#EDD8B4] text-center">
               <p className="text-[#8E5022]">No orders yet.</p>
               <a
@@ -52,7 +52,7 @@ export default async function ProfilePage() {
             </div>
           ) : (
             <div className="space-y-4">
-              {user.orders.map((order) => (
+              {user.Order.map((order) => (
                 <div
                   key={order.id}
                   className="bg-white p-4 border border-[#EDD8B4] rounded-lg shadow-sm flex justify-between items-center"

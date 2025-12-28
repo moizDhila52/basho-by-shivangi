@@ -9,16 +9,16 @@ export async function POST(req) {
     // 1. Upsert User (Create if new, Update if exists)
     const user = await prisma.user.upsert({
       where: { email },
-      update: { 
-        name, 
-        phone, 
-        gstNumber 
+      update: {
+        name,
+        phone,
+        gstNumber,
       },
-      create: { 
-        email, 
-        name, 
-        phone, 
-        gstNumber 
+      create: {
+        email,
+        name,
+        phone,
+        gstNumber,
       },
     });
 
@@ -26,13 +26,14 @@ export async function POST(req) {
     if (address) {
       await prisma.address.create({
         data: {
+          id: crypto.randomUUID(),
           userId: user.id,
           street: address.street,
           city: address.city,
           state: address.state,
           pincode: address.pincode,
-          isDefault: true
-        }
+          isDefault: true,
+        },
       });
     }
 

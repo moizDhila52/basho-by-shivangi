@@ -113,16 +113,76 @@ async function fetchCategories() {
   return response.json();
 }
 
-// Local wishlist storage functions
-const getLocalWishlist = () => {
-  if (typeof window === "undefined") return [];
-  const wishlist = localStorage.getItem("wishlist");
-  return wishlist ? JSON.parse(wishlist) : [];
+// Update API functions
+// Update fetchWishlist
+const fetchWishlist = async () => {
+  try {
+    const response = await fetch("/api/wishlist", {
+      credentials: "include", // This sends cookies automatically
+    });
+
+    if (!response.ok) return [];
+    const data = await response.json();
+    return data.wishlist || [];
+  } catch (error) {
+    console.error("Error fetching wishlist:", error);
+    return [];
+  }
 };
 
-const saveLocalWishlist = (wishlist) => {
-  if (typeof window === "undefined") return;
-  localStorage.setItem("wishlist", JSON.stringify(wishlist));
+// Update addToWishlistAPI
+const addToWishlistAPI = async (productId) => {
+  try {
+    const response = await fetch("/api/wishlist/add", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: "include", // This sends cookies automatically
+      body: JSON.stringify({ productId }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      return {
+        success: false,
+        error: data.error || "Failed to add to wishlist",
+      };
+    }
+
+    return data;
+  } catch (error) {
+    console.error("Error in addToWishlistAPI:", error);
+    return { success: false, error: error.message || "Network error" };
+  }
+};
+
+// Update removeFromWishlistAPI
+const removeFromWishlistAPI = async (productId) => {
+  try {
+    const response = await fetch(
+      `/api/wishlist/remove?productId=${productId}`,
+      {
+        method: "DELETE",
+        credentials: "include", // This sends cookies automatically
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      return {
+        success: false,
+        error: data.error || "Failed to remove from wishlist",
+      };
+    }
+
+    return data;
+  } catch (error) {
+    console.error("Error in removeFromWishlistAPI:", error);
+    return { success: false, error: error.message || "Network error" };
+  }
 };
 
 const SORT_OPTIONS = [
@@ -174,11 +234,13 @@ const ProductCard = memo(
     onAddToCart,
     onUpdateQuantity,
     isWishlistLoading,
+    authLoading,
+    isUpdating,
   }) {
     const quantityInCart =
       cartItems.find((item) => item.id === product.id)?.quantity || 0;
     const rating = product.averageRating || 0;
-    const reviewCount = product._count?.reviews || 0;
+    const reviewCount = product._count?.Review || 0;
     const isInWishlist = wishlist.has(product.id);
 
     return (
@@ -213,14 +275,24 @@ const ProductCard = memo(
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
+            console.log("Wishlist button clicked!");
+            console.log("isWishlistLoading:", isWishlistLoading);
+            console.log(
+              "Condition check - !isWishlistLoading:",
+              !isWishlistLoading
+            );
+            console.log("authLoading:", authLoading);
             if (!isWishlistLoading) {
+              console.log("✅ Calling onWishlistToggle");
               onWishlistToggle(product.id, product);
+            } else {
+              console.log("❌ NOT calling onWishlistToggle - loading is true");
             }
           }}
-          disabled={isWishlistLoading}
+          disabled={isWishlistLoading || authLoading}
           className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center shadow-md hover:shadow-lg transition-all hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {isWishlistLoading ? (
+          {isWishlistLoading || authLoading ? (
             <Loader2 className="w-5 h-5 text-[#C85428] animate-spin" />
           ) : (
             <Heart
@@ -241,9 +313,6 @@ const ProductCard = memo(
                 src={product.images[0]}
                 alt={product.name}
                 className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                onError={(e) => {
-                  e.target.src = "/placeholder-image.jpg";
-                }}
               />
             ) : (
               <div className="w-full h-full flex items-center justify-center bg-stone-100">
@@ -261,7 +330,7 @@ const ProductCard = memo(
           <Link href={`/products/${product.slug}`}>
             <div className="cursor-pointer">
               <span className="text-sm text-[#8E5022] font-medium uppercase tracking-wider">
-                {product.category?.name}
+                {product.Category?.name}
               </span>
               <h3 className="font-serif text-2xl text-[#442D1C] mt-1 mb-2 group-hover:text-[#C85428] transition-colors">
                 {product.name}
@@ -340,7 +409,8 @@ const ProductCard = memo(
                     onClick={() =>
                       onUpdateQuantity(product.id, quantityInCart - 1)
                     }
-                    className="w-10 h-10 flex items-center justify-center rounded-lg hover:bg-[#E8D0A0] transition-colors"
+                    disabled={isUpdating}
+                    className="w-10 h-10 flex items-center justify-center rounded-lg hover:bg-[#E8D0A0] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <Minus className="w-4 h-4 text-[#442D1C]" />
                   </button>
@@ -354,7 +424,8 @@ const ProductCard = memo(
 
                   <button
                     onClick={() => onAddToCart(product)}
-                    className="w-10 h-10 flex items-center justify-center rounded-lg hover:bg-[#E8D0A0] transition-colors"
+                    disabled={isUpdating}
+                    className="w-10 h-10 flex items-center justify-center rounded-lg hover:bg-[#E8D0A0] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <Plus className="w-4 h-4 text-[#442D1C]" />
                   </button>
@@ -363,15 +434,17 @@ const ProductCard = memo(
             ) : (
               <button
                 onClick={() => onAddToCart(product)}
-                disabled={!product.inStock}
+                disabled={!product.inStock || isUpdating}
                 className={`flex-1 py-3 rounded-xl font-medium transition-all flex items-center justify-center gap-2 ${
                   product.inStock
                     ? "bg-[#8E5022] text-white hover:bg-[#652810]"
                     : "bg-stone-200 text-stone-400 cursor-not-allowed"
-                }`}
+                } ${isUpdating ? "opacity-75" : ""}`}
               >
-                <ShoppingBag className="w-5 h-5" />
-                Add to Cart
+                <>
+                  <ShoppingBag className="w-5 h-5" />
+                  Add to Cart
+                </>
               </button>
             )}
           </div>
@@ -393,7 +466,8 @@ const ProductCard = memo(
       prevProps.product.id === nextProps.product.id &&
       prevWishlisted === nextWishlisted &&
       prevQuantity === nextQuantity &&
-      prevProps.isWishlistLoading === nextProps.isWishlistLoading
+      prevProps.isWishlistLoading === nextProps.isWishlistLoading &&
+      prevProps.isUpdating === nextProps.isUpdating
     );
   }
 );
@@ -489,7 +563,7 @@ function ProductsPageContent() {
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [productsLoading, setProductsLoading] = useState(true);
-  const [wishlistLoading, setWishlistLoading] = useState(false);
+  const [wishlistLoading, setWishlistLoading] = useState(new Set());
   const [error, setError] = useState(null);
 
   const [selectedCategory, setSelectedCategory] = useState(
@@ -506,27 +580,31 @@ function ProductsPageContent() {
     searchParams.get("search") || ""
   );
   const [wishlist, setWishlist] = useState(new Set());
-  const { addToCart, updateQuantity, removeFromCart, cartItems } = useCart();
+  const { addToCart, updateQuantity, removeFromCart, cartItems, isUpdating } =
+    useCart();
 
   // Prepare categories for display
   const displayCategories = [
-    { slug: "all", name: "All Categories", productCount: products.length },
+    {
+      slug: "all",
+      name: "All Categories",
+      productCount: categories.reduce(
+        (sum, cat) => sum + (cat._count?.Product || 0),
+        0
+      ),
+    },
     ...categories.map((cat) => ({
       slug: cat.slug,
       name: cat.name,
-      productCount: cat._count?.products || 0,
+      productCount: cat._count?.Product || 0,
     })),
   ];
 
   // Load wishlist from localStorage
-  const loadWishlist = useCallback(() => {
+  const loadWishlist = useCallback(async () => {
     if (user) {
-      const wishlistData = getLocalWishlist();
-      // Filter wishlist for current user
-      const userWishlist = wishlistData.filter(
-        (item) => item.userId === (user.uid || user.id || user.email)
-      );
-      const wishlistSet = new Set(userWishlist.map((item) => item.productId));
+      const wishlistData = await fetchWishlist();
+      const wishlistSet = new Set(wishlistData.map((item) => item.productId));
       setWishlist(wishlistSet);
     } else {
       setWishlist(new Set());
@@ -636,77 +714,86 @@ function ProductsPageContent() {
   // Toggle wishlist handler
   const toggleWishlistHandler = useCallback(
     async (productId, product) => {
-      console.log("=== WISHLIST HANDLER START ===");
-
+      console.log("🔵 toggleWishlistHandler called with productId:", productId);
+      console.log("🔵 authLoading:", authLoading);
+      console.log("🔵 user:", user);
       // Check if auth is still loading
       if (authLoading) {
-        console.log("Auth still loading, skipping");
+        toast.error("Please wait...");
         return;
       }
 
-      // Check if user exists
+      // Check if user exists BEFORE calling any API
       if (!user) {
-        console.log("No user, redirecting to login");
         toast.error("Please login to add to wishlist");
         const currentPath = window.location.pathname + window.location.search;
         router.push(`/login?returnUrl=${encodeURIComponent(currentPath)}`);
         return;
       }
 
+      console.log("✅ User authenticated, proceeding with wishlist toggle");
+
+      // Set loading state
+      setWishlistLoading((prev) => new Set([...prev, productId]));
+
       try {
-        setWishlistLoading(true);
-
-        // Get current wishlist from localStorage
-        const currentWishlist = getLocalWishlist();
-        const isInWishlist = currentWishlist.some(
-          (item) => item.productId === productId
-        );
-
-        let updatedWishlist;
-        let action = "";
+        const isInWishlist = wishlist.has(productId);
+        console.log("🔵 Is product in wishlist?", isInWishlist);
 
         if (isInWishlist) {
+          console.log("🔵 Removing from wishlist...");
           // Remove from wishlist
-          updatedWishlist = currentWishlist.filter(
-            (item) => item.productId !== productId
-          );
-          action = "removed";
-          toast.success("Removed from wishlist");
+          const result = await removeFromWishlistAPI(productId);
+          console.log("🔵 Remove result:", result);
+
+          if (result.success) {
+            setWishlist((prev) => {
+              const newSet = new Set(prev);
+              newSet.delete(productId);
+              return newSet;
+            });
+            toast.success("Removed from wishlist");
+          } else {
+            // Don't show "Authentication required" since we already checked
+            if (result.error && result.error !== "Authentication required") {
+              toast.error(result.error);
+            } else if (!result.error) {
+              toast.error("Failed to remove from wishlist");
+            }
+          }
         } else {
+          console.log("🔵 Adding to wishlist...");
           // Add to wishlist
-          const wishlistItem = {
-            productId,
-            userId: user.uid || user.id || user.email,
-            productName: product.name,
-            productImage: product.images?.[0] || "",
-            productPrice: product.price,
-            productSlug: product.slug,
-            createdAt: new Date().toISOString(),
-          };
+          const result = await addToWishlistAPI(productId);
+          console.log("🔵 Add result:", result);
 
-          updatedWishlist = [...currentWishlist, wishlistItem];
-          action = "added";
-          toast.success("Added to wishlist");
+          if (result.success) {
+            setWishlist((prev) => new Set([...prev, productId]));
+            toast.success("Added to wishlist");
+          } else {
+            // Don't show "Authentication required" since we already checked
+            if (result.error && result.error !== "Authentication required") {
+              toast.error(result.error);
+            } else if (!result.error) {
+              toast.error("Failed to add to wishlist");
+            }
+          }
         }
-
-        // Save to localStorage
-        saveLocalWishlist(updatedWishlist);
-
-        // Update local state
-        const wishlistSet = new Set(
-          updatedWishlist.map((item) => item.productId)
-        );
-        setWishlist(wishlistSet);
-
-        console.log(`Product ${action} from wishlist`);
       } catch (err) {
         console.error("Error in toggleWishlistHandler:", err);
-        toast.error("Failed to update wishlist");
+        // Don't show authentication errors since we handle login redirect above
+        if (err.message !== "Authentication required") {
+          toast.error(err.message || "Failed to update wishlist");
+        }
       } finally {
-        setWishlistLoading(false);
+        setWishlistLoading((prev) => {
+          const newSet = new Set(prev);
+          newSet.delete(productId);
+          return newSet;
+        });
       }
     },
-    [user, authLoading, router]
+    [user, authLoading, router, wishlist]
   );
 
   // Add to cart handler
@@ -720,12 +807,11 @@ function ProductsPageContent() {
         originalPrice: product.originalPrice,
         image: product.images?.[0] || "/placeholder-image.jpg",
         inStock: product.inStock,
-        category: product.category?.name,
+        category: product.Category?.name,
         quantity: 1,
       };
 
       addToCart(cartProduct);
-      toast.success("Added to cart!");
     },
     [addToCart]
   );
@@ -735,7 +821,6 @@ function ProductsPageContent() {
     (productId, quantity) => {
       if (quantity <= 0) {
         removeFromCart(productId);
-        toast.success("Removed from cart");
       } else {
         updateQuantity(productId, quantity);
       }
@@ -1119,7 +1204,9 @@ function ProductsPageContent() {
                   onWishlistToggle={toggleWishlistHandler}
                   onAddToCart={handleAddToCart}
                   onUpdateQuantity={handleUpdateQuantity}
-                  isWishlistLoading={wishlistLoading}
+                  isWishlistLoading={wishlistLoading.has(product.id)}
+                  authLoading={authLoading}
+                  isUpdating={isUpdating}
                 />
               ))}
             </div>
