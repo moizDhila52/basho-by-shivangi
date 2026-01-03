@@ -1,258 +1,349 @@
-import Image from 'next/image'
-import Link from 'next/link'
-import { ArrowRight, Play, Calendar, MapPin, Eye } from 'lucide-react'
+// app/gallery/page.js
+"use client";
 
-export const metadata = {
-  title: 'Gallery | Basho Pottery',
-  description: 'Visual stories from the studio, our collections, and community gatherings.',
-}
+import React, { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import Image from "next/image";
+import { Filter, X, ZoomIn, ChevronLeft, ChevronRight } from "lucide-react";
+
+const COLORS = {
+  dark: "#442D1C",
+  brown: "#652810",
+  clay: "#8E5022",
+  terracotta: "#C85428",
+  cream: "#EDD8B4",
+  background: "#FDFBF7",
+};
+
+const GALLERY_CATEGORIES = [
+  { value: "all", label: "All Photos", icon: "🖼️" },
+  { value: "PRODUCT", label: "Products", icon: "🍶" },
+  { value: "WORKSHOP", label: "Workshops", icon: "✂️" },
+  { value: "STUDIO", label: "Studio", icon: "🏠" },
+  { value: "EVENT", label: "Events", icon: "🎪" },
+  { value: "PROCESS", label: "Process", icon: "🌀" },
+  { value: "ARTISAN", label: "Artisans", icon: "👩‍🎨" },
+  { value: "CUSTOMER", label: "Customers", icon: "😊" },
+];
 
 export default function GalleryPage() {
+  const [galleryItems, setGalleryItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedCategory, setSelectedCategory] = useState("all");
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
+
+  useEffect(() => {
+    fetchGallery();
+  }, [selectedCategory]);
+
+  const fetchGallery = async () => {
+    try {
+      setLoading(true);
+      const params = new URLSearchParams();
+      if (selectedCategory !== "all")
+        params.append("category", selectedCategory);
+
+      const response = await fetch(`/api/gallery?${params.toString()}`);
+      const data = await response.json();
+
+      if (data.success) {
+        setGalleryItems(data.data);
+      }
+    } catch (error) {
+      console.error("Error fetching gallery:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const openLightbox = (item, index) => {
+    setSelectedImage(item);
+    setLightboxIndex(index);
+  };
+
+  const closeLightbox = () => {
+    setSelectedImage(null);
+  };
+
+  const navigateLightbox = (direction) => {
+    if (!selectedImage) return;
+
+    const currentIndex = galleryItems.findIndex(
+      (item) => item.id === selectedImage.id
+    );
+    let newIndex;
+
+    if (direction === "prev") {
+      newIndex = currentIndex > 0 ? currentIndex - 1 : galleryItems.length - 1;
+    } else {
+      newIndex = currentIndex < galleryItems.length - 1 ? currentIndex + 1 : 0;
+    }
+
+    setSelectedImage(galleryItems[newIndex]);
+    setLightboxIndex(newIndex);
+  };
+
+  // Masonry layout groups
+  const column1 = galleryItems.filter((_, index) => index % 3 === 0);
+  const column2 = galleryItems.filter((_, index) => index % 3 === 1);
+  const column3 = galleryItems.filter((_, index) => index % 3 === 2);
+
   return (
-    <div className="bg-stone-50 min-h-screen">
-      
-      {/* 1. HERO SECTION */}
-      <div className="relative h-[60vh] min-h-[500px] w-full overflow-hidden">
-        <Image 
-          src="https://images.unsplash.com/photo-1493106641515-6b5631de4bb9?q=80&w=2069&auto=format&fit=crop"
-          alt="Potter shaping clay"
-          fill
-          className="object-cover"
-          priority
-        />
-        <div className="absolute inset-0 bg-stone-900/40"></div>
-        
-        <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-4 animate-in fade-in slide-in-from-bottom-8 duration-1000">
-          <h1 className="font-serif text-5xl md:text-7xl font-bold text-white mb-6 drop-shadow-lg">
-            Art of Earth
-          </h1>
-          <p className="text-xl text-stone-100 max-w-lg mx-auto font-light leading-relaxed drop-shadow-md">
-            Handcrafted imperfection. Inspired by Japan, made locally in Surat.
-          </p>
-          
-          <div className="mt-10 flex gap-4">
-             <a href="#collection" className="bg-white text-stone-900 px-8 py-3 rounded-full font-bold hover:bg-stone-100 transition-colors">
-               View Collection
-             </a>
-             <Link href="/workshops" className="bg-basho-earth/80 backdrop-blur-sm text-white px-8 py-3 rounded-full font-bold hover:bg-basho-earth transition-colors border border-white/20">
-               Book Workshop
-             </Link>
+    <main className="min-h-screen bg-[#FDFBF7] text-stone-800">
+      {/* Hero Section */}
+      <section className="relative bg-gradient-to-b from-white to-[#EDD8B4]/20 pt-32 pb-20 px-4">
+        <div className="max-w-7xl mx-auto text-center">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+          >
+            <span className="text-[#8E5022] uppercase tracking-[0.3em] text-sm font-medium mb-4 inline-block">
+              Visual Stories
+            </span>
+            <h1 className="font-serif text-5xl md:text-7xl text-[#442D1C] mb-6 leading-tight">
+              Through the{" "}
+              <span className="text-[#C85428]">Maker&apos;s Lens</span>
+            </h1>
+            <p className="text-xl text-stone-600 max-w-2xl mx-auto">
+              A glimpse into our studio, processes, and the moments that bring
+              our ceramics to life.
+            </p>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Category Filters */}
+      <section className="px-4 pb-12">
+        <div className="max-w-7xl mx-auto">
+          <div className="overflow-x-auto">
+            <div className="flex gap-2 pb-4">
+              {GALLERY_CATEGORIES.map((category) => (
+                <button
+                  key={category.value}
+                  onClick={() => setSelectedCategory(category.value)}
+                  className={`px-6 py-3 rounded-full font-medium whitespace-nowrap transition-all flex items-center gap-2 flex-shrink-0 ${
+                    selectedCategory === category.value
+                      ? "bg-[#442D1C] text-white shadow-md"
+                      : "bg-white text-stone-600 hover:bg-stone-100 shadow-sm"
+                  }`}
+                >
+                  <span className="text-lg">{category.icon}</span>
+                  {category.label}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
-      </div>
+      </section>
 
-      <div className="max-w-7xl mx-auto px-4 md:px-8 py-12">
-        
-        {/* 2. FILTER BAR (Visual Only for now) */}
-        <div className="flex justify-center -mt-20 relative z-10 mb-20">
-          <div className="bg-white/90 backdrop-blur-md p-2 rounded-2xl shadow-xl shadow-stone-200/50 border border-white/50 flex gap-2 overflow-x-auto max-w-full">
-            {['All', 'Ceramics', 'Workshops', 'Events'].map((filter, idx) => (
-              <button 
-                key={filter}
-                className={`px-6 py-2.5 rounded-xl text-sm font-bold transition-all ${
-                  idx === 0 
-                  ? 'bg-basho-earth text-white shadow-md' 
-                  : 'text-stone-500 hover:bg-stone-100 hover:text-stone-900'
-                }`}
-              >
-                {filter}
-              </button>
-            ))}
-          </div>
-        </div>
+      {/* Gallery Grid - Masonry Layout */}
+      <section className="px-4 pb-32">
+        <div className="max-w-7xl mx-auto">
+          {loading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[1, 2, 3, 4, 5, 6].map((i) => (
+                <div key={i} className="space-y-6">
+                  <div
+                    className="bg-stone-200 rounded-2xl animate-pulse"
+                    style={{ height: Math.random() * 200 + 200 }}
+                  ></div>
+                  <div
+                    className="bg-stone-200 rounded-2xl animate-pulse"
+                    style={{ height: Math.random() * 200 + 200 }}
+                  ></div>
+                </div>
+              ))}
+            </div>
+          ) : galleryItems.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {/* Column 1 */}
+              <div className="space-y-6">
+                {column1.map((item, index) => (
+                  <GalleryItem
+                    key={item.id}
+                    item={item}
+                    index={index * 3}
+                    onOpen={openLightbox}
+                  />
+                ))}
+              </div>
 
-        {/* 3. THE COLLECTION GRID */}
-        <section id="collection" className="mb-24">
-          <SectionHeader title="The Collection" subtitle="Showcase" link="/products" linkText="Shop All" />
-          
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            <GalleryItem 
-              title="Wabi-Sabi Vases" 
-              desc="Hand-thrown stoneware"
-              img="https://images.unsplash.com/photo-1581783342308-f792ca11df53?q=80&w=800&auto=format&fit=crop" 
-            />
-            <GalleryItem 
-              title="Dinner Sets" 
-              desc="Matte glaze finish"
-              img="https://images.unsplash.com/photo-1610701596007-11502861dcfa?q=80&w=800&auto=format&fit=crop" 
-            />
-            <GalleryItem 
-              title="Tea Ceremony" 
-              desc="Raku fired cups"
-              img="https://images.unsplash.com/photo-1578749556920-d78852e77f24?q=80&w=800&auto=format&fit=crop" 
-            />
-            <GalleryItem 
-              title="Sake Sets" 
-              desc="Traditional vessels"
-              img="https://images.unsplash.com/photo-1624821588755-22d76535d552?q=80&w=800&auto=format&fit=crop" 
-            />
-          </div>
-        </section>
+              {/* Column 2 */}
+              <div className="space-y-6">
+                {column2.map((item, index) => (
+                  <GalleryItem
+                    key={item.id}
+                    item={item}
+                    index={index * 3 + 1}
+                    onOpen={openLightbox}
+                  />
+                ))}
+              </div>
 
-        {/* 4. THE PROCESS (Bento Grid) */}
-        <section className="mb-24">
-          <SectionHeader title="The Process" subtitle="Experience" link="/workshops" linkText="Book Class" />
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* Large Card */}
-            <div className="md:col-span-2 relative h-[400px] rounded-2xl overflow-hidden group cursor-pointer">
-              <Image 
-                src="https://images.unsplash.com/photo-1565193566173-092e75df6543?q=80&w=1600"
-                alt="Wheel throwing"
-                fill
-                className="object-cover transition-transform duration-700 group-hover:scale-105"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
-              <div className="absolute bottom-0 left-0 p-8">
-                <h3 className="text-2xl font-serif font-bold text-white mb-2">Wheel Throwing 101</h3>
-                <p className="text-stone-300 max-w-md">Learn the fundamentals of centering and shaping clay on the wheel in our introductory weekend course.</p>
+              {/* Column 3 */}
+              <div className="space-y-6">
+                {column3.map((item, index) => (
+                  <GalleryItem
+                    key={item.id}
+                    item={item}
+                    index={index * 3 + 2}
+                    onOpen={openLightbox}
+                  />
+                ))}
               </div>
             </div>
-
-            {/* Stacked Cards */}
-            <div className="flex flex-col gap-6">
-              <ProcessCard 
-                title="Glazing Techniques" 
-                subtitle="Next Session: Oct 12"
-                img="https://images.unsplash.com/photo-1526404764434-cbf85a0684f8?q=80&w=800"
-              />
-              <ProcessCard 
-                title="Private Group Events" 
-                subtitle="Book for Teams"
-                img="https://images.unsplash.com/photo-1517457373958-b7bdd4587205?q=80&w=800"
-              />
+          ) : (
+            <div className="text-center py-20">
+              <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-stone-100 flex items-center justify-center">
+                <Filter className="w-12 h-12 text-stone-400" />
+              </div>
+              <h3 className="font-serif text-3xl text-[#442D1C] mb-4">
+                No photos found
+              </h3>
+              <p className="text-stone-600 mb-8 max-w-md mx-auto">
+                No gallery items in this category yet. Check other categories or
+                come back soon!
+              </p>
+              <button
+                onClick={() => setSelectedCategory("all")}
+                className="bg-[#8E5022] text-white px-8 py-3 rounded-xl font-medium hover:bg-[#652810] transition-colors"
+              >
+                View All Photos
+              </button>
             </div>
-          </div>
-        </section>
+          )}
+        </div>
+      </section>
 
-        {/* 5. EVENTS & GATHERINGS */}
-        <section className="mb-24">
-          <SectionHeader title="Gatherings" subtitle="Community" />
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <EventCard 
-              date="NOV 15"
-              title="Autumn Tea Ceremony"
-              desc="Experience the tranquility of a traditional tea service using our handcrafted Chawan bowls."
-              img="https://images.unsplash.com/photo-1558521554-4742cb570530?q=80&w=800"
-            />
-            <EventCard 
-              date="DEC 01"
-              title="Winter Market Pop-up"
-              desc="Shop exclusive holiday collections and meet the artisans at our annual winter studio market."
-              img="https://images.unsplash.com/photo-1473188588951-e5d7ed756988?q=80&w=800"
-            />
-            <EventCard 
-              date="JAN 10"
-              title="Artist Talk: Wabi-Sabi"
-              desc="A discussion on the beauty of imperfection with master potter Hiroshi Tanaka."
-              img="https://images.unsplash.com/photo-1561577789-53e7f417da30?q=80&w=800"
-            />
-          </div>
-        </section>
+      {/* Lightbox */}
+      <AnimatePresence>
+        {selectedImage && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4"
+            onClick={closeLightbox}
+          >
+            <div
+              className="relative max-w-6xl w-full max-h-[90vh]"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Close Button */}
+              <button
+                onClick={closeLightbox}
+                className="absolute top-4 right-4 z-10 w-12 h-12 rounded-full bg-black/50 flex items-center justify-center hover:bg-black/70 transition-colors"
+              >
+                <X className="w-6 h-6 text-white" />
+              </button>
 
-        {/* 6. VISIT CTA */}
-        <div className="rounded-3xl bg-stone-900 p-12 md:p-20 text-center relative overflow-hidden">
-          <div className="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/concrete-wall.png')]"></div>
-          <div className="relative z-10">
-            <h2 className="text-3xl md:text-5xl font-serif font-bold text-white mb-6">Feel the Texture</h2>
-            <p className="text-stone-400 mb-10 max-w-xl mx-auto text-lg">
-              Photos can only convey so much. Visit our showroom to hold the pieces and find the one that speaks to your hands.
-            </p>
-            <button className="inline-flex items-center justify-center rounded-full h-14 px-10 bg-basho-clay hover:bg-basho-earth text-white font-bold transition-all shadow-lg hover:scale-105">
-              <MapPin size={20} className="mr-2" />
-              Plan Your Visit
-            </button>
+              {/* Navigation Buttons */}
+              <button
+                onClick={() => navigateLightbox("prev")}
+                className="absolute left-4 top-1/2 transform -translate-y-1/2 z-10 w-12 h-12 rounded-full bg-black/50 flex items-center justify-center hover:bg-black/70 transition-colors"
+              >
+                <ChevronLeft className="w-6 h-6 text-white" />
+              </button>
+
+              <button
+                onClick={() => navigateLightbox("next")}
+                className="absolute right-4 top-1/2 transform -translate-y-1/2 z-10 w-12 h-12 rounded-full bg-black/50 flex items-center justify-center hover:bg-black/70 transition-colors"
+              >
+                <ChevronRight className="w-6 h-6 text-white" />
+              </button>
+
+              {/* Image */}
+              <div className="relative w-full h-full">
+                <img
+                  src={selectedImage.image}
+                  alt={selectedImage.title}
+                  className="w-full h-[90vh] object-contain rounded-lg"
+                />
+
+                {/* Image Info */}
+                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-6 text-white">
+                  <h3 className="font-serif text-2xl mb-2">
+                    {selectedImage.title}
+                  </h3>
+                  {selectedImage.description && (
+                    <p className="text-white/80 mb-2">
+                      {selectedImage.description}
+                    </p>
+                  )}
+                  {selectedImage.Event && (
+                    <p className="text-white/60 text-sm">
+                      From: {selectedImage.Event.title}
+                    </p>
+                  )}
+                  <div className="flex items-center gap-2 mt-3">
+                    <span className="px-3 py-1 bg-white/20 rounded-full text-sm">
+                      {selectedImage.category}
+                    </span>
+                    {selectedImage.featured && (
+                      <span className="px-3 py-1 bg-[#C85428]/80 rounded-full text-sm">
+                        Featured
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Counter */}
+              <div className="absolute bottom-4 right-4 bg-black/50 text-white px-3 py-1.5 rounded-full text-sm">
+                {lightboxIndex + 1} / {galleryItems.length}
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </main>
+  );
+}
+
+function GalleryItem({ item, index, onOpen }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, delay: index * 0.1 }}
+      whileHover={{ y: -4 }}
+      className="relative group cursor-pointer rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300"
+      onClick={() => onOpen(item, index)}
+    >
+      <div className="relative aspect-square">
+        <img
+          src={item.image}
+          alt={item.title}
+          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+
+        {/* Overlay Info */}
+        <div className="absolute inset-0 flex items-end p-6 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+          <div className="text-white">
+            <h3 className="font-medium text-lg mb-1">{item.title}</h3>
+            {item.description && (
+              <p className="text-white/80 text-sm line-clamp-2">
+                {item.description}
+              </p>
+            )}
           </div>
         </div>
 
-      </div>
-    </div>
-  )
-}
+        {/* Zoom Icon */}
+        <div className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+          <ZoomIn className="w-5 h-5 text-white" />
+        </div>
 
-// --- SUB-COMPONENTS for cleanliness ---
-
-function SectionHeader({ title, subtitle, link, linkText }) {
-  return (
-    <div className="flex items-end justify-between border-b border-stone-200 pb-4 mb-8">
-      <div>
-        <span className="text-basho-clay text-sm font-bold uppercase tracking-wider">{subtitle}</span>
-        <h2 className="text-3xl font-serif font-bold text-stone-800 mt-1">{title}</h2>
-      </div>
-      {link && (
-        <Link href={link} className="hidden sm:flex items-center gap-2 text-sm font-medium text-stone-500 hover:text-basho-earth transition-colors">
-          {linkText} <ArrowRight size={16} />
-        </Link>
-      )}
-    </div>
-  )
-}
-
-function GalleryItem({ title, desc, img }) {
-  return (
-    <div className="group cursor-pointer flex flex-col gap-3">
-      <div className="relative overflow-hidden rounded-xl aspect-[3/4] bg-stone-200">
-        <Image 
-          src={img} 
-          alt={title} 
-          fill 
-          className="object-cover transition-transform duration-700 group-hover:scale-110" 
-        />
-        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300"></div>
-        <div className="absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300 translate-y-2 group-hover:translate-y-0">
-          <span className="flex items-center justify-center w-10 h-10 rounded-full bg-white text-stone-900 shadow-lg">
-            <Eye size={20} />
+        {/* Category Badge */}
+        <div className="absolute top-4 left-4">
+          <span className="px-3 py-1.5 bg-white/90 backdrop-blur-sm rounded-full text-sm font-medium text-stone-700">
+            {item.category}
           </span>
         </div>
       </div>
-      <div>
-        <h3 className="text-lg font-bold text-stone-800 group-hover:text-basho-earth transition-colors">{title}</h3>
-        <p className="text-stone-500 text-sm">{desc}</p>
-      </div>
-    </div>
-  )
-}
-
-function ProcessCard({ title, subtitle, img }) {
-  return (
-    <div className="flex-1 group cursor-pointer relative rounded-2xl overflow-hidden min-h-[200px]">
-      <Image 
-        src={img} 
-        alt={title} 
-        fill 
-        className="object-cover transition-transform duration-700 group-hover:scale-105" 
-      />
-      <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
-      <div className="absolute bottom-0 left-0 p-6">
-        <h3 className="text-lg font-bold text-white">{title}</h3>
-        <p className="text-basho-clay text-xs font-bold uppercase mt-1">{subtitle}</p>
-      </div>
-    </div>
-  )
-}
-
-function EventCard({ date, title, desc, img }) {
-  return (
-    <div className="bg-white rounded-2xl overflow-hidden border border-stone-100 shadow-sm hover:shadow-md transition-shadow group flex flex-col h-full">
-      <div className="h-48 overflow-hidden relative bg-stone-200">
-        <Image 
-          src={img} 
-          alt={title} 
-          fill 
-          className="object-cover transition-transform duration-700 group-hover:scale-110" 
-        />
-        <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-md px-3 py-1 rounded-lg text-xs font-bold text-stone-900 flex items-center gap-1 shadow-sm">
-          <Calendar size={12} /> {date}
-        </div>
-      </div>
-      <div className="p-6 flex flex-col gap-3 flex-1">
-        <h3 className="text-xl font-serif font-bold text-stone-800 group-hover:text-basho-earth transition-colors">{title}</h3>
-        <p className="text-stone-500 text-sm leading-relaxed flex-1">{desc}</p>
-        <button className="mt-2 text-basho-earth text-sm font-bold uppercase tracking-wider self-start hover:underline">
-          RSVP Now
-        </button>
-      </div>
-    </div>
-  )
+    </motion.div>
+  );
 }
