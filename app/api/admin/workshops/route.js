@@ -1,61 +1,76 @@
-import { NextResponse } from 'next/server'
-import { prisma } from '@/lib/db'
+import { NextResponse } from "next/server";
+import { prisma } from "@/lib/db";
 
-// 1. GET: Fetch all workshops for the Admin List
+// Helper for Slug
+const createSlug = (title) => {
+  return (
+    title
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/(^-|-$)+/g, "") +
+    "-" +
+    Date.now().toString().slice(-4)
+  );
+};
+
 export async function GET() {
   try {
     const workshops = await prisma.workshop.findMany({
-      include: { sessions: true }, // Include dates to show count
-      orderBy: { createdAt: 'desc' }
-    })
-    return NextResponse.json(workshops)
+      include: {
+        WorkshopSession: {
+          orderBy: { date: "asc" },
+          where: { date: { gte: new Date() } }, // Filter future sessions
+        },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+    return NextResponse.json(workshops);
   } catch (error) {
-    return NextResponse.json({ error: 'Failed to fetch workshops' }, { status: 500 })
+    return NextResponse.json({ error: "Fetch failed" }, { status: 500 });
   }
 }
 
-// 2. POST: Create a new Workshop + Sessions
 export async function POST(req) {
   try {
-    const body = await req.json()
-    
-    // Create the Workshop AND its Sessions in one go
+    const body = await req.json();
+
+    // Create Workshop AND Sessions atomically
     const workshop = await prisma.workshop.create({
       data: {
         title: body.title,
-        slug: body.title.toLowerCase().replace(/ /g, '-'), // Auto-generate slug
+        slug: createSlug(body.title),
         description: body.description,
         price: parseFloat(body.price),
-        image: body.image,
-        gallery: [body.image], // Default gallery to main image for now
-        
+        image: body.image || "",
+        gallery: body.image ? [body.image] : [],
+
         duration: body.duration,
         maxStudents: parseInt(body.maxStudents),
         location: body.location,
         language: body.language,
         level: body.level,
-        
+
         instructorName: body.instructorName,
         instructorRole: body.instructorRole,
-        instructorImage: body.instructorImage,
-        
-        status: 'ACTIVE',
-        
-        // ✨ Magic: Create related sessions automatically
-        sessions: {
-          create: body.sessions.map(session => ({
-            date: new Date(session.date), // Convert string to Date object
-            time: session.time,
-            spotsTotal: parseInt(body.maxStudents),
-            spotsBooked: 0
-          }))
-        }
-      }
-    })
+        instructorImage: body.instructorImage || "",
 
-    return NextResponse.json(workshop)
+        status: "ACTIVE",
+
+        // Relation Magic: Create sessions
+        WorkshopSession: {
+          create: body.sessions.map((s) => ({
+            date: new Date(s.date),
+            time: s.time,
+            spotsTotal: parseInt(body.maxStudents),
+            spotsBooked: 0,
+          })),
+        },
+      },
+    });
+
+    return NextResponse.json(workshop);
   } catch (error) {
-    console.error("Workshop Create Error:", error)
-    return NextResponse.json({ error: 'Error creating workshop' }, { status: 500 })
+    console.error("Workshop Create Error:", error);
+    return NextResponse.json({ error: "Failed to create" }, { status: 500 });
   }
 }

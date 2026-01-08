@@ -1,175 +1,449 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { ArrowLeft, Plus, Trash2 } from 'lucide-react'
-import Link from 'next/link'
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import {
+  ArrowLeft,
+  Plus,
+  Trash2,
+  Calendar,
+  Clock,
+  Upload,
+  MapPin,
+  User,
+  FileText,
+  Layout,
+  Loader2,
+} from "lucide-react";
+import { useToast } from "@/components/ToastProvider"; // <--- 1. ENSURE IMPORT IS HERE
+
+const CLOUDINARY_PRESET = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
+const CLOUDINARY_CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
 
 export default function NewWorkshopPage() {
-  const router = useRouter()
-  const [loading, setLoading] = useState(false)
-  
-  // Form State
+  const router = useRouter();
+  const { addToast } = useToast(); // <--- 2. ADD THIS LINE (This is what was missing)
+
+  const [submitting, setSubmitting] = useState(false);
+  const [uploading, setUploading] = useState(false);
+
   const [formData, setFormData] = useState({
-    title: '',
-    description: '',
-    price: '',
-    image: '',
-    duration: '3 Hours',
-    maxStudents: '8',
-    location: 'Studio A, Surat',
-    language: 'English',
-    level: 'Beginner',
-    instructorName: 'Shivangi',
-    instructorRole: 'Lead Ceramist',
-    instructorImage: '',
-    sessions: [
-      { date: '', time: '10:00 AM' } // Start with one empty session
-    ]
-  })
+    title: "",
+    description: "",
+    price: "",
+    duration: "",
+    maxStudents: "",
+    location: "Studio Bashō, Surat",
+    language: "English/Hindi",
+    level: "Beginner",
+    instructorName: "",
+    instructorRole: "Lead Potter",
+    instructorBio: "",
+    image: "",
+    instructorImage: "",
+    sessions: [{ date: "", time: "10:00 AM", spots: "" }],
+  });
 
-  // Handle Basic Inputs
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value })
-  }
+  // --- Handlers ---
 
-  // Handle Dynamic Session Inputs
-  const handleSessionChange = (index, field, value) => {
-    const newSessions = [...formData.sessions]
-    newSessions[index][field] = value
-    setFormData({ ...formData, sessions: newSessions })
-  }
-
-  const addSession = () => {
-    setFormData({
-      ...formData,
-      sessions: [...formData.sessions, { date: '', time: '10:00 AM' }]
-    })
-  }
-
-  const removeSession = (index) => {
-    const newSessions = formData.sessions.filter((_, i) => i !== index)
-    setFormData({ ...formData, sessions: newSessions })
-  }
-
-  // Submit to API
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    setLoading(true)
-
-    const res = await fetch('/api/admin/workshops', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(formData)
-    })
-
-    if (res.ok) {
-      router.push('/admin/workshops') // Redirect to list
-      router.refresh()
-    } else {
-      alert('Error creating workshop')
-      setLoading(false)
+  const handleImageUpload = async (e, field) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const data = new FormData();
+      data.append("file", file);
+      data.append("upload_preset", CLOUDINARY_PRESET);
+      const res = await fetch(
+        `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
+        { method: "POST", body: data }
+      );
+      const json = await res.json();
+      setFormData((prev) => ({ ...prev, [field]: json.secure_url }));
+      addToast("Image uploaded", "success");
+    } catch (err) {
+      addToast("Upload failed", "error"); // <--- This will now work
+    } finally {
+      setUploading(false);
     }
-  }
+  };
+
+  // ... rest of your component code (handleSessionChange, addSessionRow, etc.) ...
+  const handleSessionChange = (index, field, value) => {
+    const newSessions = [...formData.sessions];
+    newSessions[index][field] = value;
+    setFormData({ ...formData, sessions: newSessions });
+  };
+
+  const addSessionRow = () => {
+    setFormData((prev) => ({
+      ...prev,
+      sessions: [
+        ...prev.sessions,
+        { date: "", time: "10:00 AM", spots: prev.maxStudents },
+      ],
+    }));
+  };
+
+  const removeSessionRow = (index) => {
+    setFormData((prev) => ({
+      ...prev,
+      sessions: prev.sessions.filter((_, i) => i !== index),
+    }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setSubmitting(true);
+    try {
+      const res = await fetch("/api/admin/workshops", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+      if (!res.ok) throw new Error("Failed");
+      addToast("Workshop scheduled successfully!", "success");
+      router.push("/admin/workshops");
+    } catch (error) {
+      addToast("Failed to create workshop", "error");
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   return (
-    <div className="max-w-4xl mx-auto p-8 bg-stone-50 min-h-screen">
-      <Link href="/admin/workshops" className="inline-flex items-center text-stone-500 hover:text-basho-earth mb-8">
-        <ArrowLeft size={18} className="mr-2" /> Back to Workshops
-      </Link>
+    <div className="max-w-5xl mx-auto space-y-6">
+      {/* Header */}
+      <div className="flex items-center gap-4">
+        <button
+          onClick={() => router.back()}
+          className="p-2 hover:bg-[#EDD8B4]/20 rounded-lg text-[#8E5022] transition-colors"
+        >
+          <ArrowLeft size={24} />
+        </button>
+        <div>
+          <h1 className="font-serif text-3xl font-bold text-[#442D1C]">
+            Schedule Workshop
+          </h1>
+          <p className="text-[#8E5022] text-sm">
+            Create a new class and add sessions
+          </p>
+        </div>
+      </div>
 
-      <h1 className="font-serif text-3xl text-stone-800 mb-8">Schedule New Workshop</h1>
+      <form
+        onSubmit={handleSubmit}
+        className="grid grid-cols-1 lg:grid-cols-3 gap-8"
+      >
+        {/* LEFT COLUMN: Main Info */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* 1. Basic Details */}
+          <div className="bg-white p-6 rounded-xl border border-[#EDD8B4] shadow-sm space-y-4">
+            <h3 className="font-serif font-bold text-[#442D1C] flex items-center gap-2 border-b border-[#EDD8B4] pb-2">
+              <Layout size={18} /> Workshop Details
+            </h3>
 
-      <form onSubmit={handleSubmit} className="space-y-8">
-        
-        {/* Section 1: Basic Info */}
-        <div className="bg-white p-6 rounded-2xl border border-stone-200 shadow-sm space-y-6">
-          <h2 className="font-bold text-lg text-stone-800 border-b pb-2">Workshop Details</h2>
-          
-          <div className="grid grid-cols-2 gap-6">
-            <div className="col-span-2">
-              <label className="block text-sm font-medium mb-2">Workshop Title</label>
-              <input required name="title" onChange={handleChange} className="w-full p-3 border rounded-xl" placeholder="e.g. Intro to Wheel Throwing" />
+            <div className="grid md:grid-cols-2 gap-4">
+              <div className="md:col-span-2">
+                <label className="block text-xs font-bold text-[#8E5022] uppercase mb-1">
+                  Title
+                </label>
+                <input
+                  required
+                  type="text"
+                  value={formData.title}
+                  onChange={(e) =>
+                    setFormData({ ...formData, title: e.target.value })
+                  }
+                  className="w-full p-3 bg-[#FDFBF7] border border-[#EDD8B4] rounded-lg focus:ring-1 focus:ring-[#C85428] outline-none"
+                  placeholder="e.g. Intro to Wheel Throwing"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-[#8E5022] uppercase mb-1">
+                  Price (₹)
+                </label>
+                <input
+                  required
+                  type="number"
+                  value={formData.price}
+                  onChange={(e) =>
+                    setFormData({ ...formData, price: e.target.value })
+                  }
+                  className="w-full p-3 bg-[#FDFBF7] border border-[#EDD8B4] rounded-lg"
+                  placeholder="1500"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-[#8E5022] uppercase mb-1">
+                  Max Students
+                </label>
+                <input
+                  required
+                  type="number"
+                  value={formData.maxStudents}
+                  onChange={(e) =>
+                    setFormData({ ...formData, maxStudents: e.target.value })
+                  }
+                  className="w-full p-3 bg-[#FDFBF7] border border-[#EDD8B4] rounded-lg"
+                  placeholder="10"
+                />
+              </div>
+              <div className="md:col-span-2">
+                <label className="block text-xs font-bold text-[#8E5022] uppercase mb-1">
+                  Description
+                </label>
+                <textarea
+                  required
+                  rows={4}
+                  value={formData.description}
+                  onChange={(e) =>
+                    setFormData({ ...formData, description: e.target.value })
+                  }
+                  className="w-full p-3 bg-[#FDFBF7] border border-[#EDD8B4] rounded-lg focus:ring-1 focus:ring-[#C85428] outline-none"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* 2. Schedule / Sessions */}
+          <div className="bg-white p-6 rounded-xl border border-[#EDD8B4] shadow-sm space-y-4">
+            <div className="flex justify-between items-center border-b border-[#EDD8B4] pb-2">
+              <h3 className="font-serif font-bold text-[#442D1C] flex items-center gap-2">
+                <Calendar size={18} /> Session Schedule
+              </h3>
+              <button
+                type="button"
+                onClick={addSessionRow}
+                className="text-xs font-bold text-[#C85428] hover:bg-[#C85428]/10 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1"
+              >
+                <Plus size={14} /> Add Date
+              </button>
             </div>
 
-            <div className="col-span-2">
-              <label className="block text-sm font-medium mb-2">Description</label>
-              <textarea required name="description" onChange={handleChange} rows={4} className="w-full p-3 border rounded-xl" placeholder="Describe the experience..." />
+            <div className="space-y-3">
+              {formData.sessions.map((session, index) => (
+                <div
+                  key={index}
+                  className="flex flex-col md:flex-row gap-3 items-end bg-[#FDFBF7] p-3 rounded-lg border border-[#EDD8B4]/50"
+                >
+                  <div className="flex-1 w-full">
+                    <label className="text-[10px] font-bold text-[#8E5022] uppercase">
+                      Date
+                    </label>
+                    <input
+                      required
+                      type="date"
+                      value={session.date}
+                      onChange={(e) =>
+                        handleSessionChange(index, "date", e.target.value)
+                      }
+                      className="w-full p-2 bg-white border border-[#EDD8B4] rounded-md text-sm"
+                    />
+                  </div>
+                  <div className="w-full md:w-32">
+                    <label className="text-[10px] font-bold text-[#8E5022] uppercase">
+                      Time
+                    </label>
+                    <input
+                      required
+                      type="time"
+                      value={session.time}
+                      onChange={(e) =>
+                        handleSessionChange(index, "time", e.target.value)
+                      }
+                      className="w-full p-2 bg-white border border-[#EDD8B4] rounded-md text-sm"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => removeSessionRow(index)}
+                    className="p-2 text-red-500 hover:bg-red-50 rounded-lg mb-[1px]"
+                  >
+                    <Trash2 size={18} />
+                  </button>
+                </div>
+              ))}
             </div>
+          </div>
 
-            <div>
-              <label className="block text-sm font-medium mb-2">Price (₹)</label>
-              <input required type="number" name="price" onChange={handleChange} className="w-full p-3 border rounded-xl" />
-            </div>
-             
-             {/* Simple Image URL Input for now */}
-            <div>
-              <label className="block text-sm font-medium mb-2">Image URL</label>
-              <input required name="image" onChange={handleChange} className="w-full p-3 border rounded-xl" placeholder="https://..." />
+          {/* 3. Instructor Info */}
+          <div className="bg-white p-6 rounded-xl border border-[#EDD8B4] shadow-sm space-y-4">
+            <h3 className="font-serif font-bold text-[#442D1C] flex items-center gap-2 border-b border-[#EDD8B4] pb-2">
+              <User size={18} /> Instructor
+            </h3>
+            <div className="grid md:grid-cols-2 gap-4">
+              <input
+                type="text"
+                placeholder="Name (e.g. Sarah J.)"
+                value={formData.instructorName}
+                onChange={(e) =>
+                  setFormData({ ...formData, instructorName: e.target.value })
+                }
+                className="p-3 bg-[#FDFBF7] border border-[#EDD8B4] rounded-lg"
+              />
+              <input
+                type="text"
+                placeholder="Role (e.g. Senior Artist)"
+                value={formData.instructorRole}
+                onChange={(e) =>
+                  setFormData({ ...formData, instructorRole: e.target.value })
+                }
+                className="p-3 bg-[#FDFBF7] border border-[#EDD8B4] rounded-lg"
+              />
+
+              {/* Instructor Image Upload */}
+              <div className="md:col-span-2 flex items-center gap-4 bg-[#FDFBF7] p-3 rounded-lg border border-[#EDD8B4]">
+                <div className="w-12 h-12 bg-white rounded-full overflow-hidden border border-[#EDD8B4] flex-shrink-0">
+                  {formData.instructorImage ? (
+                    <img
+                      src={formData.instructorImage}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <User className="w-6 h-6 m-3 text-[#EDD8B4]" />
+                  )}
+                </div>
+                <label className="cursor-pointer bg-white px-4 py-2 border border-[#EDD8B4] rounded-lg text-sm font-medium text-[#442D1C] hover:bg-[#EDD8B4]/20 transition-colors">
+                  Upload Photo
+                  <input
+                    type="file"
+                    className="hidden"
+                    accept="image/*"
+                    onChange={(e) => handleImageUpload(e, "instructorImage")}
+                    disabled={uploading}
+                  />
+                </label>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Section 2: Logistics */}
-        <div className="bg-white p-6 rounded-2xl border border-stone-200 shadow-sm space-y-6">
-          <h2 className="font-bold text-lg text-stone-800 border-b pb-2">Logistics</h2>
-          <div className="grid grid-cols-2 gap-6">
-            <input name="duration" onChange={handleChange} value={formData.duration} className="p-3 border rounded-xl" placeholder="Duration" />
-            <input name="maxStudents" onChange={handleChange} value={formData.maxStudents} className="p-3 border rounded-xl" placeholder="Max Students" />
-            <input name="location" onChange={handleChange} value={formData.location} className="p-3 border rounded-xl" placeholder="Location" />
-            <input name="language" onChange={handleChange} value={formData.language} className="p-3 border rounded-xl" placeholder="Language" />
-          </div>
-        </div>
-
-        {/* Section 3: Sessions (Dynamic Dates) */}
-        <div className="bg-white p-6 rounded-2xl border border-stone-200 shadow-sm space-y-6">
-          <div className="flex justify-between items-center border-b pb-2">
-            <h2 className="font-bold text-lg text-stone-800">Session Dates</h2>
-            <button type="button" onClick={addSession} className="text-sm flex items-center gap-1 text-basho-earth font-medium">
-              <Plus size={16} /> Add Date
-            </button>
-          </div>
-
-          {formData.sessions.map((session, index) => (
-            <div key={index} className="flex gap-4 items-end bg-stone-50 p-4 rounded-xl">
-              <div className="flex-1">
-                <label className="block text-xs font-bold text-stone-500 mb-1">Date</label>
-                <input 
-                  type="date" 
-                  required 
-                  value={session.date}
-                  onChange={(e) => handleSessionChange(index, 'date', e.target.value)}
-                  className="w-full p-2 border rounded-lg" 
-                />
-              </div>
-              <div className="flex-1">
-                <label className="block text-xs font-bold text-stone-500 mb-1">Time</label>
-                <input 
-                  type="text" 
-                  value={session.time}
-                  onChange={(e) => handleSessionChange(index, 'time', e.target.value)}
-                  className="w-full p-2 border rounded-lg" 
-                  placeholder="e.g. 10:00 AM" 
-                />
-              </div>
-              {formData.sessions.length > 1 && (
-                <button type="button" onClick={() => removeSession(index)} className="p-2 text-red-400 hover:text-red-600">
-                  <Trash2 size={20} />
-                </button>
+        {/* RIGHT COLUMN: Sidebar (Image & Meta) */}
+        <div className="space-y-6">
+          {/* Main Image */}
+          <div className="bg-white p-6 rounded-xl border border-[#EDD8B4] shadow-sm space-y-4">
+            <h3 className="font-serif font-bold text-[#442D1C]">Cover Image</h3>
+            <div className="aspect-video bg-[#FDFBF7] rounded-lg border-2 border-dashed border-[#EDD8B4] flex flex-col items-center justify-center overflow-hidden relative group">
+              {formData.image ? (
+                <>
+                  <img
+                    src={formData.image}
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                    <label className="cursor-pointer text-white text-sm font-bold flex items-center gap-2 hover:underline">
+                      <Upload size={16} /> Change
+                      <input
+                        type="file"
+                        className="hidden"
+                        accept="image/*"
+                        onChange={(e) => handleImageUpload(e, "image")}
+                      />
+                    </label>
+                  </div>
+                </>
+              ) : (
+                <label className="cursor-pointer flex flex-col items-center gap-2 text-[#8E5022] w-full h-full justify-center hover:bg-[#EDD8B4]/10 transition-colors">
+                  {uploading ? (
+                    <Loader2 className="animate-spin" />
+                  ) : (
+                    <Upload size={24} />
+                  )}
+                  <span className="text-sm font-medium">Click to Upload</span>
+                  <input
+                    type="file"
+                    className="hidden"
+                    accept="image/*"
+                    onChange={(e) => handleImageUpload(e, "image")}
+                  />
+                </label>
               )}
             </div>
-          ))}
+          </div>
+
+          {/* Quick Details */}
+          <div className="bg-white p-6 rounded-xl border border-[#EDD8B4] shadow-sm space-y-4">
+            <h3 className="font-serif font-bold text-[#442D1C]">
+              Meta Details
+            </h3>
+
+            <div>
+              <label className="text-[10px] font-bold text-[#8E5022] uppercase">
+                Duration
+              </label>
+              <div className="flex items-center gap-2 bg-[#FDFBF7] p-2 rounded-lg border border-[#EDD8B4]">
+                <Clock size={16} className="text-[#C85428]" />
+                <input
+                  type="text"
+                  value={formData.duration}
+                  onChange={(e) =>
+                    setFormData({ ...formData, duration: e.target.value })
+                  }
+                  className="bg-transparent outline-none text-sm w-full"
+                  placeholder="e.g. 2 Hours"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="text-[10px] font-bold text-[#8E5022] uppercase">
+                Level
+              </label>
+              <select
+                value={formData.level}
+                onChange={(e) =>
+                  setFormData({ ...formData, level: e.target.value })
+                }
+                className="w-full p-2 bg-[#FDFBF7] border border-[#EDD8B4] rounded-lg text-sm"
+              >
+                <option>Beginner</option>
+                <option>Intermediate</option>
+                <option>Advanced</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="text-[10px] font-bold text-[#8E5022] uppercase">
+                Location
+              </label>
+              <div className="flex items-center gap-2 bg-[#FDFBF7] p-2 rounded-lg border border-[#EDD8B4]">
+                <MapPin size={16} className="text-[#C85428]" />
+                <input
+                  type="text"
+                  value={formData.location}
+                  onChange={(e) =>
+                    setFormData({ ...formData, location: e.target.value })
+                  }
+                  className="bg-transparent outline-none text-sm w-full"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Actions */}
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={() => router.back()}
+              className="flex-1 py-3 text-[#8E5022] font-medium hover:bg-[#EDD8B4]/20 rounded-xl transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={submitting || uploading}
+              className="flex-1 py-3 bg-[#442D1C] text-[#EDD8B4] font-bold rounded-xl hover:bg-[#652810] shadow-lg transition-all flex items-center justify-center gap-2 disabled:opacity-70"
+            >
+              {submitting ? (
+                <Loader2 className="animate-spin w-5 h-5" />
+              ) : (
+                "Publish Workshop"
+              )}
+            </button>
+          </div>
         </div>
-
-        <button 
-          disabled={loading}    
-          type="submit" 
-          className="w-full bg-basho-earth text-white py-4 rounded-xl font-bold hover:bg-stone-800 transition-colors disabled:opacity-50"
-        >
-          {loading ? 'Publishing...' : 'Publish Workshop'}
-        </button>
-
       </form>
     </div>
-  )
+  );
 }
