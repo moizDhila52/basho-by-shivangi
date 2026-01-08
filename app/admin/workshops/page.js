@@ -1,94 +1,200 @@
-'use client'
+"use client";
 
-import { useEffect, useState } from 'react'
-import Link from 'next/link'
-import { Plus, Calendar, Users, Clock } from 'lucide-react'
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import {
+  Plus,
+  Calendar,
+  Users,
+  Clock,
+  MapPin,
+  MoreVertical,
+  Edit2,
+  Trash2,
+} from "lucide-react";
+import { motion } from "framer-motion";
+import { useToast } from "@/components/ToastProvider";
 
-export default function AdminWorkshops() {
-  const [workshops, setWorkshops] = useState([])
-  const [loading, setLoading] = useState(true)
+export default function AdminWorkshopsPage() {
+  const { addToast } = useToast();
+  const [workshops, setWorkshops] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchWorkshops = async () => {
+    try {
+      const res = await fetch("/api/admin/workshops");
+      if (res.ok) setWorkshops(await res.json());
+    } catch (error) {
+      addToast("Failed to load workshops", "error");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    fetch('/api/admin/workshops')
-      .then(res => res.json())
-      .then(data => {
-        setWorkshops(data)
-        setLoading(false)
-      })
-  }, [])
+    fetchWorkshops();
+  }, []);
 
-  if (loading) return <div className="p-8 text-stone-400">Loading schedule...</div>
+  const handleDelete = async (id) => {
+    if (
+      !confirm("Are you sure? This will delete the workshop and all sessions.")
+    )
+      return;
+    try {
+      const res = await fetch(`/api/admin/workshops/${id}`, {
+        method: "DELETE",
+      });
+      if (res.ok) {
+        setWorkshops((prev) => prev.filter((w) => w.id !== id));
+        addToast("Workshop deleted", "success");
+      }
+    } catch (error) {
+      addToast("Failed to delete", "error");
+    }
+  };
+
+  if (loading)
+    return (
+      <div className="p-10 text-center text-[#8E5022]">Loading schedule...</div>
+    );
 
   return (
-    <div className="p-8 bg-stone-50 min-h-screen">
+    <div className="space-y-8">
       {/* Header */}
-      <div className="flex justify-between items-center mb-8">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="font-serif text-3xl text-stone-800">Workshops</h1>
-          <p className="text-stone-500">Manage your classes and sessions</p>
+          <h1 className="font-serif text-3xl font-bold text-[#442D1C]">
+            Workshops
+          </h1>
+          <p className="text-[#8E5022] mt-1 text-sm">
+            Manage pottery classes and sessions
+          </p>
         </div>
-        <Link 
-          href="/admin/workshops/new" 
-          className="bg-basho-earth text-white px-6 py-3 rounded-xl flex items-center gap-2 hover:bg-stone-800 transition-colors"
+        <Link
+          href="/admin/workshops/new"
+          className="flex items-center gap-2 bg-[#442D1C] text-[#EDD8B4] px-6 py-3 rounded-xl hover:bg-[#652810] transition-all shadow-lg font-medium"
         >
-          <Plus size={20} />
-          Schedule New Workshop
+          <Plus size={20} /> Schedule Workshop
         </Link>
       </div>
 
       {/* Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {workshops.map(workshop => (
-          <div key={workshop.id} className="bg-white rounded-2xl border border-stone-200 overflow-hidden shadow-sm hover:shadow-md transition-all">
-            {/* Image Header */}
-            <div className="relative h-48 bg-stone-200">
-              <img src={workshop.image} alt={workshop.title} className="w-full h-full object-cover" />
-              <div className="absolute top-4 right-4 bg-white/90 backdrop-blur px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">
-                {workshop.status}
-              </div>
-            </div>
-
-            {/* Content */}
-            <div className="p-6">
-              <h3 className="font-serif text-xl font-bold text-stone-800 mb-2">{workshop.title}</h3>
-              <div className="flex flex-wrap gap-4 text-sm text-stone-500 mb-6">
-                <div className="flex items-center gap-1">
-                  <Clock size={16} className="text-basho-clay" />
-                  {workshop.duration}
-                </div>
-                <div className="flex items-center gap-1">
-                  <Users size={16} className="text-basho-clay" />
-                  Max {workshop.maxStudents}
-                </div>
-              </div>
-
-              {/* Sessions List */}
-              <div className="bg-stone-50 rounded-xl p-4 mb-4">
-                <h4 className="text-xs font-bold text-stone-400 uppercase tracking-wider mb-3">Upcoming Sessions</h4>
-                <div className="space-y-2">
-                  {workshop.sessions.length > 0 ? workshop.sessions.map(session => (
-                    <div key={session.id} className="flex justify-between text-sm">
-                      <span className="font-medium text-stone-700">
-                        {new Date(session.date).toLocaleDateString()}
-                      </span>
-                      <span className="text-stone-500">{session.time}</span>
-                    </div>
-                  )) : (
-                    <p className="text-xs text-stone-400 italic">No dates scheduled</p>
-                  )}
+      {workshops.length === 0 ? (
+        <div className="text-center p-20 bg-white rounded-2xl border border-[#EDD8B4] border-dashed">
+          <Calendar className="w-16 h-16 text-[#EDD8B4] mx-auto mb-4" />
+          <h3 className="text-[#442D1C] font-bold text-lg">
+            No workshops scheduled
+          </h3>
+          <p className="text-[#8E5022] mb-6">
+            Create your first class to get started.
+          </p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {workshops.map((workshop) => (
+            <motion.div
+              key={workshop.id}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="group bg-white rounded-2xl border border-[#EDD8B4] overflow-hidden hover:shadow-xl transition-all duration-300 flex flex-col"
+            >
+              {/* Image */}
+              <div className="relative h-48 bg-[#FDFBF7] overflow-hidden">
+                <img
+                  src={workshop.image || "/placeholder-workshop.jpg"}
+                  alt={workshop.title}
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                />
+                <div className="absolute top-4 right-4 flex gap-2">
+                  <span
+                    className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider backdrop-blur-md shadow-sm ${
+                      workshop.status === "ACTIVE"
+                        ? "bg-green-100/90 text-green-800"
+                        : "bg-gray-100/90 text-gray-800"
+                    }`}
+                  >
+                    {workshop.status}
+                  </span>
                 </div>
               </div>
 
-              <div className="flex justify-between items-center pt-4 border-t border-stone-100">
-                <span className="font-bold text-lg">₹{workshop.price}</span>
-                <button className="text-sm font-medium text-basho-earth hover:underline">
-                  Edit Details
-                </button>
+              {/* Content */}
+              <div className="p-6 flex-1 flex flex-col">
+                <div className="flex justify-between items-start mb-2">
+                  <h3 className="font-serif text-xl font-bold text-[#442D1C] line-clamp-1">
+                    {workshop.title}
+                  </h3>
+                  <span className="font-bold text-[#C85428]">
+                    ₹{workshop.price}
+                  </span>
+                </div>
+
+                <div className="flex flex-wrap gap-y-2 gap-x-4 text-sm text-[#8E5022] mb-6">
+                  <div className="flex items-center gap-1.5">
+                    <Clock size={14} /> {workshop.duration}
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <Users size={14} /> Max {workshop.maxStudents}
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <MapPin size={14} /> {workshop.location}
+                  </div>
+                </div>
+
+                {/* Sessions Preview */}
+                <div className="bg-[#FDFBF7] rounded-xl p-4 mb-6 border border-[#EDD8B4]/50 flex-1">
+                  <h4 className="text-[10px] font-bold text-[#8E5022] uppercase tracking-wider mb-3 flex items-center justify-between">
+                    <span>Upcoming Sessions</span>
+                    <span className="bg-[#EDD8B4] text-[#442D1C] px-1.5 py-0.5 rounded text-[10px]">
+                      {workshop.WorkshopSession?.length || 0}
+                    </span>
+                  </h4>
+                  <div className="space-y-2 max-h-24 overflow-y-auto custom-scrollbar">
+                    {workshop.WorkshopSession?.length > 0 ? (
+                      workshop.WorkshopSession.slice(0, 3).map((session) => (
+                        <div
+                          key={session.id}
+                          className="flex justify-between text-sm items-center"
+                        >
+                          <span className="font-medium text-[#442D1C]">
+                            {new Date(session.date).toLocaleDateString(
+                              undefined,
+                              { day: "numeric", month: "short" }
+                            )}
+                          </span>
+                          <span className="text-[#8E5022]/80 text-xs bg-white px-2 py-0.5 rounded border border-[#EDD8B4]/50">
+                            {session.time}
+                          </span>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-xs text-[#8E5022]/50 italic">
+                        No dates scheduled
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div className="flex gap-3 pt-4 border-t border-[#EDD8B4]/30 mt-auto">
+                  <Link
+                    href={`/admin/workshops/${workshop.id}`}
+                    className="flex-1 flex items-center justify-center gap-2 bg-[#FDFBF7] hover:bg-[#EDD8B4]/20 border border-[#EDD8B4] text-[#442D1C] py-2 rounded-lg text-sm font-medium transition-colors"
+                  >
+                    <Edit2 size={16} /> Edit
+                  </Link>
+                  <button
+                    onClick={() => handleDelete(workshop.id)}
+                    className="px-3 py-2 bg-red-50 hover:bg-red-100 text-red-600 border border-red-100 rounded-lg transition-colors"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
               </div>
-            </div>
-          </div>
-        ))}
-      </div>
+            </motion.div>
+          ))}
+        </div>
+      )}
     </div>
-  )
+  );
 }

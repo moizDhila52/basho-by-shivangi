@@ -212,6 +212,17 @@ model Review {
   @@index([userId])
 }
 
+model StoreSettings {
+  id                    String   @id @default(uuid())
+  shippingBaseRate      Float    @default(50.00)
+  shippingPerKgRate     Float    @default(40.00)
+  freeShippingThreshold Float    @default(5000.00)
+  gstPercent            Float    @default(12.0)
+  address               String?
+  gstin                 String?
+  updatedAt             DateTime @updatedAt
+}
+
 model User {
   id           String         @id @default(uuid())
   email        String         @unique
@@ -225,7 +236,11 @@ model User {
   otpExpiresAt DateTime?
   passwordHash String?
   phone        String?
+<<<<<<< HEAD
   isSubscribed   Boolean        @default(false)
+=======
+  isSubscribed Boolean        @default(false)
+>>>>>>> 459e171c455e1ad05b081b59845cc1fc798221ec
   Address      Address[]
   CustomOrder  CustomOrder[]
   Order        Order[]
@@ -431,6 +446,7 @@ model CustomOrder {
   @@index([userId])
 }
 
+<<<<<<< HEAD
 model StoreSettings {
   id                    String   @id
   shippingBaseRate      Float    @default(50.00)
@@ -440,6 +456,15 @@ model StoreSettings {
   address               String?
   gstin                 String?
   updatedAt             DateTime
+=======
+model NewsletterSubscriber {
+  id        String   @id
+  email     String   @unique
+  isActive  Boolean  @default(true)
+  source    String   @default("checkout")
+  createdAt DateTime @default(now())
+  updatedAt DateTime
+>>>>>>> 459e171c455e1ad05b081b59845cc1fc798221ec
 }
 
 enum EventType {
@@ -504,6 +529,7 @@ enum CustomOrderStatus {
   SHIPPED
   CANCELLED
 }
+<<<<<<< HEAD
 
 
 model NewsletterSubscriber {
@@ -514,3 +540,5 @@ model NewsletterSubscriber {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+=======
+>>>>>>> 459e171c455e1ad05b081b59845cc1fc798221ec

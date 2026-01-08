@@ -3,12 +3,16 @@ const nextConfig = {
   images: {
     remotePatterns: [
       {
-        protocol: 'https',
-        hostname: 'images.unsplash.com',
+        protocol: "https",
+        hostname: "res.cloudinary.com",
+        port: "",
+        pathname: "/**",
       },
       {
-        protocol: 'https',
-        hostname: 'plus.unsplash.com',
+        protocol: "https",
+        hostname: "images.unsplash.com", // Optional: if you use Unsplash placeholders
+        port: "",
+        pathname: "/**",
       },
     ],
   },

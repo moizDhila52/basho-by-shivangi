@@ -14,9 +14,25 @@ import {
   Twitter,
   Send,
   Check,
+  Loader2,
+  ArrowRight,
 } from "lucide-react";
+import { motion } from "framer-motion";
+import { useToast } from "@/components/ToastProvider"; // Ensure you have this wrapped in layout
 
-const ConnectPage = () => {
+// Brand Colors
+const COLORS = {
+  dark: "#442D1C",
+  brown: "#652810",
+  clay: "#8E5022",
+  terracotta: "#C85428",
+  cream: "#EDD8B4",
+  background: "#FDFBF7",
+};
+
+export default function ConnectPage() {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const [formData, setFormData] = useState({
     companyName: "",
     contactName: "",
@@ -29,58 +45,58 @@ const ConnectPage = () => {
     message: "",
   });
 
-  const [submitted, setSubmitted] = useState(false);
-
   const services = [
     {
-      icon: <Gift size={40} />,
+      icon: <Gift className="w-8 h-8" />,
       title: "Corporate Gifting",
-      description:
-        "Elevate your brand with bespoke ceramic gifts that leave a lasting impression. Each piece is carefully crafted to reflect your company's values and aesthetic.",
-      features: [
-        "Custom branding",
-        "Bulk orders",
-        "Premium packaging",
-        "Personalized designs",
-      ],
+      description: "Bespoke ceramic gifts that reflect your company's values.",
+      features: ["Custom branding", "Bulk orders", "Premium packaging"],
     },
     {
-      icon: <Users size={40} />,
+      icon: <Users className="w-8 h-8" />,
       title: "Team Workshops",
-      description:
-        "Foster creativity and collaboration through hands-on pottery workshops. Perfect for team building, creative retreats, and professional development.",
+      description: "Hands-on pottery workshops for creative team building.",
       features: [
         "On-site or studio",
-        "2-4 hour sessions",
         "All materials included",
         "Expert instruction",
       ],
     },
     {
-      icon: <Handshake size={40} />,
-      title: "Brand Collaborations",
-      description:
-        "Partner with us to create unique product lines, limited editions, or co-branded collections that align with your brand identity and vision.",
+      icon: <Handshake className="w-8 h-8" />,
+      title: "Collaborations",
+      description: "Co-branded collections aligned with your brand identity.",
       features: [
         "Product development",
-        "Co-branding opportunities",
         "Marketing support",
-        "Exclusive partnerships",
+        "Exclusive designs",
       ],
     },
   ];
 
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = () => {
-    setSubmitted(true);
-    setTimeout(() => {
-      setSubmitted(false);
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+
+    try {
+      const res = await fetch("/api/inquiries", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+
+      if (!res.ok) throw new Error("Submission failed");
+
+      addToast(
+        "Inquiry sent successfully! We will contact you soon.",
+        "success"
+      );
+
+      // Reset Form
       setFormData({
         companyName: "",
         contactName: "",
@@ -92,919 +108,308 @@ const ConnectPage = () => {
         timeline: "",
         message: "",
       });
-    }, 3000);
+    } catch (error) {
+      console.error(error);
+      addToast("Something went wrong. Please try again.", "error");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
     <div
-      style={{
-        backgroundColor: "#F5F1E8",
-        minHeight: "100vh",
-        fontFamily: "system-ui, -apple-system, sans-serif",
-      }}
+      className="min-h-screen font-sans selection:bg-[#C85428] selection:text-white"
+      style={{ backgroundColor: COLORS.background }}
     >
-      {/* Hero Section */}
-      <section
-        style={{
-          background: "linear-gradient(135deg, #6B4F3A 0%, #556B2F 100%)",
-          padding: "120px 24px 80px",
-          textAlign: "center",
-          color: "#F5F1E8",
-        }}
-      >
-        <h1
-          style={{
-            fontSize: "56px",
-            fontWeight: "300",
-            marginBottom: "24px",
-            letterSpacing: "2px",
-          }}
-        >
-          Let's Create Together
-        </h1>
-        <p
-          style={{
-            fontSize: "20px",
-            maxWidth: "700px",
-            margin: "0 auto",
-            opacity: 0.9,
-            lineHeight: "1.6",
-          }}
-        >
-          Explore partnerships, corporate solutions, and collaborative
-          opportunities that bring artistry to your business
-        </p>
-      </section>
-
-      {/* Corporate Services */}
-      <section
-        style={{
-          padding: "100px 24px",
-          maxWidth: "1200px",
-          margin: "0 auto",
-        }}
-      >
-        <div
-          style={{
-            textAlign: "center",
-            marginBottom: "70px",
-          }}
-        >
-          <h2
-            style={{
-              fontSize: "42px",
-              fontWeight: "300",
-              color: "#6B4F3A",
-              marginBottom: "16px",
-              letterSpacing: "1px",
-            }}
+      {/* --- HERO SECTION --- */}
+      <section className="relative overflow-hidden pt-32 pb-24 px-6">
+        <div className="max-w-4xl mx-auto text-center relative z-10">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
           >
-            Corporate Services
-          </h2>
-          <p
-            style={{
-              fontSize: "18px",
-              color: "#9C9282",
-              maxWidth: "600px",
-              margin: "0 auto",
-            }}
-          >
-            Tailored solutions for businesses seeking unique, handcrafted
-            experiences
-          </p>
+            <span className="text-[#C85428] font-bold tracking-widest text-sm uppercase mb-4 block">
+              Partnerships & Inquiries
+            </span>
+            <h1 className="font-serif text-5xl md:text-7xl text-[#442D1C] mb-6 leading-tight">
+              Let's Create <br />{" "}
+              <span className="italic text-[#8E5022]">Together.</span>
+            </h1>
+            <p className="text-[#652810] text-lg md:text-xl max-w-2xl mx-auto leading-relaxed">
+              Explore partnerships, corporate solutions, and collaborative
+              opportunities that bring artisanal craftsmanship to your business.
+            </p>
+          </motion.div>
         </div>
 
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
-            gap: "32px",
-          }}
-        >
-          {services.map((service, index) => (
-            <div
-              key={index}
-              style={{
-                backgroundColor: "white",
-                borderRadius: "20px",
-                padding: "48px 36px",
-                boxShadow: "0 10px 40px rgba(107, 79, 58, 0.08)",
-                transition: "all 0.3s",
-                cursor: "pointer",
-                border: "2px solid transparent",
-              }}
-              onMouseOver={(e) => {
-                e.currentTarget.style.transform = "translateY(-8px)";
-                e.currentTarget.style.boxShadow =
-                  "0 20px 60px rgba(107, 79, 58, 0.15)";
-                e.currentTarget.style.borderColor = "#E6D5B8";
-              }}
-              onMouseOut={(e) => {
-                e.currentTarget.style.transform = "translateY(0)";
-                e.currentTarget.style.boxShadow =
-                  "0 10px 40px rgba(107, 79, 58, 0.08)";
-                e.currentTarget.style.borderColor = "transparent";
-              }}
+        {/* Decorative Background Elements */}
+        <div className="absolute top-0 left-0 w-full h-full overflow-hidden opacity-10 pointer-events-none">
+          <div className="absolute -top-20 -left-20 w-96 h-96 bg-[#EDD8B4] rounded-full blur-3xl"></div>
+          <div className="absolute top-40 right-0 w-72 h-72 bg-[#C85428] rounded-full blur-3xl"></div>
+        </div>
+      </section>
+
+      {/* --- SERVICES GRID --- */}
+      <section className="py-20 px-6 max-w-7xl mx-auto">
+        <div className="grid md:grid-cols-3 gap-8">
+          {services.map((s, i) => (
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: i * 0.1 }}
+              className="bg-white p-8 rounded-2xl border border-[#EDD8B4] hover:border-[#C85428] hover:shadow-xl transition-all duration-300 group"
             >
-              <div
-                style={{
-                  backgroundColor: "#E6D5B8",
-                  width: "80px",
-                  height: "80px",
-                  borderRadius: "50%",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  color: "#6B4F3A",
-                  marginBottom: "24px",
-                }}
-              >
-                {service.icon}
+              <div className="w-16 h-16 rounded-full bg-[#FDFBF7] flex items-center justify-center text-[#8E5022] group-hover:bg-[#C85428] group-hover:text-white transition-colors mb-6">
+                {s.icon}
               </div>
-
-              <h3
-                style={{
-                  fontSize: "26px",
-                  fontWeight: "500",
-                  color: "#6B4F3A",
-                  marginBottom: "16px",
-                }}
-              >
-                {service.title}
+              <h3 className="font-serif text-2xl text-[#442D1C] mb-3">
+                {s.title}
               </h3>
-
-              <p
-                style={{
-                  fontSize: "16px",
-                  color: "#9C9282",
-                  lineHeight: "1.7",
-                  marginBottom: "24px",
-                }}
-              >
-                {service.description}
+              <p className="text-[#652810]/80 mb-6 leading-relaxed">
+                {s.description}
               </p>
-
-              <ul
-                style={{
-                  listStyle: "none",
-                  padding: 0,
-                  margin: 0,
-                }}
-              >
-                {service.features.map((feature, fIndex) => (
+              <ul className="space-y-2">
+                {s.features.map((f, idx) => (
                   <li
-                    key={fIndex}
-                    style={{
-                      fontSize: "15px",
-                      color: "#8B7355",
-                      marginBottom: "12px",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "12px",
-                    }}
+                    key={idx}
+                    className="flex items-center gap-2 text-sm text-[#8E5022]"
                   >
-                    <div
-                      style={{
-                        width: "6px",
-                        height: "6px",
-                        backgroundColor: "#8B7355",
-                        borderRadius: "50%",
-                      }}
-                    />
-                    {feature}
+                    <div className="w-1.5 h-1.5 rounded-full bg-[#C85428]" />
+                    {f}
                   </li>
                 ))}
               </ul>
-            </div>
+            </motion.div>
           ))}
         </div>
       </section>
 
-      {/* Corporate Inquiry Form */}
-      <section
-        style={{
-          padding: "100px 24px",
-          backgroundColor: "#E6D5B8",
-        }}
-      >
-        <div
-          style={{
-            maxWidth: "800px",
-            margin: "0 auto",
-          }}
-        >
-          <div
-            style={{
-              textAlign: "center",
-              marginBottom: "60px",
-            }}
-          >
-            <h2
-              style={{
-                fontSize: "42px",
-                fontWeight: "300",
-                color: "#6B4F3A",
-                marginBottom: "16px",
-                letterSpacing: "1px",
-              }}
-            >
+      {/* --- INQUIRY FORM SECTION --- */}
+      <section className="py-20 px-6">
+        <div className="max-w-6xl mx-auto bg-white rounded-3xl shadow-2xl overflow-hidden border border-[#EDD8B4] flex flex-col md:flex-row">
+          {/* Left: Contact Info */}
+          <div className="md:w-1/3 bg-[#442D1C] text-[#EDD8B4] p-10 md:p-14 flex flex-col justify-between relative overflow-hidden">
+            <div className="relative z-10">
+              <h2 className="font-serif text-3xl mb-6 text-white">
+                Get in Touch
+              </h2>
+              <p className="mb-10 text-white/80">
+                Prefer to speak directly? Reach out to our corporate team via
+                email or visit our studio.
+              </p>
+
+              <div className="space-y-6">
+                <div className="flex items-start gap-4">
+                  <Mail className="w-6 h-6 text-[#C85428] mt-1" />
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-wider text-white/50">
+                      Email
+                    </p>
+                    <a
+                      href="mailto:corporate@basho.com"
+                      className="text-lg hover:text-white transition-colors"
+                    >
+                      corporate@basho.com
+                    </a>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-4">
+                  <Phone className="w-6 h-6 text-[#C85428] mt-1" />
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-wider text-white/50">
+                      Phone
+                    </p>
+                    <p className="text-lg">+91 98765 43210</p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-4">
+                  <MapPin className="w-6 h-6 text-[#C85428] mt-1" />
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-wider text-white/50">
+                      Studio
+                    </p>
+                    <p className="text-lg">
+                      123 Artisan Lane,
+                      <br />
+                      Surat, Gujarat
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Socials */}
+            <div className="relative z-10 mt-12 pt-12 border-t border-white/10">
+              <div className="flex gap-4">
+                {[Instagram, Facebook, Linkedin, Twitter].map((Icon, i) => (
+                  <a
+                    key={i}
+                    href="#"
+                    className="p-2 bg-white/5 rounded-lg hover:bg-[#C85428] hover:text-white transition-colors"
+                  >
+                    <Icon size={20} />
+                  </a>
+                ))}
+              </div>
+            </div>
+
+            {/* Decoration */}
+            <div className="absolute bottom-0 right-0 w-64 h-64 bg-[#C85428] rounded-full blur-[100px] opacity-20 pointer-events-none"></div>
+          </div>
+
+          {/* Right: Form */}
+          <div className="md:w-2/3 p-10 md:p-14 bg-white">
+            <h2 className="font-serif text-3xl text-[#442D1C] mb-8">
               Start a Conversation
             </h2>
-            <p
-              style={{
-                fontSize: "18px",
-                color: "#6B4F3A",
-                opacity: 0.8,
-              }}
-            >
-              Tell us about your project and we'll craft a solution together
-            </p>
-          </div>
-
-          <div
-            style={{
-              backgroundColor: "white",
-              borderRadius: "24px",
-              padding: "56px",
-              boxShadow: "0 20px 60px rgba(107, 79, 58, 0.1)",
-            }}
-          >
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
-                gap: "24px",
-                marginBottom: "24px",
-              }}
-            >
-              <div>
-                <label
-                  style={{
-                    display: "block",
-                    fontSize: "14px",
-                    fontWeight: "500",
-                    color: "#6B4F3A",
-                    marginBottom: "8px",
-                    letterSpacing: "0.5px",
-                  }}
-                >
-                  Company Name *
-                </label>
-                <input
-                  type="text"
-                  name="companyName"
-                  value={formData.companyName}
-                  onChange={handleChange}
-                  style={{
-                    width: "100%",
-                    padding: "14px 16px",
-                    borderRadius: "12px",
-                    border: "2px solid #E6D5B8",
-                    fontSize: "15px",
-                    outline: "none",
-                    transition: "border-color 0.3s",
-                    boxSizing: "border-box",
-                  }}
-                  onFocus={(e) => (e.target.style.borderColor = "#8B7355")}
-                  onBlur={(e) => (e.target.style.borderColor = "#E6D5B8")}
-                />
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="grid md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-[#8E5022] uppercase tracking-wider">
+                    Company Name *
+                  </label>
+                  <input
+                    required
+                    name="companyName"
+                    value={formData.companyName}
+                    onChange={handleChange}
+                    className="w-full bg-[#FDFBF7] border border-[#EDD8B4] rounded-xl p-3 focus:ring-2 focus:ring-[#C85428] focus:border-transparent outline-none transition-all text-[#442D1C]"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-[#8E5022] uppercase tracking-wider">
+                    Contact Person *
+                  </label>
+                  <input
+                    required
+                    name="contactName"
+                    value={formData.contactName}
+                    onChange={handleChange}
+                    className="w-full bg-[#FDFBF7] border border-[#EDD8B4] rounded-xl p-3 focus:ring-2 focus:ring-[#C85428] focus:border-transparent outline-none transition-all text-[#442D1C]"
+                  />
+                </div>
               </div>
 
-              <div>
-                <label
-                  style={{
-                    display: "block",
-                    fontSize: "14px",
-                    fontWeight: "500",
-                    color: "#6B4F3A",
-                    marginBottom: "8px",
-                    letterSpacing: "0.5px",
-                  }}
-                >
-                  Contact Name *
-                </label>
-                <input
-                  type="text"
-                  name="contactName"
-                  value={formData.contactName}
-                  onChange={handleChange}
-                  style={{
-                    width: "100%",
-                    padding: "14px 16px",
-                    borderRadius: "12px",
-                    border: "2px solid #E6D5B8",
-                    fontSize: "15px",
-                    outline: "none",
-                    transition: "border-color 0.3s",
-                    boxSizing: "border-box",
-                  }}
-                  onFocus={(e) => (e.target.style.borderColor = "#8B7355")}
-                  onBlur={(e) => (e.target.style.borderColor = "#E6D5B8")}
-                />
-              </div>
-            </div>
-
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
-                gap: "24px",
-                marginBottom: "24px",
-              }}
-            >
-              <div>
-                <label
-                  style={{
-                    display: "block",
-                    fontSize: "14px",
-                    fontWeight: "500",
-                    color: "#6B4F3A",
-                    marginBottom: "8px",
-                    letterSpacing: "0.5px",
-                  }}
-                >
-                  Email *
-                </label>
-                <input
-                  type="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  style={{
-                    width: "100%",
-                    padding: "14px 16px",
-                    borderRadius: "12px",
-                    border: "2px solid #E6D5B8",
-                    fontSize: "15px",
-                    outline: "none",
-                    transition: "border-color 0.3s",
-                    boxSizing: "border-box",
-                  }}
-                  onFocus={(e) => (e.target.style.borderColor = "#8B7355")}
-                  onBlur={(e) => (e.target.style.borderColor = "#E6D5B8")}
-                />
+              <div className="grid md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-[#8E5022] uppercase tracking-wider">
+                    Email Address *
+                  </label>
+                  <input
+                    required
+                    type="email"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleChange}
+                    className="w-full bg-[#FDFBF7] border border-[#EDD8B4] rounded-xl p-3 focus:ring-2 focus:ring-[#C85428] focus:border-transparent outline-none transition-all text-[#442D1C]"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-[#8E5022] uppercase tracking-wider">
+                    Phone Number
+                  </label>
+                  <input
+                    type="tel"
+                    name="phone"
+                    value={formData.phone}
+                    onChange={handleChange}
+                    className="w-full bg-[#FDFBF7] border border-[#EDD8B4] rounded-xl p-3 focus:ring-2 focus:ring-[#C85428] focus:border-transparent outline-none transition-all text-[#442D1C]"
+                  />
+                </div>
               </div>
 
-              <div>
-                <label
-                  style={{
-                    display: "block",
-                    fontSize: "14px",
-                    fontWeight: "500",
-                    color: "#6B4F3A",
-                    marginBottom: "8px",
-                    letterSpacing: "0.5px",
-                  }}
-                >
-                  Phone
-                </label>
-                <input
-                  type="tel"
-                  name="phone"
-                  value={formData.phone}
-                  onChange={handleChange}
-                  style={{
-                    width: "100%",
-                    padding: "14px 16px",
-                    borderRadius: "12px",
-                    border: "2px solid #E6D5B8",
-                    fontSize: "15px",
-                    outline: "none",
-                    transition: "border-color 0.3s",
-                    boxSizing: "border-box",
-                  }}
-                  onFocus={(e) => (e.target.style.borderColor = "#8B7355")}
-                  onBlur={(e) => (e.target.style.borderColor = "#E6D5B8")}
-                />
-              </div>
-            </div>
-
-            <div style={{ marginBottom: "24px" }}>
-              <label
-                style={{
-                  display: "block",
-                  fontSize: "14px",
-                  fontWeight: "500",
-                  color: "#6B4F3A",
-                  marginBottom: "8px",
-                  letterSpacing: "0.5px",
-                }}
-              >
-                Service Interested In *
-              </label>
-              <select
-                name="service"
-                value={formData.service}
-                onChange={handleChange}
-                style={{
-                  width: "100%",
-                  padding: "14px 16px",
-                  borderRadius: "12px",
-                  border: "2px solid #E6D5B8",
-                  fontSize: "15px",
-                  outline: "none",
-                  transition: "border-color 0.3s",
-                  backgroundColor: "white",
-                  cursor: "pointer",
-                  boxSizing: "border-box",
-                }}
-                onFocus={(e) => (e.target.style.borderColor = "#8B7355")}
-                onBlur={(e) => (e.target.style.borderColor = "#E6D5B8")}
-              >
-                <option value="">Select a service</option>
-                <option value="corporate-gifting">Corporate Gifting</option>
-                <option value="team-workshops">Team Workshops</option>
-                <option value="brand-collaboration">Brand Collaboration</option>
-                <option value="other">Other</option>
-              </select>
-            </div>
-
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
-                gap: "24px",
-                marginBottom: "24px",
-              }}
-            >
-              <div>
-                <label
-                  style={{
-                    display: "block",
-                    fontSize: "14px",
-                    fontWeight: "500",
-                    color: "#6B4F3A",
-                    marginBottom: "8px",
-                    letterSpacing: "0.5px",
-                  }}
-                >
-                  Team Size / Quantity
-                </label>
-                <input
-                  type="text"
-                  name="teamSize"
-                  value={formData.teamSize}
-                  onChange={handleChange}
-                  placeholder="e.g., 20 people or 100 units"
-                  style={{
-                    width: "100%",
-                    padding: "14px 16px",
-                    borderRadius: "12px",
-                    border: "2px solid #E6D5B8",
-                    fontSize: "15px",
-                    outline: "none",
-                    transition: "border-color 0.3s",
-                    boxSizing: "border-box",
-                  }}
-                  onFocus={(e) => (e.target.style.borderColor = "#8B7355")}
-                  onBlur={(e) => (e.target.style.borderColor = "#E6D5B8")}
-                />
+              <div className="grid md:grid-cols-3 gap-6">
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-[#8E5022] uppercase tracking-wider">
+                    Service
+                  </label>
+                  <select
+                    name="service"
+                    value={formData.service}
+                    onChange={handleChange}
+                    className="w-full bg-[#FDFBF7] border border-[#EDD8B4] rounded-xl p-3 focus:ring-2 focus:ring-[#C85428] outline-none text-[#442D1C] appearance-none cursor-pointer"
+                  >
+                    <option value="">Select...</option>
+                    <option value="Corporate Gifting">Corporate Gifting</option>
+                    <option value="Team Workshop">Team Workshop</option>
+                    <option value="Brand Collaboration">Collaboration</option>
+                    <option value="Bulk Order">Bulk Order</option>
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-[#8E5022] uppercase tracking-wider">
+                    Budget
+                  </label>
+                  <select
+                    name="budget"
+                    value={formData.budget}
+                    onChange={handleChange}
+                    className="w-full bg-[#FDFBF7] border border-[#EDD8B4] rounded-xl p-3 focus:ring-2 focus:ring-[#C85428] outline-none text-[#442D1C] appearance-none cursor-pointer"
+                  >
+                    <option value="">Select...</option>
+                    <option value="Under 50k">Under ₹50k</option>
+                    <option value="50k - 1L">₹50k - ₹1L</option>
+                    <option value="1L - 5L">₹1L - ₹5L</option>
+                    <option value="5L+">₹5L+</option>
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-[#8E5022] uppercase tracking-wider">
+                    Timeline
+                  </label>
+                  <select
+                    name="timeline"
+                    value={formData.timeline}
+                    onChange={handleChange}
+                    className="w-full bg-[#FDFBF7] border border-[#EDD8B4] rounded-xl p-3 focus:ring-2 focus:ring-[#C85428] outline-none text-[#442D1C] appearance-none cursor-pointer"
+                  >
+                    <option value="">Select...</option>
+                    <option value="Urgent">Urgent (2 weeks)</option>
+                    <option value="1 Month">1 Month</option>
+                    <option value="Flexible">Flexible</option>
+                  </select>
+                </div>
               </div>
 
-              <div>
-                <label
-                  style={{
-                    display: "block",
-                    fontSize: "14px",
-                    fontWeight: "500",
-                    color: "#6B4F3A",
-                    marginBottom: "8px",
-                    letterSpacing: "0.5px",
-                  }}
-                >
-                  Budget Range
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-[#8E5022] uppercase tracking-wider">
+                  Message *
                 </label>
-                <select
-                  name="budget"
-                  value={formData.budget}
+                <textarea
+                  required
+                  name="message"
+                  value={formData.message}
                   onChange={handleChange}
-                  style={{
-                    width: "100%",
-                    padding: "14px 16px",
-                    borderRadius: "12px",
-                    border: "2px solid #E6D5B8",
-                    fontSize: "15px",
-                    outline: "none",
-                    transition: "border-color 0.3s",
-                    backgroundColor: "white",
-                    cursor: "pointer",
-                    boxSizing: "border-box",
-                  }}
-                  onFocus={(e) => (e.target.style.borderColor = "#8B7355")}
-                  onBlur={(e) => (e.target.style.borderColor = "#E6D5B8")}
-                >
-                  <option value="">Select range</option>
-                  <option value="under-5k">Under $5,000</option>
-                  <option value="5k-15k">$5,000 - $15,000</option>
-                  <option value="15k-30k">$15,000 - $30,000</option>
-                  <option value="30k-plus">$30,000+</option>
-                </select>
+                  rows="4"
+                  className="w-full bg-[#FDFBF7] border border-[#EDD8B4] rounded-xl p-3 focus:ring-2 focus:ring-[#C85428] focus:border-transparent outline-none transition-all text-[#442D1C]"
+                  placeholder="Tell us more about your requirements..."
+                ></textarea>
               </div>
-            </div>
 
-            <div style={{ marginBottom: "24px" }}>
-              <label
-                style={{
-                  display: "block",
-                  fontSize: "14px",
-                  fontWeight: "500",
-                  color: "#6B4F3A",
-                  marginBottom: "8px",
-                  letterSpacing: "0.5px",
-                }}
-              >
-                Timeline
-              </label>
-              <select
-                name="timeline"
-                value={formData.timeline}
-                onChange={handleChange}
-                style={{
-                  width: "100%",
-                  padding: "14px 16px",
-                  borderRadius: "12px",
-                  border: "2px solid #E6D5B8",
-                  fontSize: "15px",
-                  outline: "none",
-                  transition: "border-color 0.3s",
-                  backgroundColor: "white",
-                  cursor: "pointer",
-                  boxSizing: "border-box",
-                }}
-                onFocus={(e) => (e.target.style.borderColor = "#8B7355")}
-                onBlur={(e) => (e.target.style.borderColor = "#E6D5B8")}
-              >
-                <option value="">Select timeline</option>
-                <option value="urgent">Within 2 weeks</option>
-                <option value="1-month">1 month</option>
-                <option value="2-3-months">2-3 months</option>
-                <option value="flexible">Flexible</option>
-              </select>
-            </div>
-
-            <div style={{ marginBottom: "32px" }}>
-              <label
-                style={{
-                  display: "block",
-                  fontSize: "14px",
-                  fontWeight: "500",
-                  color: "#6B4F3A",
-                  marginBottom: "8px",
-                  letterSpacing: "0.5px",
-                }}
-              >
-                Tell Us About Your Project *
-              </label>
-              <textarea
-                name="message"
-                value={formData.message}
-                onChange={handleChange}
-                rows="6"
-                placeholder="Share your vision, requirements, and any specific details..."
-                style={{
-                  width: "100%",
-                  padding: "14px 16px",
-                  borderRadius: "12px",
-                  border: "2px solid #E6D5B8",
-                  fontSize: "15px",
-                  outline: "none",
-                  transition: "border-color 0.3s",
-                  resize: "vertical",
-                  fontFamily: "inherit",
-                  boxSizing: "border-box",
-                }}
-                onFocus={(e) => (e.target.style.borderColor = "#8B7355")}
-                onBlur={(e) => (e.target.style.borderColor = "#E6D5B8")}
-              />
-            </div>
-
-            <button
-              onClick={handleSubmit}
-              disabled={submitted}
-              style={{
-                width: "100%",
-                backgroundColor: submitted ? "#556B2F" : "#8B7355",
-                color: "white",
-                border: "none",
-                padding: "18px",
-                fontSize: "16px",
-                fontWeight: "500",
-                borderRadius: "12px",
-                cursor: submitted ? "default" : "pointer",
-                transition: "all 0.3s",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: "12px",
-                letterSpacing: "0.5px",
-              }}
-              onMouseOver={(e) => {
-                if (!submitted)
-                  e.currentTarget.style.backgroundColor = "#6B4F3A";
-              }}
-              onMouseOut={(e) => {
-                if (!submitted)
-                  e.currentTarget.style.backgroundColor = "#8B7355";
-              }}
-            >
-              {submitted ? (
-                <>
-                  <Check size={20} />
-                  Message Sent Successfully
-                </>
-              ) : (
-                <>
-                  <Send size={20} />
-                  Send Inquiry
-                </>
-              )}
-            </button>
-          </div>
-        </div>
-      </section>
-
-      {/* Contact & Social Media */}
-      <section
-        style={{
-          padding: "100px 24px",
-          maxWidth: "1200px",
-          margin: "0 auto",
-        }}
-      >
-        <div
-          style={{
-            textAlign: "center",
-            marginBottom: "60px",
-          }}
-        >
-          <h2
-            style={{
-              fontSize: "42px",
-              fontWeight: "300",
-              color: "#6B4F3A",
-              marginBottom: "16px",
-              letterSpacing: "1px",
-            }}
-          >
-            Connect With Us
-          </h2>
-          <p
-            style={{
-              fontSize: "18px",
-              color: "#9C9282",
-            }}
-          >
-            Reach out through your preferred channel
-          </p>
-        </div>
-
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
-            gap: "32px",
-            marginBottom: "80px",
-          }}
-        >
-          <div
-            style={{
-              backgroundColor: "white",
-              borderRadius: "20px",
-              padding: "40px",
-              textAlign: "center",
-              boxShadow: "0 10px 40px rgba(107, 79, 58, 0.08)",
-              transition: "transform 0.3s",
-            }}
-            onMouseOver={(e) =>
-              (e.currentTarget.style.transform = "translateY(-5px)")
-            }
-            onMouseOut={(e) =>
-              (e.currentTarget.style.transform = "translateY(0)")
-            }
-          >
-            <div
-              style={{
-                backgroundColor: "#E6D5B8",
-                width: "64px",
-                height: "64px",
-                borderRadius: "50%",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                margin: "0 auto 20px",
-                color: "#6B4F3A",
-              }}
-            >
-              <Mail size={28} />
-            </div>
-            <h3
-              style={{
-                fontSize: "20px",
-                fontWeight: "500",
-                color: "#6B4F3A",
-                marginBottom: "12px",
-              }}
-            >
-              Email Us
-            </h3>
-            <p
-              style={{
-                fontSize: "16px",
-                color: "#8B7355",
-              }}
-            >
-              corporate@basho.com
-            </p>
-          </div>
-
-          <div
-            style={{
-              backgroundColor: "white",
-              borderRadius: "20px",
-              padding: "40px",
-              textAlign: "center",
-              boxShadow: "0 10px 40px rgba(107, 79, 58, 0.08)",
-              transition: "transform 0.3s",
-            }}
-            onMouseOver={(e) =>
-              (e.currentTarget.style.transform = "translateY(-5px)")
-            }
-            onMouseOut={(e) =>
-              (e.currentTarget.style.transform = "translateY(0)")
-            }
-          >
-            <div
-              style={{
-                backgroundColor: "#E6D5B8",
-                width: "64px",
-                height: "64px",
-                borderRadius: "50%",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                margin: "0 auto 20px",
-                color: "#6B4F3A",
-              }}
-            >
-              <Phone size={28} />
-            </div>
-            <h3
-              style={{
-                fontSize: "20px",
-                fontWeight: "500",
-                color: "#6B4F3A",
-                marginBottom: "12px",
-              }}
-            >
-              Call Us
-            </h3>
-            <p
-              style={{
-                fontSize: "16px",
-                color: "#8B7355",
-              }}
-            >
-              +1 (555) 123-4567
-            </p>
-          </div>
-
-          <div
-            style={{
-              backgroundColor: "white",
-              borderRadius: "20px",
-              padding: "40px",
-              textAlign: "center",
-              boxShadow: "0 10px 40px rgba(107, 79, 58, 0.08)",
-              transition: "transform 0.3s",
-            }}
-            onMouseOver={(e) =>
-              (e.currentTarget.style.transform = "translateY(-5px)")
-            }
-            onMouseOut={(e) =>
-              (e.currentTarget.style.transform = "translateY(0)")
-            }
-          >
-            <div
-              style={{
-                backgroundColor: "#E6D5B8",
-                width: "64px",
-                height: "64px",
-                borderRadius: "50%",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                margin: "0 auto 20px",
-                color: "#6B4F3A",
-              }}
-            >
-              <MapPin size={28} />
-            </div>
-            <h3
-              style={{
-                fontSize: "20px",
-                fontWeight: "500",
-                color: "#6B4F3A",
-                marginBottom: "12px",
-              }}
-            >
-              Visit Studio
-            </h3>
-            <p
-              style={{
-                fontSize: "16px",
-                color: "#8B7355",
-                lineHeight: "1.6",
-              }}
-            >
-              123 Artisan Lane
-              <br />
-              Portland, OR 97209
-            </p>
-          </div>
-        </div>
-
-        {/* Social Media */}
-        <div
-          style={{
-            backgroundColor: "#556B2F",
-            borderRadius: "24px",
-            padding: "60px 40px",
-            textAlign: "center",
-          }}
-        >
-          <h3
-            style={{
-              fontSize: "32px",
-              fontWeight: "300",
-              color: "#F5F1E8",
-              marginBottom: "16px",
-              letterSpacing: "1px",
-            }}
-          >
-            Follow Our Journey
-          </h3>
-          <p
-            style={{
-              fontSize: "16px",
-              color: "#E6D5B8",
-              marginBottom: "40px",
-            }}
-          >
-            Stay inspired with our latest creations and behind-the-scenes
-            moments
-          </p>
-
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "center",
-              gap: "20px",
-              flexWrap: "wrap",
-            }}
-          >
-            {[
-              { icon: <Instagram size={24} />, name: "@basho.ceramics" },
-              { icon: <Facebook size={24} />, name: "Basho Ceramics" },
-              { icon: <Linkedin size={24} />, name: "Basho Studio" },
-              { icon: <Twitter size={24} />, name: "@bashoceramics" },
-            ].map((social, index) => (
               <button
-                key={index}
-                style={{
-                  backgroundColor: "rgba(245, 241, 232, 0.1)",
-                  border: "2px solid rgba(245, 241, 232, 0.3)",
-                  borderRadius: "16px",
-                  padding: "16px 24px",
-                  color: "#F5F1E8",
-                  cursor: "pointer",
-                  transition: "all 0.3s",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "12px",
-                  fontSize: "15px",
-                }}
-                onMouseOver={(e) => {
-                  e.currentTarget.style.backgroundColor = "#F5F1E8";
-                  e.currentTarget.style.color = "#556B2F";
-                  e.currentTarget.style.borderColor = "#F5F1E8";
-                }}
-                onMouseOut={(e) => {
-                  e.currentTarget.style.backgroundColor =
-                    "rgba(245, 241, 232, 0.1)";
-                  e.currentTarget.style.color = "#F5F1E8";
-                  e.currentTarget.style.borderColor =
-                    "rgba(245, 241, 232, 0.3)";
-                }}
+                type="submit"
+                disabled={isSubmitting}
+                className="w-full bg-gradient-to-r from-[#C85428] to-[#8E5022] text-white font-bold py-4 rounded-xl shadow-lg hover:shadow-xl transition-all hover:scale-[1.01] flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
               >
-                {social.icon}
-                <span>{social.name}</span>
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="animate-spin w-5 h-5" /> Sending...
+                  </>
+                ) : (
+                  <>
+                    <Send className="w-5 h-5" /> Send Inquiry
+                  </>
+                )}
               </button>
-            ))}
+            </form>
           </div>
         </div>
       </section>
     </div>
   );
-};
-
-export default ConnectPage;
+}
