@@ -9,40 +9,40 @@ async function main() {
   console.log("🧹 Cleaning database...");
 
   // Delete in reverse order (children first) to avoid foreign key constraints
-  try {
-    await prisma.review
-      .deleteMany()
-      .catch(() => console.log("No reviews to delete"));
-    await prisma.wishlistItem
-      .deleteMany()
-      .catch(() => console.log("No wishlist items to delete"));
-    await prisma.orderItem
-      .deleteMany()
-      .catch(() => console.log("No order items to delete"));
-    await prisma.order
-      .deleteMany()
-      .catch(() => console.log("No orders to delete"));
-    await prisma.cartItem
-      .deleteMany()
-      .catch(() => console.log("No cart items to delete"));
-    await prisma.cart
-      .deleteMany()
-      .catch(() => console.log("No carts to delete"));
-    await prisma.product
-      .deleteMany()
-      .catch(() => console.log("No products to delete"));
-    await prisma.category
-      .deleteMany()
-      .catch(() => console.log("No categories to delete"));
-    await prisma.address
-      .deleteMany()
-      .catch(() => console.log("No addresses to delete"));
-    await prisma.user
-      .deleteMany()
-      .catch(() => console.log("No users to delete"));
-  } catch (error) {
-    console.log("Error during cleanup:", error.message);
-  }
+  // try {
+  //   await prisma.review
+  //     .deleteMany()
+  //     .catch(() => console.log("No reviews to delete"));
+  //   await prisma.wishlistItem
+  //     .deleteMany()
+  //     .catch(() => console.log("No wishlist items to delete"));
+  //   await prisma.orderItem
+  //     .deleteMany()
+  //     .catch(() => console.log("No order items to delete"));
+  //   await prisma.order
+  //     .deleteMany()
+  //     .catch(() => console.log("No orders to delete"));
+  //   await prisma.cartItem
+  //     .deleteMany()
+  //     .catch(() => console.log("No cart items to delete"));
+  //   await prisma.cart
+  //     .deleteMany()
+  //     .catch(() => console.log("No carts to delete"));
+  //   await prisma.product
+  //     .deleteMany()
+  //     .catch(() => console.log("No products to delete"));
+  //   await prisma.category
+  //     .deleteMany()
+  //     .catch(() => console.log("No categories to delete"));
+  //   await prisma.address
+  //     .deleteMany()
+  //     .catch(() => console.log("No addresses to delete"));
+  //   await prisma.user
+  //     .deleteMany()
+  //     .catch(() => console.log("No users to delete"));
+  // } catch (error) {
+  //   console.log("Error during cleanup:", error.message);
+  // }
 
   // Create Users first (needed for reviews)
   console.log("👥 Creating users...");
