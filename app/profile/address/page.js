@@ -1,11 +1,15 @@
-import { prisma } from "@/lib/prisma";
-import { getSession } from "@/lib/session";
+// app/profile/address/page.js
+import { prisma } from '@/lib/prisma';
+import { getSession } from '@/lib/session';
+import AddressManager from '@/components/profile/AddressManager';
 
 export default async function AddressPage() {
   const session = await getSession();
+  
+  // Fetch data on the server
   const user = await prisma.user.findUnique({
     where: { id: session.userId },
-    include: { addresses: true },
+    include: { Address: true }, // Ensure this matches your Prisma schema (Address vs addresses)
   });
 
   return (
@@ -14,27 +18,8 @@ export default async function AddressPage() {
         Saved Addresses
       </h2>
 
-      {/* Address Grid */}
-      <div className="grid gap-4 md:grid-cols-2">
-        {user.addresses.map((addr) => (
-          <div key={addr.id} className="p-4 border border-[#EDD8B4] rounded-lg">
-            <p className="font-bold">{addr.street}</p>
-            <p>
-              {addr.city}, {addr.state} - {addr.pincode}
-            </p>
-            {addr.isDefault && (
-              <span className="text-xs bg-[#442D1C] text-white px-2 py-1 rounded mt-2 inline-block">
-                Default
-              </span>
-            )}
-          </div>
-        ))}
-
-        {/* Add New Button Placeholder */}
-        <button className="flex items-center justify-center p-4 border border-dashed border-[#EDD8B4] rounded-lg text-[#8E5022] hover:bg-[#FDFBF7]">
-          + Add New Address
-        </button>
-      </div>
+      {/* Pass the server data to the interactive client component */}
+      <AddressManager initialAddresses={user.Address || []} />
     </div>
   );
 }

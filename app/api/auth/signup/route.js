@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { hashPassword } from "@/lib/auth";
-import { createSession } from "@/lib/session";
+import { hashPassword } from "@/lib/auth"; // Ensure this path is correct
+import { createSession } from "@/lib/session"; // Ensure this path is correct
 
 export async function POST(req) {
   try {
@@ -16,8 +16,9 @@ export async function POST(req) {
       );
     }
 
-    // 2. Create User (No Address)
+    // 2. Create User
     const hashedPassword = await hashPassword(password);
+    
     const newUser = await prisma.user.create({
       data: {
         email,
@@ -25,6 +26,10 @@ export async function POST(req) {
         name,
         phone,
         role: "CUSTOMER",
+        // Create an empty cart for the user immediately
+        Cart: {
+            create: {} 
+        }
       },
     });
 
@@ -35,10 +40,14 @@ export async function POST(req) {
       role: newUser.role,
       name: newUser.name,
     });
-    // console.log(userId + "  " + email + "  " + role + "  " + name);
+    
+    console.log(`User created: ${newUser.email} (${newUser.id})`);
+    
     return NextResponse.json({ success: true });
+
   } catch (error) {
-    console.log(userId + "  " + email + "  " + role + "  " + name);
+    // FIX: Log the actual error object, not undefined variables
+    console.error("Signup Route Error:", error); 
     return NextResponse.json({ error: "Signup failed" }, { status: 500 });
   }
 }

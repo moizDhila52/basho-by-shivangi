@@ -1,8 +1,7 @@
-"use client";
-
-import React, { createContext, useContext, useState, useEffect } from "react";
-import { useAuth } from "@/components/AuthProvider";
-import toast from "react-hot-toast";
+'use client';
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import { useAuth } from '@/components/AuthProvider';
+import toast from 'react-hot-toast';
 
 const CartContext = createContext();
 
@@ -37,7 +36,7 @@ export function CartProvider({ children }) {
           setCartItems(guestCart);
         }
       } catch (error) {
-        console.error("Error loading cart:", error);
+        console.error('Error loading cart:', error);
       } finally {
         setLoading(false);
       }
@@ -56,84 +55,124 @@ export function CartProvider({ children }) {
   // ===== Guest Cart Functions (localStorage) =====
   const getGuestCart = () => {
     try {
-      const savedCart = localStorage.getItem("basho-guest-cart");
+      const savedCart = localStorage.getItem('basho-guest-cart');
       return savedCart ? JSON.parse(savedCart) : [];
     } catch (error) {
-      console.error("Error loading guest cart:", error);
+      console.error('Error loading guest cart:', error);
       return [];
     }
   };
 
   const saveGuestCart = (cart) => {
     try {
-      localStorage.setItem("basho-guest-cart", JSON.stringify(cart));
+      localStorage.setItem('basho-guest-cart', JSON.stringify(cart));
     } catch (error) {
-      console.error("Error saving guest cart:", error);
+      console.error('Error saving guest cart:', error);
     }
   };
 
   const clearGuestCart = () => {
     try {
-      localStorage.removeItem("basho-guest-cart");
+      localStorage.removeItem('basho-guest-cart');
     } catch (error) {
-      console.error("Error clearing guest cart:", error);
+      console.error('Error clearing guest cart:', error);
     }
   };
 
   // ===== Database Cart Functions =====
   const fetchCartFromDB = async () => {
     try {
-      const response = await fetch("/api/cart", {
-        credentials: "include",
+      const response = await fetch('/api/cart', {
+        credentials: 'include',
       });
 
       if (!response.ok) {
-        throw new Error("Failed to fetch cart");
+        throw new Error('Failed to fetch cart');
       }
 
       const data = await response.json();
       setCartItems(data.cartItems || []);
     } catch (error) {
-      console.error("Error fetching cart from DB:", error);
-      toast.error("Failed to load cart");
+      console.error('Error fetching cart from DB:', error);
+      toast.error('Failed to load cart');
     }
   };
 
   const mergeGuestCart = async (guestCart) => {
     try {
-      const response = await fetch("/api/cart/merge", {
-        method: "POST",
+      const response = await fetch('/api/cart/merge', {
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
-        credentials: "include",
+        credentials: 'include',
         body: JSON.stringify({ guestCart }),
       });
 
       if (!response.ok) {
-        throw new Error("Failed to merge cart");
+        throw new Error('Failed to merge cart');
       }
 
       const data = await response.json();
       setCartItems(data.cartItems || []);
-      toast.success("Cart synced successfully!");
+      toast.success('Cart synced successfully!');
     } catch (error) {
-      console.error("Error merging cart:", error);
+      console.error('Error merging cart:', error);
+    }
+  };
+
+  const moveToWishlist = async (product) => {
+    if (!user) {
+      toast.error('Please login to save items');
+      return;
+    }
+
+    setIsUpdating(true);
+    try {
+      // 1. Add to Wishlist
+      const wishlistRes = await fetch('/api/wishlist/add', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ productId: product.id }),
+      });
+
+      if (!wishlistRes.ok) throw new Error('Failed to add to wishlist');
+
+      // 2. Remove from Cart
+      // We reuse the existing removeFromCart logic but suppress the toast to avoid double notifications
+      const removeRes = await fetch(
+        `/api/cart/remove?productId=${product.id}`,
+        {
+          method: 'DELETE',
+          credentials: 'include',
+        },
+      );
+
+      if (removeRes.ok) {
+        const data = await removeRes.json();
+        setCartItems(data.cartItems); // Update state with fresh cart
+        toast.success('Moved to Wishlist');
+      }
+    } catch (error) {
+      console.error('Error moving to wishlist:', error);
+      toast.error('Failed to move item');
+    } finally {
+      setIsUpdating(false);
     }
   };
 
   // ===== Cart Actions =====
   const addToCart = async (product) => {
+    // 1. Logged In User Logic
     if (user) {
-      // Logged in - add to database
       setIsUpdating(true);
       try {
-        const response = await fetch("/api/cart/add", {
-          method: "POST",
+        const response = await fetch('/api/cart/add', {
+          method: 'POST',
           headers: {
-            "Content-Type": "application/json",
+            'Content-Type': 'application/json',
           },
-          credentials: "include",
+          credentials: 'include',
           body: JSON.stringify({
             productId: product.id,
             quantity: product.quantity || 1,
@@ -142,21 +181,23 @@ export function CartProvider({ children }) {
 
         const data = await response.json();
 
+        // If backend says "Out of Stock" (400), this block runs
         if (!response.ok) {
-          throw new Error(data.error || "Failed to add to cart");
+          throw new Error(data.error || 'Failed to add to cart');
         }
 
         setCartItems(data.cartItems);
         setIsCartOpen(true);
-        toast.success("Added to cart!");
+
+        return data;
       } catch (error) {
-        console.error("Error adding to cart:", error);
-        toast.error(error.message || "Failed to add to cart");
+        console.error('Error adding to cart:', error);
+
+        throw error;
       } finally {
         setIsUpdating(false);
       }
     } else {
-      // Guest - add to localStorage
       setCartItems((prevItems) => {
         const existingItem = prevItems.find((item) => item.id === product.id);
 
@@ -164,7 +205,7 @@ export function CartProvider({ children }) {
           return prevItems.map((item) =>
             item.id === product.id
               ? { ...item, quantity: item.quantity + (product.quantity || 1) }
-              : item
+              : item,
           );
         } else {
           return [
@@ -173,8 +214,8 @@ export function CartProvider({ children }) {
           ];
         }
       });
+
       setIsCartOpen(true);
-      toast.success("Added to cart!");
     }
   };
 
@@ -186,31 +227,31 @@ export function CartProvider({ children }) {
         const response = await fetch(
           `/api/cart/remove?productId=${productId}`,
           {
-            method: "DELETE",
-            credentials: "include",
-          }
+            method: 'DELETE',
+            credentials: 'include',
+          },
         );
 
         const data = await response.json();
 
         if (!response.ok) {
-          throw new Error(data.error || "Failed to remove from cart");
+          throw new Error(data.error || 'Failed to remove from cart');
         }
 
         setCartItems(data.cartItems);
-        toast.success("Removed from cart");
+        toast.success('Removed from cart');
       } catch (error) {
-        console.error("Error removing from cart:", error);
-        toast.error("Failed to remove from cart");
+        console.error('Error removing from cart:', error);
+        toast.error('Failed to remove from cart');
       } finally {
         setIsUpdating(false);
       }
     } else {
       // Guest - remove from localStorage
       setCartItems((prevItems) =>
-        prevItems.filter((item) => item.id !== productId)
+        prevItems.filter((item) => item.id !== productId),
       );
-      toast.success("Removed from cart");
+      toast.success('Removed from cart');
     }
   };
 
@@ -224,25 +265,25 @@ export function CartProvider({ children }) {
       // Logged in - update in database
       setIsUpdating(true);
       try {
-        const response = await fetch("/api/cart/update", {
-          method: "PATCH",
+        const response = await fetch('/api/cart/update', {
+          method: 'PATCH',
           headers: {
-            "Content-Type": "application/json",
+            'Content-Type': 'application/json',
           },
-          credentials: "include",
+          credentials: 'include',
           body: JSON.stringify({ productId, quantity }),
         });
 
         const data = await response.json();
 
         if (!response.ok) {
-          throw new Error(data.error || "Failed to update quantity");
+          throw new Error(data.error || 'Failed to update quantity');
         }
 
         setCartItems(data.cartItems);
       } catch (error) {
-        console.error("Error updating quantity:", error);
-        toast.error(error.message || "Failed to update quantity");
+        console.error('Error updating quantity:', error);
+        toast.error(error.message || 'Failed to update quantity');
       } finally {
         setIsUpdating(false);
       }
@@ -250,8 +291,8 @@ export function CartProvider({ children }) {
       // Guest - update in localStorage
       setCartItems((prevItems) =>
         prevItems.map((item) =>
-          item.id === productId ? { ...item, quantity } : item
-        )
+          item.id === productId ? { ...item, quantity } : item,
+        ),
       );
     }
   };
@@ -261,20 +302,20 @@ export function CartProvider({ children }) {
       // Logged in - clear database cart
       setIsUpdating(true);
       try {
-        const response = await fetch("/api/cart/clear", {
-          method: "DELETE",
-          credentials: "include",
+        const response = await fetch('/api/cart/clear', {
+          method: 'DELETE',
+          credentials: 'include',
         });
 
         if (!response.ok) {
-          throw new Error("Failed to clear cart");
+          throw new Error('Failed to clear cart');
         }
 
         setCartItems([]);
-        toast.success("Cart cleared");
+        toast.success('Cart cleared');
       } catch (error) {
-        console.error("Error clearing cart:", error);
-        toast.error("Failed to clear cart");
+        console.error('Error clearing cart:', error);
+        toast.error('Failed to clear cart');
       } finally {
         setIsUpdating(false);
       }
@@ -282,7 +323,7 @@ export function CartProvider({ children }) {
       // Guest - clear localStorage
       setCartItems([]);
       clearGuestCart();
-      toast.success("Cart cleared");
+      toast.success('Cart cleared');
     }
   };
 
@@ -290,7 +331,7 @@ export function CartProvider({ children }) {
   const getTotalPrice = () => {
     return cartItems.reduce(
       (total, item) => total + item.price * item.quantity,
-      0
+      0,
     );
   };
 
@@ -318,6 +359,7 @@ export function CartProvider({ children }) {
         setIsCartOpen,
         loading,
         isUpdating,
+        moveToWishlist,
       }}
     >
       {children}
@@ -328,7 +370,7 @@ export function CartProvider({ children }) {
 export const useCart = () => {
   const context = useContext(CartContext);
   if (!context) {
-    throw new Error("useCart must be used within a CartProvider");
+    throw new Error('useCart must be used within a CartProvider');
   }
   return context;
 };
