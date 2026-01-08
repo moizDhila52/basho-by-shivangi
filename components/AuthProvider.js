@@ -1,28 +1,43 @@
 "use client";
 import { createContext, useContext, useEffect, useState } from "react";
-import { onAuthStateChanged } from "firebase/auth";
-import { auth } from "@/lib/firebase"; // Now this import works
 
-const AuthContext = createContext({});
+const AuthContext = createContext({
+  user: null,
+  loading: true,
+});
 
-export const useAuth = () => useContext(AuthContext);
-
-export const AuthProvider = ({ children }) => {
+export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setUser(user);
-      setLoading(false);
-    });
+    async function checkUser() {
+      try {
+        // Fetch the session from our new API
+        const res = await fetch("/api/auth/session");
+        const data = await res.json();
 
-    return () => unsubscribe();
+        if (data.user) {
+          setUser(data.user);
+        } else {
+          setUser(null);
+        }
+      } catch (error) {
+        console.error("Auth check failed", error);
+        setUser(null);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    checkUser();
   }, []);
 
   return (
     <AuthContext.Provider value={{ user, loading }}>
-      {!loading && children}
+      {children}
     </AuthContext.Provider>
   );
-};
+}
+
+export const useAuth = () => useContext(AuthContext);

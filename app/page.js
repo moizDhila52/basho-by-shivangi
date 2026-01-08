@@ -1,109 +1,148 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
-import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion';
-import { ArrowRight, Leaf, Utensils, Flame, Heart, Droplet, Sparkles, ChevronDown, Moon, Sun, Mountain, Waves } from 'lucide-react';
-import Link from 'next/link';
+import React, { useEffect, useState } from "react";
+import {
+  motion,
+  useScroll,
+  useTransform,
+  AnimatePresence,
+} from "framer-motion";
+import {
+  ArrowRight,
+  Leaf,
+  Utensils,
+  Flame,
+  Heart,
+  Droplet,
+  Sparkles,
+  ChevronDown,
+  Moon,
+  Sun,
+  Mountain,
+  Waves,
+} from "lucide-react";
+import Link from "next/link";
 
 // --- Brand Colors from Palette ---
 const COLORS = {
-  dark: '#442D1C',
-  brown: '#652810',
-  clay: '#8E5022',
-  terracotta: '#C85428',
-  cream: '#EDD8B4',
-  background: '#FDFBF7'
+  dark: "#442D1C",
+  brown: "#652810",
+  clay: "#8E5022",
+  terracotta: "#C85428",
+  cream: "#EDD8B4",
+  background: "#FDFBF7",
 };
 
 // --- Enhanced Animation Variants ---
 const fadeInUp = {
   hidden: { opacity: 0, y: 40 },
-  visible: { 
-    opacity: 1, 
-    y: 0, 
-    transition: { 
-      duration: 0.8, 
-      ease: [0.22, 1, 0.36, 1] 
-    } 
-  }
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.8,
+      ease: [0.22, 1, 0.36, 1],
+    },
+  },
 };
 
 const fadeInScale = {
   hidden: { opacity: 0, scale: 0.95 },
-  visible: { 
-    opacity: 1, 
-    scale: 1, 
-    transition: { 
+  visible: {
+    opacity: 1,
+    scale: 1,
+    transition: {
       duration: 0.7,
-      ease: "easeOut" 
-    } 
-  }
+      ease: "easeOut",
+    },
+  },
 };
 
 const staggerContainer = {
   hidden: { opacity: 0 },
-  visible: { 
-    opacity: 1, 
-    transition: { 
+  visible: {
+    opacity: 1,
+    transition: {
       staggerChildren: 0.15,
-      delayChildren: 0.1 
-    } 
-  }
+      delayChildren: 0.1,
+    },
+  },
 };
 
 const floatAnimation = {
   initial: { y: 0 },
-  animate: { 
+  animate: {
     y: [-10, 10, -10],
-    transition: { 
-      duration: 6, 
-      repeat: Infinity, 
-      ease: "easeInOut" 
-    } 
-  }
+    transition: {
+      duration: 6,
+      repeat: Infinity,
+      ease: "easeInOut",
+    },
+  },
 };
 
 export default function LandingPage() {
   const [scrolled, setScrolled] = useState(false);
+  const [particles, setParticles] = useState([]);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const { scrollY } = useScroll();
-  
+
   const heroOpacity = useTransform(scrollY, [0, 300], [1, 0]);
   const heroScale = useTransform(scrollY, [0, 300], [1, 1.1]);
+
+  useEffect(() => {
+    // This runs ONLY on the browser, preventing the mismatch
+    setParticles(
+      [...Array(21)].map((_, i) => ({
+        id: i,
+        x: Math.random() * 100,
+        y: Math.random() * 100,
+        duration: Math.random() * 10 + 10,
+      }))
+    );
+  }, []);
 
   useEffect(() => {
     const handleScroll = () => {
       setScrolled(window.scrollY > 50);
     };
-    
+
     const handleMouseMove = (e) => {
       setMousePosition({ x: e.clientX, y: e.clientY });
     };
 
-    window.addEventListener('scroll', handleScroll);
-    window.addEventListener('mousemove', handleMouseMove);
-    
+    window.addEventListener("scroll", handleScroll);
+    window.addEventListener("mousemove", handleMouseMove);
+
     return () => {
-      window.removeEventListener('scroll', handleScroll);
-      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener("scroll", handleScroll);
+      window.removeEventListener("mousemove", handleMouseMove);
     };
   }, []);
 
-  const cursorX = useTransform(scrollY, [0, 1000], [mousePosition.x, mousePosition.x * 0.5]);
-  const cursorY = useTransform(scrollY, [0, 1000], [mousePosition.y, mousePosition.y * 0.5]);
+  const cursorX = useTransform(
+    scrollY,
+    [0, 1000],
+    [mousePosition.x, mousePosition.x * 0.5]
+  );
+  const cursorY = useTransform(
+    scrollY,
+    [0, 1000],
+    [mousePosition.y, mousePosition.y * 0.5]
+  );
 
   return (
     <main className="min-h-screen bg-[#FDFBF7] text-stone-800 font-sans overflow-x-hidden">
       {/* Custom Cursor Effect */}
-      <motion.div 
+      <motion.div
         className="fixed w-6 h-6 rounded-full border border-[#8E5022]/30 pointer-events-none z-50 mix-blend-difference"
         style={{ x: cursorX, y: cursorY }}
         animate={{ scale: [1, 1.2, 1] }}
         transition={{ duration: 2, repeat: Infinity }}
       />
-      
+
       {/* Scroll Progress Indicator */}
-      <motion.div 
+      <motion.div
         className="fixed top-0 left-0 h-1 bg-gradient-to-r from-[#8E5022] to-[#C85428] z-50"
         style={{ scaleX: useTransform(scrollY, [0, 1000], [0, 1]) }}
       />
@@ -113,43 +152,45 @@ export default function LandingPage() {
         {/* Animated Background Elements */}
         <div className="absolute inset-0 overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-br from-[#FDFBF7] via-[#FDFBF7] to-[#EDD8B4]/30" />
-          
+
           {/* Floating Particles */}
-          {[...Array(21)].map((_, i) => (
+          {/* Floating Particles - FIXED */}
+          {particles.map((p) => (
             <motion.div
-              key={i}
+              key={p.id}
               className="absolute w-5 h-5 z-10 rounded-full bg-[#8E5022]/20"
-              initial={{ x: Math.random() * 100 + 'vw', y: Math.random() * 100 + 'vh' }}
+              // Use stored values instead of Math.random()
+              initial={{ x: `${p.x}vw`, y: `${p.y}vh` }}
               animate={{
-                x: [null, Math.random() * 100 + 'vw'],
-                y: [null, Math.random() * 100 + 'vh'],
+                x: [null, `${Math.random() * 100}vw`],
+                y: [null, `${Math.random() * 100}vh`],
               }}
               transition={{
-                duration: Math.random() * 10 + 10,
+                duration: p.duration,
                 repeat: Infinity,
-                ease: "linear"
+                ease: "linear",
               }}
             />
           ))}
-          
-            {/* Hero Image with Parallax */}
-            <motion.div 
-              className="absolute inset-0"
-              style={{ scale: heroScale, opacity: heroOpacity }}
-            >
-              <img 
-                src="/images/others/landing-page-hero.jpg" 
-                alt="Basho Ceramics" 
-                className="w-full h-full object-cover"
-                style={{ objectPosition: 'center 30%' }}
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-black/20 to-transparent" />
-              <div className="absolute inset-0 bg-gradient-to-r from-black/10 to-transparent" />
-            </motion.div>
-          </div>
 
-          {/* Hero Content */}
-        <motion.div 
+          {/* Hero Image with Parallax */}
+          <motion.div
+            className="absolute inset-0"
+            style={{ scale: heroScale, opacity: heroOpacity }}
+          >
+            <img
+              src="/images/others/landing-page-hero.jpg"
+              alt="Basho Ceramics"
+              className="w-full h-full object-cover"
+              style={{ objectPosition: "center 30%" }}
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-black/20 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-r from-black/10 to-transparent" />
+          </motion.div>
+        </div>
+
+        {/* Hero Content */}
+        <motion.div
           initial="hidden"
           animate="visible"
           variants={staggerContainer}
@@ -161,8 +202,8 @@ export default function LandingPage() {
               Handcrafted Japanese Ceramics
             </p>
           </motion.div>
-          
-          <motion.h1 
+
+          <motion.h1
             variants={fadeInUp}
             className="font-serif text-6xl md:text-8xl lg:text-9xl mb-8 leading-[0.9] tracking-tight"
           >
@@ -171,16 +212,17 @@ export default function LandingPage() {
               The Beauty of <span className="italic">Impermanence</span>
             </span>
           </motion.h1>
-          
-          <motion.p 
+
+          <motion.p
             variants={fadeInUp}
             className="text-xl md:text-2xl font-light mb-12 max-w-3xl mx-auto opacity-95 leading-relaxed"
           >
-            Earth whispers through clay, water shapes the form, fire gives it soul. 
-            Inspired by Matsuo Bashō's poetry, we create living objects for mindful moments.
+            Earth whispers through clay, water shapes the form, fire gives it
+            soul. Inspired by Matsuo Bashō's poetry, we create living objects
+            for mindful moments.
           </motion.p>
-          
-          <motion.div 
+
+          <motion.div
             variants={fadeInUp}
             className="flex flex-col sm:flex-row gap-6 justify-center items-center"
           >
@@ -204,7 +246,7 @@ export default function LandingPage() {
               </motion.button>
             </Link>
           </motion.div>
-          
+
           {/* Scroll Indicator */}
           <motion.div
             animate="animate"
@@ -223,7 +265,7 @@ export default function LandingPage() {
           <div className="absolute -top-40 -right-40 w-80 h-80 rounded-full bg-[#8E5022] blur-3xl" />
           <div className="absolute -bottom-40 -left-40 w-80 h-80 rounded-full bg-[#C85428] blur-3xl" />
         </div>
-        
+
         <motion.div
           initial="hidden"
           whileInView="visible"
@@ -247,7 +289,7 @@ export default function LandingPage() {
           </motion.div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 relative">
-            <PhilosophyCard 
+            <PhilosophyCard
               title="Wabi-sabi"
               subtitle="侘寂"
               icon={<Leaf className="w-8 h-8" />}
@@ -255,7 +297,7 @@ export default function LandingPage() {
               color="#442D1C"
               delay={0}
             />
-            <PhilosophyCard 
+            <PhilosophyCard
               title="Fueki-Ryuko"
               subtitle="不易流行"
               icon={<Flame className="w-8 h-8" />}
@@ -264,7 +306,7 @@ export default function LandingPage() {
               delay={0.1}
               featured
             />
-            <PhilosophyCard 
+            <PhilosophyCard
               title="Karumi"
               subtitle="軽み"
               icon={<Droplet className="w-8 h-8" />}
@@ -279,11 +321,11 @@ export default function LandingPage() {
       {/* 3. PRODUCTS SECTION with Parallax */}
       <section className="py-32 relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-b from-[#FDFBF7] to-[#EDD8B4]/20" />
-        
+
         <div className="max-w-7xl mx-auto px-4 md:px-8 relative">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
             {/* Image Gallery with Hover Effects */}
-            <motion.div 
+            <motion.div
               initial="hidden"
               whileInView="visible"
               viewport={{ once: true }}
@@ -295,27 +337,27 @@ export default function LandingPage() {
                 className="absolute top-0 left-0 w-4/5 h-2/3 rounded-3xl overflow-hidden shadow-2xl z-20"
                 whileHover={{ y: -10 }}
               >
-                <img 
-                  src="/showcase/products/1.png" 
-                  alt="Tea Bowl Collection" 
+                <img
+                  src="/showcase/products/1.png"
+                  alt="Tea Bowl Collection"
                   className="w-full h-full object-cover transition-transform duration-700 hover:scale-110"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
               </motion.div>
-              
+
               <motion.div
                 variants={fadeInScale}
                 className="absolute bottom-0 right-0 w-2/3 h-2/3 rounded-3xl overflow-hidden shadow-2xl"
                 whileHover={{ y: -10 }}
               >
-                <img 
-                  src="/showcase/products/2.png" 
-                  alt="Dinnerware Set" 
+                <img
+                  src="/showcase/products/2.png"
+                  alt="Dinnerware Set"
                   className="w-full h-full object-cover transition-transform duration-700 hover:scale-110"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
               </motion.div>
-              
+
               {/* Decorative Elements */}
               <div className="absolute -z-10 -top-10 -left-10 w-40 h-40 rounded-full bg-[#C85428]/10 blur-2xl" />
               <div className="absolute -z-10 -bottom-10 -right-10 w-40 h-40 rounded-full bg-[#8E5022]/10 blur-2xl" />
@@ -332,37 +374,43 @@ export default function LandingPage() {
                 <Sparkles className="w-4 h-4" />
                 Curated Collections
               </span>
-              
+
               <h2 className="font-serif text-5xl md:text-6xl text-[#442D1C] mb-8 leading-tight">
-                Tableware for <br/>
+                Tableware for <br />
                 <span className="text-[#C85428]">Mindful</span> Moments
               </h2>
-              
+
               <p className="text-stone-600 text-lg mb-10 leading-relaxed">
-                From morning matcha rituals to intimate dinner gatherings, our collections transform daily meals into mindful experiences. Each piece is designed to be held, appreciated, and passed down through generations.
+                From morning matcha rituals to intimate dinner gatherings, our
+                collections transform daily meals into mindful experiences. Each
+                piece is designed to be held, appreciated, and passed down
+                through generations.
               </p>
-              
+
               <div className="space-y-6 mb-10">
-                <CollectionLink 
+                <CollectionLink
                   href="/products/tea-ware"
                   title="Tea Ceremony Collection"
                   description="Matcha bowls, teapots, and incense holders"
                 />
-                <CollectionLink 
+                <CollectionLink
                   href="/products/dinnerware"
                   title="Dining Essentials"
                   description="Complete sets for 2-12 people"
                 />
-                <CollectionLink 
+                <CollectionLink
                   href="/custom"
                   title="Bespoke Commissions"
                   description="Custom designs for restaurants & cafes"
                 />
               </div>
-              
+
               <Link href="/products">
                 <motion.button
-                  whileHover={{ scale: 1.05, backgroundColor: COLORS.terracotta }}
+                  whileHover={{
+                    scale: 1.05,
+                    backgroundColor: COLORS.terracotta,
+                  }}
                   whileTap={{ scale: 0.95 }}
                   className="w-full md:w-auto bg-[#8E5022] text-white px-10 py-4 rounded-full font-medium text-lg transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-3 group"
                 >
@@ -380,7 +428,7 @@ export default function LandingPage() {
         <div className="absolute inset-0 opacity-5">
           <div className="absolute top-1/4 left-1/4 w-64 h-64 rounded-full bg-[#EDD8B4] blur-3xl" />
         </div>
-        
+
         <div className="max-w-7xl mx-auto px-4 md:px-8">
           <motion.div
             initial="hidden"
@@ -408,32 +456,32 @@ export default function LandingPage() {
               viewport={{ once: true }}
               className="space-y-8"
             >
-              <ProcessStep 
+              <ProcessStep
                 step="01"
                 title="Clay Preparation"
                 description="Local stoneware clay is wedged and kneaded by hand to remove air bubbles"
               />
-              <ProcessStep 
+              <ProcessStep
                 step="02"
                 title="Wheel Throwing"
                 description="Each piece is thrown on the potter's wheel, guided by rhythm and intuition"
               />
-              <ProcessStep 
+              <ProcessStep
                 step="03"
                 title="Leather Hard Trimming"
                 description="Excess clay is removed, revealing the piece's true form"
               />
-              <ProcessStep 
+              <ProcessStep
                 step="04"
                 title="Bisque Firing"
                 description="First firing at 900°C transforms clay into porous bisqueware"
               />
-              <ProcessStep 
+              <ProcessStep
                 step="05"
                 title="Glazing"
                 description="Hand-dipped in our signature, food-safe glaze formulas"
               />
-              <ProcessStep 
+              <ProcessStep
                 step="06"
                 title="Final Firing"
                 description="High-fire at 1200°C brings out the glaze's true colors and strength"
@@ -450,36 +498,39 @@ export default function LandingPage() {
               <h3 className="font-serif text-3xl mb-8 text-[#EDD8B4]">
                 Material & Care
               </h3>
-              
+
               <div className="grid grid-cols-1 gap-8 mb-12">
-                <CareFeature 
+                <CareFeature
                   icon={<Utensils className="w-6 h-6" />}
                   title="Food Safe"
                   description="All glazes are lead-free and certified food-safe"
                 />
-                <CareFeature 
+                <CareFeature
                   icon={<Flame className="w-6 h-6" />}
                   title="Thermal Safe"
                   description="Withstands temperature extremes from freezer to oven"
                 />
-                <CareFeature 
+                <CareFeature
                   icon={<Droplet className="w-6 h-6" />}
                   title="Dishwasher Safe"
                   description="Durable glazes withstand regular washing"
                 />
-                <CareFeature 
+                <CareFeature
                   icon={<Heart className="w-6 h-6" />}
                   title="Heirloom Quality"
                   description="Designed to last for generations"
                 />
               </div>
-              
+
               <div className="bg-black/20 rounded-2xl p-6">
-                <h4 className="font-serif text-xl mb-4 text-[#EDD8B4]">Care Instructions</h4>
+                <h4 className="font-serif text-xl mb-4 text-[#EDD8B4]">
+                  Care Instructions
+                </h4>
                 <p className="text-stone-300 leading-relaxed">
-                  While durable, hand washing with mild soap preserves the glaze's luster. 
-                  Avoid sudden temperature changes. Each piece develops a unique patina 
-                  with use—a beautiful record of shared meals and memories.
+                  While durable, hand washing with mild soap preserves the
+                  glaze's luster. Avoid sudden temperature changes. Each piece
+                  develops a unique patina with use—a beautiful record of shared
+                  meals and memories.
                 </p>
               </div>
             </motion.div>
@@ -499,56 +550,60 @@ export default function LandingPage() {
           >
             {/* Decorative Quote Marks */}
             <div className="absolute -top-10 left-10 text-[#8E5022]/10">
-              <svg className="w-24 h-24" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M9.983 3v7.391c0 5.704-3.731 9.57-8.983 10.609l-.995-2.151c2.432-.917 3.995-3.638 3.995-5.849h-4v-10h9.983zm14.017 0v7.391c0 5.704-3.748 9.571-9 10.609l-.996-2.151c2.433-.917 3.996-3.638 3.996-5.849h-3.983v-10h9.983z"/>
+              <svg
+                className="w-24 h-24"
+                fill="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path d="M9.983 3v7.391c0 5.704-3.731 9.57-8.983 10.609l-.995-2.151c2.432-.917 3.995-3.638 3.995-5.849h-4v-10h9.983zm14.017 0v7.391c0 5.704-3.748 9.571-9 10.609l-.996-2.151c2.433-.917 3.996-3.638 3.996-5.849h-3.983v-10h9.983z" />
               </svg>
             </div>
-            
+
             <motion.div variants={fadeInUp} className="relative z-10">
               {/* Founder Image with Frame */}
               <motion.div
                 whileHover={{ scale: 1.05 }}
                 className="w-48 h-48 mx-auto mb-10 rounded-full overflow-hidden border-4 border-white shadow-2xl relative"
               >
-                <img 
-                  src="/brand/founder.jpg" 
-                  alt="Shivangi, Founder" 
+                <img
+                  src="/brand/founder.jpg"
+                  alt="Shivangi, Founder"
                   className="w-full h-full object-cover"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-[#8E5022]/30 to-transparent" />
               </motion.div>
-              
+
               <h2 className="font-serif text-5xl md:text-6xl text-[#442D1C] mb-8">
                 The <span className="text-[#C85428]">Hand</span> Behind the Clay
               </h2>
-              
-              <motion.blockquote 
+
+              <motion.blockquote
                 variants={fadeInUp}
                 className="text-2xl md:text-3xl font-light italic text-stone-700 mb-10 leading-relaxed max-w-3xl mx-auto"
               >
-                "Pottery is my conversation with the earth. Each piece begins as a whisper 
-                in the clay—a moment captured, a feeling remembered. Through Bashō, I invite 
-                you to touch this poetry, to make it part of your story."
+                "Pottery is my conversation with the earth. Each piece begins as
+                a whisper in the clay—a moment captured, a feeling remembered.
+                Through Bashō, I invite you to touch this poetry, to make it
+                part of your story."
               </motion.blockquote>
-              
+
               <div className="space-y-4">
-                <div className="font-serif text-2xl text-[#8E5022]">Shivangi</div>
+                <div className="font-serif text-2xl text-[#8E5022]">
+                  Shivangi
+                </div>
                 <div className="text-stone-600 uppercase tracking-widest text-sm">
                   Founder & Master Potter
                 </div>
               </div>
-              
+
               {/* Interactive CTA */}
-              <motion.div
-                variants={fadeInUp}
-                className="mt-16"
-              >
+              <motion.div variants={fadeInUp} className="mt-16">
                 <Link href="/about">
                   <motion.button
-                    whileHover={{ 
+                    whileHover={{
                       scale: 1.05,
                       backgroundColor: COLORS.dark,
-                      color: COLORS.cream
+                      color: COLORS.cream,
                     }}
                     whileTap={{ scale: 0.95 }}
                     className="bg-transparent border-2 border-[#442D1C] text-[#442D1C] px-12 py-4 rounded-full font-medium text-lg hover:shadow-xl transition-all group"
@@ -563,7 +618,7 @@ export default function LandingPage() {
             </motion.div>
           </motion.div>
         </div>
-        
+
         {/* Final CTA Section */}
         <motion.div
           initial={{ opacity: 0, y: 50 }}
@@ -575,9 +630,10 @@ export default function LandingPage() {
             Begin Your <span className="text-[#C85428]">Journey</span> with Clay
           </h3>
           <p className="text-xl text-stone-600 mb-12 max-w-2xl mx-auto">
-            Discover pieces that speak to your soul, crafted to become part of your story.
+            Discover pieces that speak to your soul, crafted to become part of
+            your story.
           </p>
-          
+
           <div className="flex flex-col sm:flex-row gap-6 justify-center">
             <Link href="/products">
               <motion.button
@@ -606,7 +662,15 @@ export default function LandingPage() {
 
 // --- Enhanced Sub Components ---
 
-function PhilosophyCard({ title, subtitle, icon, description, color, delay = 0, featured = false }) {
+function PhilosophyCard({
+  title,
+  subtitle,
+  icon,
+  description,
+  color,
+  delay = 0,
+  featured = false,
+}) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 30 }}
@@ -615,37 +679,37 @@ function PhilosophyCard({ title, subtitle, icon, description, color, delay = 0, 
       transition={{ duration: 0.6, delay }}
       whileHover={{ y: -10, transition: { duration: 0.3 } }}
       className={`relative rounded-3xl p-10 backdrop-blur-sm border transition-all duration-500 overflow-hidden group ${
-        featured 
-          ? 'bg-gradient-to-br from-white to-[#EDD8B4]/20 border-[#C85428]/30 shadow-2xl scale-105 z-10' 
-          : 'bg-white/80 border-stone-200 shadow-lg hover:shadow-2xl'
+        featured
+          ? "bg-gradient-to-br from-white to-[#EDD8B4]/20 border-[#C85428]/30 shadow-2xl scale-105 z-10"
+          : "bg-white/80 border-stone-200 shadow-lg hover:shadow-2xl"
       }`}
     >
       {/* Background Glow */}
-      <div 
+      <div
         className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
-        style={{ 
-          background: `radial-gradient(circle at center, ${color}10, transparent 70%)`
+        style={{
+          background: `radial-gradient(circle at center, ${color}10, transparent 70%)`,
         }}
       />
-      
+
       <div className="relative z-10">
-        <div 
+        <div
           className="w-16 h-16 rounded-2xl flex items-center justify-center mb-8 transition-all duration-500 group-hover:scale-110"
-          style={{ backgroundColor: color + '15' }}
+          style={{ backgroundColor: color + "15" }}
         >
           <div style={{ color }}>{icon}</div>
         </div>
-        
+
         <h3 className="font-serif text-3xl mb-2" style={{ color }}>
           {title}
         </h3>
-        <div className="text-sm text-stone-500 mb-6 font-japanese">{subtitle}</div>
-        
-        <p className="text-stone-600 leading-relaxed mb-6">
-          {description}
-        </p>
-        
-        <motion.div 
+        <div className="text-sm text-stone-500 mb-6 font-japanese">
+          {subtitle}
+        </div>
+
+        <p className="text-stone-600 leading-relaxed mb-6">{description}</p>
+
+        <motion.div
           className="w-12 h-0.5 rounded-full"
           style={{ backgroundColor: color }}
           initial={{ width: 0 }}
@@ -687,7 +751,7 @@ function ProcessStep({ step, title, description }) {
         </div>
         <div className="absolute top-12 left-1/2 w-0.5 h-8 bg-[#EDD8B4]/20 -translate-x-1/2 last:hidden" />
       </div>
-      
+
       <div>
         <h4 className="text-xl font-serif text-[#EDD8B4] mb-2">{title}</h4>
         <p className="text-stone-300 leading-relaxed">{description}</p>

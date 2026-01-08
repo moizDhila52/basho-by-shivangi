@@ -1,0 +1,193 @@
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// --- Enums ---
+enum Role {
+  CUSTOMER
+  ADMIN
+}
+
+enum OrderStatus {
+  PENDING
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+enum WorkshopStatus {
+  UPCOMING
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+// --- Models ---
+
+model User {
+  id           String  @id @default(cuid())
+  email        String  @unique
+  name         String?
+  passwordHash String? // <--- ADDED THIS (Critical for signup)
+  phone        String?
+  gstNumber    String?
+  role         Role    @default(CUSTOMER)
+
+  // --- OTP Fields ---
+  otp          String?
+  otpExpiresAt DateTime?
+
+  // Relations
+  addresses Address[]
+  orders    Order[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Address {
+  id     String @id @default(cuid()) // <--- FIXED (Removed @db.ObjectId)
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  street    String
+  city      String
+  state     String
+  pincode   String
+  country   String  @default("India")
+  isDefault Boolean @default(false)
+}
+
+model Category {
+  id          String    @id @default(cuid())
+  name        String
+  slug        String    @unique
+  description String?
+  products    Product[]
+  createdAt   DateTime  @default(now())
+}
+
+model Product {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  description String
+  price       Float
+  stock       Int      @default(0)
+  images      String[]
+  isFeatured  Boolean  @default(false)
+
+  categoryId String
+  category   Category @relation(fields: [categoryId], references: [id])
+
+  orderItems OrderItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([categoryId])
+  @@index([slug])
+}
+
+model Order {
+  id          String  @id @default(cuid())
+  orderNumber String? @unique
+
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id])
+
+  // Snapshot details at time of order
+  customerName  String?
+  customerEmail String?
+  address       Json
+
+  // Costs
+  total        Float
+  shippingCost Float @default(0)
+
+  status OrderStatus @default(PENDING)
+
+  // Payment Details
+  razorpayOrderId String?
+  paymentId       String?
+
+  items OrderItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model OrderItem {
+  id      String @id @default(cuid())
+  orderId String
+  order   Order  @relation(fields: [orderId], references: [id])
+
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+
+  quantity Int
+  price    Float
+}
+
+// --- WORKSHOP SECTION ---
+
+model Workshop {
+  id          String   @id @default(cuid())
+  title       String
+  slug        String   @unique
+  description String
+  price       Float
+  image       String
+  gallery     String[]
+
+  duration    String
+  maxStudents Int
+  location    String
+  language    String
+  level       String
+
+  instructorName  String
+  instructorRole  String
+  instructorImage String
+
+  status WorkshopStatus @default(UPCOMING)
+
+  sessions WorkshopSession[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model WorkshopSession {
+  id          String   @id @default(cuid())
+  date        DateTime
+  time        String
+  spotsTotal  Int
+  spotsBooked Int      @default(0)
+
+  workshopId String
+  workshop   Workshop @relation(fields: [workshopId], references: [id])
+
+  registrations WorkshopRegistration[]
+}
+
+model WorkshopRegistration {
+  id            String @id @default(cuid())
+  customerName  String
+  customerEmail String
+  amountPaid    Float
+
+  sessionId String
+  session   WorkshopSession @relation(fields: [sessionId], references: [id])
+
+  createdAt DateTime @default(now())
+}
