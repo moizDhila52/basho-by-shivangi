@@ -115,6 +115,47 @@ model OrderItem {
   @@index([productId])
 }
 
+model CustomOrder {
+  id                   String            @id @default(uuid())
+  userId               String?
+  productType          String
+  quantity             Int               @default(1)
+  material             String
+  glaze                String?
+  dimensions           Json              // { height: number, width: number, depth: number }
+  colorPreferences     String?
+  specialRequirements  String?
+  deadline             String?
+  budgetRange          String?
+  contactName          String
+  contactEmail         String
+  contactPhone         String?
+  notes                String?
+  status               CustomOrderStatus @default(PENDING)
+  estimatedPrice       Float?
+  actualPrice          Float?
+  files                String[]          // Array of file URLs
+  adminNotes           String?
+  createdAt            DateTime          @default(now())
+  updatedAt            DateTime          @updatedAt
+  User                 User?             @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+enum CustomOrderStatus {
+  PENDING
+  REVIEWED
+  QUOTED
+  APPROVED
+  IN_PROGRESS
+  COMPLETED
+  SHIPPED
+  CANCELLED
+}
+
 model Product {
   id              String         @id @default(uuid())
   name            String
@@ -188,6 +229,7 @@ model User {
   Address      Address[]
   CustomOrder  CustomOrder[]
   Order        Order[]
+  CustomOrder  CustomOrder[]
   Review       Review[]
   Cart         Cart?          @relation(fields: [cartId], references: [id])
   WishlistItem WishlistItem[]
