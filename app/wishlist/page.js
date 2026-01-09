@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import React, { useState, useEffect, useCallback } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import React, { useState, useEffect, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   Heart,
   ShoppingBag,
@@ -13,20 +13,20 @@ import {
   Minus,
   ArrowRight,
   X,
-} from "lucide-react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useAuth } from "@/components/AuthProvider";
-import { useCart } from "@/context/CartContext";
-import toast from "react-hot-toast";
+} from 'lucide-react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/components/AuthProvider';
+import { useCart } from '@/context/CartContext';
+import toast from 'react-hot-toast';
 
 const COLORS = {
-  dark: "#442D1C",
-  brown: "#652810",
-  clay: "#8E5022",
-  terracotta: "#C85428",
-  cream: "#EDD8B4",
-  background: "#FDFBF7",
+  dark: '#442D1C',
+  brown: '#652810',
+  clay: '#8E5022',
+  terracotta: '#C85428',
+  cream: '#EDD8B4',
+  background: '#FDFBF7',
 };
 
 const fadeInUp = {
@@ -55,15 +55,15 @@ const staggerContainer = {
 // Fetch wishlist from API
 const fetchWishlist = async () => {
   try {
-    const response = await fetch("/api/wishlist", {
-      credentials: "include",
+    const response = await fetch('/api/wishlist', {
+      credentials: 'include',
     });
 
     if (!response.ok) return [];
     const data = await response.json();
     return data.wishlist || [];
   } catch (error) {
-    console.error("Error fetching wishlist:", error);
+    console.error('Error fetching wishlist:', error);
     return [];
   }
 };
@@ -74,9 +74,9 @@ const removeFromWishlistAPI = async (productId) => {
     const response = await fetch(
       `/api/wishlist/remove?productId=${productId}`,
       {
-        method: "DELETE",
-        credentials: "include",
-      }
+        method: 'DELETE',
+        credentials: 'include',
+      },
     );
 
     const data = await response.json();
@@ -84,14 +84,14 @@ const removeFromWishlistAPI = async (productId) => {
     if (!response.ok) {
       return {
         success: false,
-        error: data.error || "Failed to remove from wishlist",
+        error: data.error || 'Failed to remove from wishlist',
       };
     }
 
     return data;
   } catch (error) {
-    console.error("Error in removeFromWishlistAPI:", error);
-    return { success: false, error: error.message || "Network error" };
+    console.error('Error in removeFromWishlistAPI:', error);
+    return { success: false, error: error.message || 'Network error' };
   }
 };
 
@@ -109,7 +109,7 @@ export default function WishlistPage() {
   useEffect(() => {
     const loadWishlist = async () => {
       if (!user && !authLoading) {
-        router.push("/login?returnUrl=/wishlist");
+        router.push('/login?returnUrl=/wishlist');
         return;
       }
 
@@ -119,8 +119,8 @@ export default function WishlistPage() {
           const wishlistData = await fetchWishlist();
           setWishlistItems(wishlistData);
         } catch (error) {
-          console.error("Error loading wishlist:", error);
-          toast.error("Failed to load wishlist");
+          console.error('Error loading wishlist:', error);
+          toast.error('Failed to load wishlist');
         } finally {
           setLoading(false);
         }
@@ -139,15 +139,15 @@ export default function WishlistPage() {
 
       if (result.success) {
         setWishlistItems((prev) =>
-          prev.filter((item) => item.productId !== productId)
+          prev.filter((item) => item.productId !== productId),
         );
-        toast.success("Removed from wishlist");
+        toast.success('Removed from wishlist');
       } else {
-        toast.error(result.error || "Failed to remove from wishlist");
+        toast.error(result.error || 'Failed to remove from wishlist');
       }
     } catch (error) {
-      console.error("Error removing from wishlist:", error);
-      toast.error("Failed to remove from wishlist");
+      console.error('Error removing from wishlist:', error);
+      toast.error('Failed to remove from wishlist');
     } finally {
       setRemovingItems((prev) => {
         const newSet = new Set(prev);
@@ -158,26 +158,47 @@ export default function WishlistPage() {
   }, []);
 
   // Add to cart handler
+  // Add to cart handler
+  // Add to cart handler
   const handleAddToCart = useCallback(
-    (product) => {
+    async (product) => {
+      // 1. Block clicks if currently loading
+      if (isUpdating) return;
+
+      // 2. Immediate frontend stock check
+      if (!product.inStock) {
+        toast.error('Product is out of stock');
+        return;
+      }
+
       const cartProduct = {
         id: product.id,
         name: product.name,
         slug: product.slug,
         price: product.price,
         originalPrice: product.originalPrice,
-        image: product.images?.[0] || "/placeholder-image.jpg",
+        image: product.images?.[0] || '/placeholder-image.jpg',
         inStock: product.inStock,
         category: product.Category?.name,
         quantity: 1,
       };
 
-      addToCart(cartProduct);
-      toast.success("Added to cart");
-    },
-    [addToCart]
-  );
+      try {
+        // 3. Await the context action.
+        // If CartContext is fixed (Step 1), this line will freeze
+        // until the server responds.
+        await addToCart(cartProduct);
 
+        // 4. Success! This only runs if the line above did NOT throw an error.
+        toast.success('Added to cart');
+      } catch (error) {
+        // 5. If server returns 400/500, we land here.
+        console.error('Add to cart failed:', error);
+        toast.error(error.message || 'Failed to add to cart');
+      }
+    },
+    [addToCart, isUpdating],
+  );
   // Update quantity handler
   const handleUpdateQuantity = useCallback(
     (productId, quantity) => {
@@ -187,7 +208,7 @@ export default function WishlistPage() {
         updateQuantity(productId, quantity);
       }
     },
-    [updateQuantity, removeFromCart]
+    [updateQuantity, removeFromCart],
   );
 
   // Loading state
@@ -219,9 +240,9 @@ export default function WishlistPage() {
               <p className="text-stone-600">
                 {wishlistItems.length > 0
                   ? `${wishlistItems.length} ${
-                      wishlistItems.length === 1 ? "item" : "items"
+                      wishlistItems.length === 1 ? 'item' : 'items'
                     } saved for later`
-                  : "Start building your collection"}
+                  : 'Start building your collection'}
               </p>
             </div>
 
@@ -365,8 +386,8 @@ export default function WishlistPage() {
                                 key={i}
                                 className={`w-4 h-4 ${
                                   i < Math.floor(rating)
-                                    ? "fill-[#C85428] text-[#C85428]"
-                                    : "text-stone-300"
+                                    ? 'fill-[#C85428] text-[#C85428]'
+                                    : 'text-stone-300'
                                 }`}
                               />
                             ))}
@@ -398,12 +419,13 @@ export default function WishlistPage() {
                           <div className="flex-1">
                             <div className="flex items-center justify-between bg-[#EDD8B4] rounded-xl p-1">
                               <button
-                                onClick={() =>
+                                onClick={(e) => {
+                                  e.stopPropagation(); // Prevent bubbling
                                   handleUpdateQuantity(
                                     product.id,
-                                    quantityInCart - 1
-                                  )
-                                }
+                                    quantityInCart - 1,
+                                  );
+                                }}
                                 disabled={isUpdating}
                                 className="w-10 h-10 flex items-center justify-center rounded-lg hover:bg-[#E8D0A0] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                               >
@@ -417,27 +439,51 @@ export default function WishlistPage() {
                                 </span>
                               </div>
 
-                              <button
-                                onClick={() => handleAddToCart(product)}
-                                disabled={isUpdating}
-                                className="w-10 h-10 flex items-center justify-center rounded-lg hover:bg-[#E8D0A0] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                              >
-                                <Plus className="w-4 h-4 text-[#442D1C]" />
-                              </button>
+                              {/* FIX: If Out of Stock, do not show Plus button. Show X or disabled state */}
+                              {!product.inStock ? (
+                                <button
+                                  disabled
+                                  className="w-10 h-10 flex items-center justify-center rounded-lg opacity-50 cursor-not-allowed bg-stone-200"
+                                  title="Out of Stock"
+                                >
+                                  <X className="w-4 h-4 text-red-500" />
+                                </button>
+                              ) : (
+                                <button
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation(); // Stop event bubbling
+                                    handleAddToCart(product);
+                                  }}
+                                  disabled={isUpdating}
+                                  className="w-10 h-10 flex items-center justify-center rounded-lg hover:bg-[#E8D0A0] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                  <Plus className="w-4 h-4 text-[#442D1C]" />
+                                </button>
+                              )}
                             </div>
+                            {/* Optional: Add a text warning below if needed */}
+                            {!product.inStock && (
+                              <p className="text-[10px] text-red-600 text-center mt-1 font-medium">
+                                Max available
+                              </p>
+                            )}
                           </div>
                         ) : (
                           <button
-                            onClick={() => handleAddToCart(product)}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              handleAddToCart(product);
+                            }}
                             disabled={!product.inStock || isUpdating}
                             className={`flex-1 py-3 rounded-xl font-medium transition-all flex items-center justify-center gap-2 ${
                               product.inStock
-                                ? "bg-[#8E5022] text-white hover:bg-[#652810]"
-                                : "bg-stone-200 text-stone-400 cursor-not-allowed"
-                            } ${isUpdating ? "opacity-75" : ""}`}
+                                ? 'bg-[#8E5022] text-white hover:bg-[#652810]'
+                                : 'bg-stone-200 text-stone-400 cursor-not-allowed'
+                            } ${isUpdating ? 'opacity-75' : ''}`}
                           >
                             <ShoppingBag className="w-5 h-5" />
-                            {product.inStock ? "Add to Cart" : "Out of Stock"}
+                            {product.inStock ? 'Add to Cart' : 'Out of Stock'}
                           </button>
                         )}
                       </div>

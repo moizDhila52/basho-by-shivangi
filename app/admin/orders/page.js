@@ -22,13 +22,21 @@ import {
   MapPin,
   ExternalLink,
   X,
+  ClipboardCheck, // Added for Confirmed Icon
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { format } from "date-fns";
 import { useToast } from "@/components/ToastProvider";
-import React from "react"; // For React.cloneElement
+import React from "react";
 
-const STATUS_FLOW = ["PENDING", "PROCESSING", "SHIPPED", "DELIVERED"];
+// UPDATED: Added CONFIRMED to the flow
+const STATUS_FLOW = [
+  "PENDING",
+  "CONFIRMED",
+  "PROCESSING",
+  "SHIPPED",
+  "DELIVERED",
+];
 
 export default function AdminOrdersPage() {
   const [orders, setOrders] = useState([]);
@@ -38,13 +46,15 @@ export default function AdminOrdersPage() {
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [updatingOrder, setUpdatingOrder] = useState(null);
-  const [dateRange, setDateRange] = useState("all");  
+  const [dateRange, setDateRange] = useState("all");
+
+  const { addToast } = useToast(); // Hook was missing in your snippet, ensuring it works
 
   // Fetch Orders
   const fetchOrders = async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/admin/orders");
+      const res = await fetch("/api/admin/orders"); // Ensure this endpoint exists as discussed
       if (!res.ok) throw new Error("Failed to fetch orders");
       const data = await res.json();
       setOrders(data);
@@ -102,15 +112,21 @@ export default function AdminOrdersPage() {
     setUpdatingOrder(orderId);
 
     try {
-      const res = await fetch(`/api/admin/orders/${orderId}`, {
-        method: "PATCH",
+      // Assuming you created the route app/api/admin/orders/update/route.js
+      // or similar based on previous steps. Adjust URL if needed.
+      const res = await fetch(`/api/admin/orders/update`, {
+        method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: newStatus }),
+        body: JSON.stringify({ id: orderId, status: newStatus }),
       });
 
       if (!res.ok) throw new Error("Failed to update");
 
-      const updatedOrder = await res.json();
+      const data = await res.json();
+      const updatedOrder = data.order || {
+        ...oldOrders.find((o) => o.id === orderId),
+        status: newStatus,
+      };
 
       // Sync with server data
       setOrders((prev) =>
@@ -151,7 +167,10 @@ export default function AdminOrdersPage() {
         currency: "INR",
       }),
       totalOrders: orders.length,
-      pendingOrders: orders.filter((o) => o.status === "PENDING").length,
+      // Group Pending and Confirmed as "Action Needed" or keep separate
+      pendingOrders: orders.filter(
+        (o) => o.status === "PENDING" || o.status === "CONFIRMED"
+      ).length,
       todayOrders: orders.filter(
         (o) => new Date(o.createdAt).toDateString() === today
       ).length,
@@ -165,17 +184,18 @@ export default function AdminOrdersPage() {
       Customer: order.customerName,
       Email: order.customerEmail,
       Phone: order.customerPhone || "N/A",
-      GSTIN: order.customerGst || "N/A", // Added GSTIN to export
+      GSTIN: order.customerGst || "N/A",
       Amount: order.total,
       Status: order.status,
       Date: format(new Date(order.createdAt), "dd/MM/yyyy"),
-      // Handle the OrderItem relation
       Items: order.OrderItem?.map(
         (item) => `${item.productName} (x${item.quantity})`
       ).join("; "),
     }));
 
-    const headers = Object.keys(csvData[0]);
+    const headers = Object.keys(csvData[0] || {});
+    if (headers.length === 0) return;
+
     const rows = csvData.map((row) =>
       headers.map((header) => JSON.stringify(row[header])).join(",")
     );
@@ -246,7 +266,7 @@ export default function AdminOrdersPage() {
           color="bg-[#8E5022]/10"
         />
         <StatCard
-          label="Pending"
+          label="Active (Pending/Conf)"
           value={stats.pendingOrders}
           icon={<Clock className="text-[#F59E0B]" />}
           color="bg-[#F59E0B]/10"
@@ -288,9 +308,11 @@ export default function AdminOrdersPage() {
         </div>
 
         <div className="flex flex-wrap gap-2">
+          {/* UPDATED: Added CONFIRMED to filter list */}
           {[
             "ALL",
             "PENDING",
+            "CONFIRMED",
             "PROCESSING",
             "SHIPPED",
             "DELIVERED",
@@ -333,14 +355,16 @@ export default function AdminOrdersPage() {
                 >
                   <td className="p-4">
                     <span className="font-mono font-bold">
-                      #{order.orderNumber}
+                      #{order.orderNumber || order.id.slice(-8).toUpperCase()}
                     </span>
                     <div className="text-xs text-[#8E5022] mt-1">
                       {format(new Date(order.createdAt), "MMM dd, HH:mm")}
                     </div>
                   </td>
                   <td className="p-4">
-                    <div className="font-medium">{order.customerName}</div>
+                    <div className="font-medium">
+                      {order.customerName || "Guest"}
+                    </div>
                     <div className="text-xs text-[#8E5022]">
                       {order.customerEmail}
                     </div>
@@ -395,6 +419,8 @@ export default function AdminOrdersPage() {
                         className="bg-white border border-[#EDD8B4] rounded-lg text-xs py-1.5 px-2 focus:ring-1 focus:ring-[#C85428] outline-none disabled:opacity-50 cursor-pointer"
                       >
                         <option value="PENDING">Pending</option>
+                        {/* UPDATED: Added Confirmed option */}
+                        <option value="CONFIRMED">Confirmed</option>
                         <option value="PROCESSING">Processing</option>
                         <option value="SHIPPED">Shipped</option>
                         <option value="DELIVERED">Delivered</option>
@@ -440,7 +466,7 @@ export default function AdminOrdersPage() {
               <div className="p-6 bg-[#FDFBF7] border-b border-[#EDD8B4] flex justify-between items-start">
                 <div>
                   <h2 className="font-serif text-2xl font-bold text-[#442D1C]">
-                    Order #{selectedOrder.orderNumber}
+                    Order #{selectedOrder.orderNumber || selectedOrder.id}
                   </h2>
                   <p className="text-sm text-[#8E5022] mt-1">
                     {format(
@@ -472,7 +498,7 @@ export default function AdminOrdersPage() {
                         </div>
                         <div>
                           <p className="font-bold text-[#442D1C]">
-                            {selectedOrder.customerName}
+                            {selectedOrder.customerName || "Guest"}
                           </p>
                           <p className="text-[#8E5022]">
                             {selectedOrder.customerEmail}
@@ -487,7 +513,7 @@ export default function AdminOrdersPage() {
                       )}
                     </div>
 
-                    {/* NEW: Customer GST Details */}
+                    {/* Customer GST Details */}
                     {selectedOrder.customerGst && (
                       <div className="mt-4 p-3 bg-[#FDFBF7] border border-[#EDD8B4] rounded-lg">
                         <div className="text-xs font-bold text-[#8E5022] uppercase tracking-wider mb-2">
@@ -522,7 +548,7 @@ export default function AdminOrdersPage() {
                           </p>
                           <p>{selectedOrder.address.pincode}</p>
                           <p className="text-[#8E5022] text-xs mt-1 uppercase font-bold">
-                            {selectedOrder.address.country}
+                            {selectedOrder.address.country || "India"}
                           </p>
                         </div>
                       </div>
@@ -620,6 +646,8 @@ export default function AdminOrdersPage() {
                     className="ml-2 bg-white border border-[#EDD8B4] rounded p-1 focus:ring-1 focus:ring-[#C85428] outline-none cursor-pointer"
                   >
                     <option value="PENDING">Pending</option>
+                    {/* UPDATED: Added Confirmed option */}
+                    <option value="CONFIRMED">Confirmed</option>
                     <option value="PROCESSING">Processing</option>
                     <option value="SHIPPED">Shipped</option>
                     <option value="DELIVERED">Delivered</option>
@@ -658,16 +686,20 @@ function StatCard({ label, value, icon, color }) {
 }
 
 function StatusBadge({ status }) {
+  // UPDATED: Added CONFIRMED style
   const styles = {
     PENDING: "bg-yellow-100 text-yellow-800 border-yellow-200",
+    CONFIRMED: "bg-indigo-100 text-indigo-800 border-indigo-200", // New Style
     PROCESSING: "bg-blue-100 text-blue-800 border-blue-200",
     SHIPPED: "bg-purple-100 text-purple-800 border-purple-200",
     DELIVERED: "bg-green-100 text-green-800 border-green-200",
     CANCELLED: "bg-red-100 text-red-800 border-red-200",
   };
 
+  // UPDATED: Added CONFIRMED Icon
   const icons = {
     PENDING: Clock,
+    CONFIRMED: ClipboardCheck, // New Icon
     PROCESSING: Package,
     SHIPPED: Truck,
     DELIVERED: CheckCircle,
@@ -688,9 +720,12 @@ function StatusBadge({ status }) {
 }
 
 function getStatusColor(status, bg = false) {
+  // UPDATED: Added CONFIRMED Color Logic
   switch (status) {
     case "PENDING":
       return bg ? "bg-yellow-400" : "text-yellow-600";
+    case "CONFIRMED":
+      return bg ? "bg-indigo-400" : "text-indigo-600"; // New Color
     case "PROCESSING":
       return bg ? "bg-blue-400" : "text-blue-600";
     case "SHIPPED":

@@ -4,18 +4,20 @@ import { prisma } from "@/lib/prisma";
 export async function GET() {
   try {
     const orders = await prisma.order.findMany({
-      orderBy: { createdAt: 'desc' },
       include: {
-        user: {
-          select: { name: true, email: true } // Fetch user details if linked
-        },
-        items: true
-      }
+        OrderItem: true,
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
     });
 
     return NextResponse.json(orders);
   } catch (error) {
-    console.error("Order Fetch Error:", error);
-    return NextResponse.json({ error: "Failed to fetch orders" }, { status: 500 });
+    console.error("Error fetching admin orders:", error);
+    return NextResponse.json(
+      { error: "Failed to fetch orders" },
+      { status: 500 }
+    );
   }
 }

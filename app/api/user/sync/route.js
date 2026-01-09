@@ -1,5 +1,5 @@
-import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma"; // Ensure you have your prisma client export here
+import { NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
 
 export async function POST(req) {
   try {
@@ -22,24 +22,46 @@ export async function POST(req) {
       },
     });
 
-    // 2. If address provided, save it
+    // 2. Address Logic: Prevent Duplicates & Enforce Limit
     if (address) {
-      await prisma.address.create({
-        data: {
-          id: crypto.randomUUID(),
+      // A. Check if this EXACT address already exists
+      const existingAddress = await prisma.address.findFirst({
+        where: {
           userId: user.id,
           street: address.street,
           city: address.city,
           state: address.state,
           pincode: address.pincode,
-          isDefault: true,
         },
       });
+
+      // B. If it does NOT exist, proceed to checks
+      if (!existingAddress) {
+        // C. Check Limit (Max 2)
+        const addressCount = await prisma.address.count({
+          where: { userId: user.id },
+        });
+
+        if (addressCount < 2) {
+          await prisma.address.create({
+            data: {
+              // Ensure your schema auto-generates IDs, or use crypto.randomUUID() if strictly required
+              userId: user.id,
+              street: address.street,
+              city: address.city,
+              state: address.state,
+              pincode: address.pincode,
+              
+              isDefault: addressCount === 0,
+            },
+          });
+        }
+      }
     }
 
     return NextResponse.json({ success: true, userId: user.id });
   } catch (error) {
-    console.error("Sync Error:", error);
-    return NextResponse.json({ error: "Failed to sync user" }, { status: 500 });
+    console.error('Sync Error:', error);
+    return NextResponse.json({ error: 'Failed to sync user' }, { status: 500 });
   }
 }

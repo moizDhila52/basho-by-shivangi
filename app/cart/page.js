@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import React, { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   ArrowLeft,
   ShoppingBag,
@@ -11,16 +11,16 @@ import {
   ArrowRight,
   Loader2,
   Heart,
-  Tag,
   Truck,
   X,
   AlertTriangle,
-} from "lucide-react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useCart } from "@/context/CartContext";
-import { useAuth } from "@/components/AuthProvider";
-import toast from "react-hot-toast";
+} from 'lucide-react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useCart } from '@/context/CartContext';
+import { useAuth } from '@/components/AuthProvider';
+import toast from 'react-hot-toast';
+import RelatedProducts from '@/components/cart/RelatedProducts';
 
 const fadeInUp = {
   hidden: { opacity: 0, y: 40 },
@@ -121,6 +121,7 @@ export default function CartPage() {
   const { user } = useAuth();
   const {
     cartItems,
+    addToCart,
     removeFromCart,
     updateQuantity,
     clearCart,
@@ -128,29 +129,82 @@ export default function CartPage() {
     getTotalItems,
     loading,
     isUpdating,
+    moveToWishlist,
   } = useCart();
 
   const [showClearDialog, setShowClearDialog] = useState(false);
+  const [settings, setSettings] = useState({
+    shippingBaseRate: 50,
+    shippingPerKgRate: 40,
+    freeShippingThreshold: 5000,
+    gstPercent: 12,
+  });
 
+  // Fetch Store Settings for Calculation
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const res = await fetch('/api/settings');
+        if (res.ok) {
+          const data = await res.json();
+          setSettings(data);
+        }
+      } catch (error) {
+        console.error('Failed to load settings');
+      }
+    };
+    fetchSettings();
+  }, []);
+
+  // --- Dynamic Calculation Logic ---
   const subtotal = getTotalPrice();
-  const shipping = subtotal > 200 ? 0 : 15;
-  const tax = subtotal * 0.08; // 8% tax
-  const total = subtotal + shipping + tax;
+
+  // Calculate Total Weight of Cart (Product Weight * Quantity)
+  const totalWeight = cartItems.reduce((acc, item) => {
+    // Default to 0.5kg if product weight is not defined
+    return acc + (item.weight || 0.5) * item.quantity;
+  }, 0);
+
+  // Calculate Shipping Cost based on Settings
+  let shippingCost = 0;
+  if (subtotal >= settings.freeShippingThreshold) {
+    shippingCost = 0;
+  } else {
+    if (totalWeight <= 1) {
+      shippingCost = settings.shippingBaseRate;
+    } else {
+      const extraWeight = Math.ceil(totalWeight - 1);
+      shippingCost =
+        settings.shippingBaseRate + extraWeight * settings.shippingPerKgRate;
+    }
+  }
+
+  const tax = subtotal * (settings.gstPercent / 100);
+  const total = subtotal + shippingCost + tax;
+
+  const hasOutOfStockItems = cartItems.some(
+    (item) => item.isOutOfStock || item.quantity > item.stock,
+  );
 
   // Handle checkout
   const handleCheckout = () => {
     if (!user) {
-      toast.error("Please login to checkout");
+      toast.error('Please login to checkout');
       router.push(`/login?returnUrl=/checkout`);
       return;
     }
 
     if (cartItems.length === 0) {
-      toast.error("Your cart is empty");
+      toast.error('Your cart is empty');
       return;
     }
 
-    router.push("/checkout");
+    if (hasOutOfStockItems) {
+      toast.error('Please remove out-of-stock items before checkout');
+      return;
+    }
+
+    router.push('/checkout');
   };
 
   // Handle clear cart
@@ -282,7 +336,7 @@ export default function CartPage() {
           </div>
 
           <motion.p variants={fadeInUp} className="text-stone-600 text-lg">
-            {getTotalItems()} {getTotalItems() === 1 ? "item" : "items"} in your
+            {getTotalItems()} {getTotalItems() === 1 ? 'item' : 'items'} in your
             cart
           </motion.p>
         </motion.div>
@@ -300,9 +354,38 @@ export default function CartPage() {
                 key={item.id}
                 variants={fadeInUp}
                 custom={index}
-                className="bg-white rounded-3xl p-6 shadow-lg hover:shadow-xl transition-all"
+                className={`bg-white rounded-3xl p-6 shadow-lg transition-all ${
+                  item.isOutOfStock || item.quantity > item.stock
+                    ? 'opacity-75 border-2 border-orange-100'
+                    : 'hover:shadow-xl'
+                }`}
               >
-                <div className="flex gap-6">
+                <div className="flex gap-6 relative">
+                  {/* --- OOS OVERLAY & WISHLIST ACTION --- */}
+                  {(item.isOutOfStock || item.quantity > item.stock) && (
+                    <div className="absolute top-0 right-14 z-20 flex flex-col items-end gap-2">
+                      {/* 1. The Badge */}
+                      <span className="bg-red-100 text-red-700 text-xs font-bold px-3 py-1.5 rounded-full flex items-center gap-1 shadow-sm">
+                        <AlertTriangle className="w-3 h-3" />
+                        {item.isOutOfStock
+                          ? 'Out of Stock'
+                          : `Only ${item.stock} left`}
+                      </span>
+
+                      {/* 2. The Move to Wishlist Button */}
+                      <button
+                        onClick={() => moveToWishlist(item)}
+                        disabled={isUpdating}
+                        className="flex items-center gap-1.5 bg-white border border-[#EDD8B4] px-3 py-1.5 rounded-full shadow-sm hover:bg-[#FDFBF7] transition-colors group/wish"
+                      >
+                        <Heart className="w-3.5 h-3.5 text-[#8E5022] group-hover/wish:fill-[#8E5022] transition-colors" />
+                        <span className="text-xs font-medium text-[#442D1C]">
+                          Save for later
+                        </span>
+                      </button>
+                    </div>
+                  )}
+                  {/* ----------------------------------- */}
                   {/* Product Image */}
                   <Link
                     href={`/products/${item.slug}`}
@@ -314,7 +397,7 @@ export default function CartPage() {
                         alt={item.name}
                         className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                         onError={(e) => {
-                          e.target.src = "/placeholder-image.jpg";
+                          e.target.src = '/placeholder-image.jpg';
                         }}
                       />
                     </div>
@@ -349,12 +432,12 @@ export default function CartPage() {
                     <div className="flex items-center gap-4 mb-4">
                       <div className="flex items-baseline gap-2">
                         <span className="font-serif text-2xl text-[#8E5022]">
-                          ${item.price.toFixed(2)}
+                          ₹{item.price.toFixed(2)}
                         </span>
                         {item.originalPrice &&
                           item.originalPrice > item.price && (
                             <span className="text-stone-400 line-through text-sm">
-                              ${item.originalPrice.toFixed(2)}
+                              ₹{item.originalPrice.toFixed(2)}
                             </span>
                           )}
                       </div>
@@ -362,12 +445,12 @@ export default function CartPage() {
                         <span
                           className={`text-xs px-3 py-1 rounded-full ${
                             item.stock > 10
-                              ? "bg-green-100 text-green-700"
-                              : "bg-orange-100 text-orange-700"
+                              ? 'bg-green-100 text-green-700'
+                              : 'bg-orange-100 text-orange-700'
                           }`}
                         >
                           {item.stock > 10
-                            ? "In Stock"
+                            ? 'In Stock'
                             : `Only ${item.stock} left`}
                         </span>
                       )}
@@ -404,7 +487,7 @@ export default function CartPage() {
                           Subtotal
                         </div>
                         <div className="font-serif text-xl text-[#442D1C]">
-                          ${(item.price * item.quantity).toFixed(2)}
+                          ₹{(item.price * item.quantity).toFixed(2)}
                         </div>
                       </div>
                     </div>
@@ -412,6 +495,19 @@ export default function CartPage() {
                 </div>
               </motion.div>
             ))}
+
+            {/* Related Products Section */}
+            <RelatedProducts
+              cartItems={cartItems}
+              onAdd={async (product) => {
+                try {
+                  await addToCart(product);
+                  toast.success(`Added ${product.name} to cart`);
+                } catch (error) {
+                  console.error(error);
+                }
+              }}
+            />
           </motion.div>
 
           {/* Right Column - Order Summary */}
@@ -431,7 +527,7 @@ export default function CartPage() {
                 <div className="space-y-4 mb-6">
                   <div className="flex justify-between text-stone-600">
                     <span>Subtotal ({getTotalItems()} items)</span>
-                    <span className="font-medium">${subtotal.toFixed(2)}</span>
+                    <span className="font-medium">₹{subtotal.toFixed(2)}</span>
                   </div>
 
                   <div className="flex justify-between text-stone-600">
@@ -440,24 +536,17 @@ export default function CartPage() {
                       Shipping
                     </span>
                     <span className="font-medium">
-                      {shipping === 0 ? (
+                      {shippingCost === 0 ? (
                         <span className="text-green-600">Free</span>
                       ) : (
-                        `$${shipping.toFixed(2)}`
+                        `₹${shippingCost.toFixed(2)}`
                       )}
                     </span>
                   </div>
 
-                  {subtotal < 200 && (
-                    <div className="flex items-center gap-2 p-3 bg-[#EDD8B4]/30 rounded-xl text-sm text-stone-600">
-                      <Tag className="w-4 h-4 text-[#8E5022]" />
-                      Add ${(200 - subtotal).toFixed(2)} more for free shipping
-                    </div>
-                  )}
-
                   <div className="flex justify-between text-stone-600">
-                    <span>Tax (8%)</span>
-                    <span className="font-medium">${tax.toFixed(2)}</span>
+                    <span>Tax ({settings.gstPercent}%)</span>
+                    <span className="font-medium">₹{tax.toFixed(2)}</span>
                   </div>
 
                   <div className="pt-4 border-t-2 border-stone-200">
@@ -466,7 +555,7 @@ export default function CartPage() {
                         Total
                       </span>
                       <span className="font-serif text-3xl text-[#442D1C]">
-                        ${total.toFixed(2)}
+                        ₹{total.toFixed(2)}
                       </span>
                     </div>
                   </div>
@@ -475,13 +564,22 @@ export default function CartPage() {
                 {/* Checkout Button */}
                 <button
                   onClick={handleCheckout}
-                  disabled={isUpdating}
-                  className="w-full bg-[#8E5022] text-white py-5 rounded-2xl font-medium text-lg hover:bg-[#652810] transition-colors flex items-center justify-center gap-3 mb-4 disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={isUpdating || hasOutOfStockItems}
+                  className={`w-full py-5 rounded-2xl font-medium text-lg flex items-center justify-center gap-3 mb-4 transition-colors ${
+                    isUpdating || hasOutOfStockItems
+                      ? 'bg-stone-300 text-stone-500 cursor-not-allowed'
+                      : 'bg-[#8E5022] text-white hover:bg-[#652810]'
+                  }`}
                 >
                   {isUpdating ? (
                     <>
                       <Loader2 className="w-5 h-5 animate-spin" />
                       Processing...
+                    </>
+                  ) : hasOutOfStockItems ? (
+                    <>
+                      Resolve Stock Issues
+                      <AlertTriangle className="w-5 h-5" />
                     </>
                   ) : (
                     <>
@@ -502,7 +600,10 @@ export default function CartPage() {
                     <div className="w-8 h-8 rounded-full bg-[#EDD8B4]/50 flex items-center justify-center">
                       <Truck className="w-4 h-4 text-[#8E5022]" />
                     </div>
-                    <span>Free shipping on orders over $200</span>
+                    <span>
+                      Free shipping on orders over ₹
+                      {settings.freeShippingThreshold}
+                    </span>
                   </div>
                   <div className="flex items-center gap-3 text-sm text-stone-600">
                     <div className="w-8 h-8 rounded-full bg-[#EDD8B4]/50 flex items-center justify-center">

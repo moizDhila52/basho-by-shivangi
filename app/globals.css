@@ -168,3 +168,28 @@ main.landing-page {
   
   
 }
+
+@media print {
+  /* 1. Hide the Navigation Bar, Header, and Footer */
+  nav, header, footer {
+    display: none !important;
+  }
+
+  /* 2. Hide any other elements you might want gone */
+  /* This hides the "Back" button or breadcrumbs if they exist */
+  button {
+    display: none !important;
+  }
+  
+  /* 3. Reset background colors for a clean print */
+  body, main {
+    background-color: white !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* 4. Ensure the invoice takes full width */
+  .min-h-screen {
+    min-height: auto !important;
+  }
+}

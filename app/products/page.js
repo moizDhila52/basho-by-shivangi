@@ -954,6 +954,24 @@ function ProductsPageContent() {
             </div>
           </motion.div>
         </div>
+
+        {/* Custom Order Button */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+          className="mt-8 flex justify-center"
+        >
+          <Link href="/custom-order">
+            <button className="group relative bg-gradient-to-r from-[#8E5022] to-[#C85428] text-white px-8 py-4 rounded-2xl font-medium hover:shadow-2xl hover:shadow-[#C85428]/30 transition-all duration-300 hover:scale-105 flex items-center gap-3 overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-r from-[#652810] to-[#8E5022] opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+              <Sparkles className="w-5 h-5 relative z-10" />
+              <span className="relative z-10">Custom Order</span>
+              <div className="absolute -right-2 -top-2 w-6 h-6 rounded-full bg-white/20" />
+              <div className="absolute -right-4 -bottom-4 w-10 h-10 rounded-full bg-white/10" />
+            </button>
+          </Link>
+        </motion.div>
       </section>
 
       {/* Main Content */}
@@ -1241,7 +1259,6 @@ function ProductsPageContent() {
           )}
         </div>
       </section>
-
       {/* Cart Slider */}
       <CartSlider />
     </main>

@@ -115,6 +115,36 @@ model OrderItem {
   @@index([productId])
 }
 
+model CustomOrder {
+  id                  String            @id @default(uuid())
+  userId              String?
+  productType         String
+  quantity            Int               @default(1)
+  material            String
+  glaze               String?
+  dimensions          Json
+  colorPreferences    String?
+  specialRequirements String?
+  deadline            String?
+  budgetRange         String?
+  contactName         String
+  contactEmail        String
+  contactPhone        String?
+  notes               String?
+  status              CustomOrderStatus @default(PENDING)
+  estimatedPrice      Float?
+  actualPrice         Float?
+  files               String[]
+  adminNotes          String?
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+  User                User?             @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+}
+
 model Product {
   id              String         @id @default(uuid())
   name            String
@@ -183,6 +213,7 @@ model StoreSettings {
 }
 
 model User {
+<<<<<<< HEAD
   id           String         @id @default(uuid())
   email        String         @unique
   name         String?
@@ -204,6 +235,27 @@ model User {
   Review       Review[]
   Cart         Cart?          @relation(fields: [cartId], references: [id])
   WishlistItem WishlistItem[]
+=======
+  id             String         @id @default(uuid())
+  email          String         @unique
+  name           String?
+  role           Role           @default(CUSTOMER)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  cartId         String?
+  gstNumber      String?
+  otp            String?
+  otpExpiresAt   DateTime?
+  passwordHash   String?
+  phone          String?
+  isSubscribed   Boolean        @default(false)
+  Address        Address[]
+  CustomOrder    CustomOrder[]
+  Order          Order[]
+  Review         Review[]
+  Cart           Cart?          @relation(fields: [cartId], references: [id])
+  WishlistItem   WishlistItem[]
+>>>>>>> 120244e3a9e13e6db71362eefe85d9f57895e1c4
 }
 
 model WishlistItem {
@@ -220,9 +272,9 @@ model WishlistItem {
 }
 
 model Workshop {
-  id              String            @id @default(uuid())
+  id              String              @id @default(uuid())
   title           String
-  slug            String            @unique
+  slug            String              @unique
   description     String
   price           Float
   image           String
@@ -235,9 +287,9 @@ model Workshop {
   instructorName  String
   instructorRole  String
   instructorImage String
-  status          WorkshopStatus    @default(UPCOMING)
-  createdAt       DateTime          @default(now())
-  updatedAt       DateTime          @updatedAt
+  status          WorkshopStatus      @default(UPCOMING)
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
   instructorBio   String?
   testimonials    Testimonial[]
   WorkshopSession WorkshopSession[]
@@ -375,43 +427,13 @@ model CorporateInquiry {
   @@index([createdAt])
 }
 
-model CustomOrder {
-  id                  String            @id
-  userId              String?
-  productType         String
-  quantity            Int               @default(1)
-  material            String
-  glaze               String?
-  dimensions          Json
-  colorPreferences    String?
-  specialRequirements String?
-  deadline            String?
-  budgetRange         String?
-  contactName         String
-  contactEmail        String
-  contactPhone        String?
-  notes               String?
-  status              CustomOrderStatus @default(PENDING)
-  estimatedPrice      Float?
-  actualPrice         Float?
-  files               String[]
-  adminNotes          String?
-  createdAt           DateTime          @default(now())
-  updatedAt           DateTime
-  User                User?             @relation(fields: [userId], references: [id])
-
-  @@index([createdAt])
-  @@index([status])
-  @@index([userId])
-}
-
 model NewsletterSubscriber {
-  id        String   @id
+  id        String   @id @default(uuid())
   email     String   @unique
   isActive  Boolean  @default(true)
   source    String   @default("checkout")
   createdAt DateTime @default(now())
-  updatedAt DateTime
+  updatedAt DateTime @updatedAt
 }
 
 enum EventType {
@@ -448,6 +470,7 @@ enum InquiryStatus {
 
 enum OrderStatus {
   PENDING
+  CONFIRMED
   PROCESSING
   SHIPPED
   DELIVERED

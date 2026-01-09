@@ -71,20 +71,28 @@ export async function GET(request) {
       });
     }
 
-    // Transform cart items to match frontend format
-    const cartItems = cart.CartItem.map((item) => ({
-      id: item.Product.id,
-      name: item.Product.name,
-      slug: item.Product.slug,
-      price: item.Product.price,
-      originalPrice: item.Product.originalPrice,
-      image: item.Product.images?.[0] || "/placeholder-image.jpg",
-      inStock: item.Product.inStock,
-      stock: item.Product.stock,
-      category: item.Product.Category?.name,
-      quantity: item.quantity,
-      cartItemId: item.id,
-    }));
+    const cartItems = cart.CartItem.map((item) => {
+      // Logic: Item is OOS if product is disabled OR cart qty > available stock
+      const isOutOfStock = !item.Product.inStock || item.Product.stock <= 0;
+      const isQuantityIssue = item.Product.stock < item.quantity;
+
+      return {
+        id: item.Product.id,
+        name: item.Product.name,
+        slug: item.Product.slug,
+        price: item.Product.price,
+        originalPrice: item.Product.originalPrice,
+        image: item.Product.images?.[0] || "/placeholder-image.jpg",
+        inStock: item.Product.inStock,
+        stock: item.Product.stock, // Current database stock
+        category: item.Product.Category?.name,
+        quantity: item.quantity,
+        cartItemId: item.id,
+        // New flags for frontend
+        isOutOfStock: isOutOfStock,
+        maxAvailable: item.Product.stock
+      };
+    });
 
     return NextResponse.json({ cartItems });
   } catch (error) {
