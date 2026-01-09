@@ -1,27 +1,21 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { sendOrderStatusEmail } from '@/lib/mailer';
+import { sendOrderStatusEmail } from '@/lib/mailer'; // Import the email function
 
 export async function PUT(req) {
   try {
     const body = await req.json();
-
-    // 🔍 Debugging: Log what we received
-    console.log('Admin Update Received:', body);
-
-    // 1. Get ID (Check both 'id' and 'orderId')
-    const id = body.id || body.orderId;
-    const newStatus = body.status;
+    // Destructure status as newStatus to avoid confusion
+    const { id, status: newStatus, ...otherData } = body;
 
     if (!id) {
-      console.error('Missing Order ID');
       return NextResponse.json(
         { error: 'Order ID is required' },
         { status: 400 },
       );
     }
 
-    // 2. Fetch the EXISTING order first to get the old status
+    // 1. Fetch the EXISTING order first to get the old status
     const existingOrder = await prisma.order.findUnique({
       where: { id },
     });
@@ -30,28 +24,27 @@ export async function PUT(req) {
       return NextResponse.json({ error: 'Order not found' }, { status: 404 });
     }
 
-    const oldStatus = existingOrder.status;
+    const oldStatus = existingOrder.status; // <--- Define oldStatus here
 
-    // 3. Perform the Update
-    // Remove id/orderId/status from body to get "otherData"
-    const { id: _id, orderId: _oid, status: _s, ...otherData } = body;
-
+    // 2. Perform the Update
     const updatedOrder = await prisma.order.update({
       where: { id },
       data: {
         status: newStatus,
-        ...otherData,
+        ...otherData, // Update other fields if any
       },
     });
 
-    // 4. Send Email ONLY if the status has changed
+    // 3. Send Email ONLY if the status has changed
     if (newStatus && newStatus !== oldStatus) {
-      console.log(`Status changing from ${oldStatus} to ${newStatus}`);
       try {
         await sendOrderStatusEmail(updatedOrder, newStatus);
-        console.log(`✅ Email sent to customer for status: ${newStatus}`);
+        console.log(
+          `✅ Status email sent for Order #${updatedOrder.orderNumber || id}`,
+        );
       } catch (emailError) {
         console.error('❌ Failed to send status email:', emailError);
+        // Don't fail the request if email fails, just log it
       }
     }
 

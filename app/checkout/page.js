@@ -522,7 +522,7 @@ export default function CheckoutPage() {
               clearCart();
 
               setTimeout(() => {
-                router.push('/success');
+                router.push(`/success?orderId=${verifyData.orderId}`);
               }, 2000);
             } else {
               setPaymentStatus('idle');

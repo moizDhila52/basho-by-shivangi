@@ -93,6 +93,19 @@ function SuccessContent() {
       )}
 
       <div className="space-y-4">
+
+        {/* 👇 ADD THIS BUTTON SECTION 👇 */}
+        {orderId && (
+          <Link href={`/profile/orders/${orderId}`} className="block">
+            <button className="w-full bg-[#442D1C] text-white py-4 rounded-xl font-medium hover:bg-[#2c1d12] transition-all flex items-center justify-center gap-2 shadow-lg hover:shadow-xl">
+              <Package className="w-5 h-5" />
+              Track Order
+            </button>
+          </Link>
+        )}
+        {/* 👆 END ADDITION 👆 */}
+
+        
         <Link href="/products" className="block">
           <button className="w-full bg-[#8E5022] text-white py-4 rounded-xl font-medium hover:bg-[#652810] transition-all flex items-center justify-center gap-2 shadow-lg hover:shadow-xl group">
             Continue Shopping
