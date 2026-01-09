@@ -1,35 +1,54 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { comparePassword } from "@/lib/auth";
 import { createSession } from "@/lib/session";
 
 export async function POST(req) {
   try {
-    const { email, password } = await req.json();
+    const body = await req.json();
+    const { email, uid, name, image } = body;
 
-    const user = await prisma.user.findUnique({ where: { email } });
-
-    if (!user || !user.passwordHash) {
-      // If no user OR user has no password (signed up via OTP only before)
-      return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
+    if (!email || !uid) {
+      return NextResponse.json(
+        { error: "Missing credentials" },
+        { status: 400 }
+      );
     }
 
-    const isValid = await comparePassword(password, user.passwordHash);
+    console.log("Attempting login for:", email);
 
-    if (!isValid) {
-      return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
-    }
+    // 1. Upsert User
+    // Logic: If found, update image/firebaseUid. If new, create with CUSTOMER role.
+    const user = await prisma.user.upsert({
+      where: { email },
+      update: {
+        image: image || undefined,
+        firebaseUid: uid,
+        // NEVER update role here, or an ADMIN logging in via Google becomes a CUSTOMER
+      },
+      create: {
+        email,
+        firebaseUid: uid,
+        name: name || "User",
+        image: image || null,
+        role: "CUSTOMER",
+      },
+    });
 
+    // 2. Create Server Session (Cookie)
     await createSession({
       userId: user.id,
       email: user.email,
       role: user.role,
-      name: user.name
+      name: user.name,
+      image: user.image,
     });
 
-    return NextResponse.json({ success: true, role: user.role });
-
+    return NextResponse.json({ success: true, user });
   } catch (error) {
-    return NextResponse.json({ error: "Login failed" }, { status: 500 });
+    console.error("Login API Error:", error);
+    return NextResponse.json(
+      { error: "Internal Server Error" },
+      { status: 500 }
+    );
   }
 }

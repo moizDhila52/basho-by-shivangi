@@ -38,7 +38,7 @@ export default function AdminOrdersPage() {
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [updatingOrder, setUpdatingOrder] = useState(null);
-  const [dateRange, setDateRange] = useState("all");
+  const [dateRange, setDateRange] = useState("all");  
 
   // Fetch Orders
   const fetchOrders = async () => {

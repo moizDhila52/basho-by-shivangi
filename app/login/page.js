@@ -1,184 +1,330 @@
 "use client";
-import { useState } from "react";
+
+import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Suspense } from "react";
+import { Eye, EyeOff, Loader2, ArrowRight, ArrowLeft } from "lucide-react";
+import {
+  signInWithEmailAndPassword,
+  signInWithPopup,
+  GoogleAuthProvider,
+  sendPasswordResetEmail, // 1. Import this
+} from "firebase/auth";
+import { auth } from "@/lib/firebase";
+import { useToast } from "@/components/ToastProvider";
+import { useAuth } from "@/components/AuthProvider";
 
-function LoginForm() {
-  const [useOtp, setUseOtp] = useState(false);
-  const [step, setStep] = useState("input"); // 'input' or 'verify'
-  const [formData, setFormData] = useState({
-    email: "",
-    password: "",
-    otp: "",
-  });
-  const [loading, setLoading] = useState(false);
+export default function LoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirectUrl = searchParams.get("redirect") || "/profile";
+  const { addToast } = useToast();
+  const { user, refreshAuth } = useAuth();
 
-  const handleChange = (e) =>
+  // Redirect if already logged in
+  useEffect(() => {
+    if (user) router.push("/");
+  }, [user, router]);
+
+  // States
+  const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
+
+  // 2. View State: 'login' or 'forgot'
+  const [view, setView] = useState("login");
+
+  const [formData, setFormData] = useState({ email: "", password: "" });
+
+  const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
 
-  // 1. Handle Password Login
-  async function handlePasswordLogin(e) {
+  // --- Session Sync Logic (From previous step) ---
+  const createBackendSession = async (firebaseUser) => {
+    try {
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          uid: firebaseUser.uid,
+          email: firebaseUser.email,
+          name: firebaseUser.displayName,
+          image: firebaseUser.photoURL,
+          rememberMe: rememberMe,
+        }),
+      });
+
+      if (!res.ok) throw new Error("Session creation failed");
+
+      await refreshAuth();
+      addToast("Welcome back!", "success");
+      const nextUrl = searchParams.get("redirect") || "/";
+      router.push(nextUrl);
+    } catch (error) {
+      console.error(error);
+      addToast("Failed to start session", "error");
+    }
+  };
+
+  // --- Handlers ---
+  const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
-    const res = await fetch("/api/auth/login", {
-      method: "POST",
-      body: JSON.stringify({
-        email: formData.email,
-        password: formData.password,
-      }),
-    });
-    if (res.ok) {
-      router.refresh();
-      router.replace(redirectUrl);
-    } else {
-      alert("Invalid credentials");
+    try {
+      const userCredential = await signInWithEmailAndPassword(
+        auth,
+        formData.email,
+        formData.password
+      );
+      await createBackendSession(userCredential.user);
+    } catch (error) {
+      const msg =
+        error.code === "auth/invalid-credential"
+          ? "Invalid email or password"
+          : error.message;
+      addToast(msg, "error");
       setLoading(false);
     }
-  }
+  };
 
-  // 2. Handle OTP Flow
-  async function handleSendOtp(e) {
-    e.preventDefault();
+  const handleGoogleLogin = async () => {
     setLoading(true);
-    const res = await fetch("/api/auth/send-otp", {
-      method: "POST",
-      body: JSON.stringify({ email: formData.email }),
-    });
-    const data = await res.json();
-    setLoading(false);
-
-    if (res.ok) setStep("verify");
-    else alert(data.error || "Failed to send OTP");
-  }
-
-  async function handleVerifyOtp(e) {
-    e.preventDefault();
-    setLoading(true);
-    const res = await fetch("/api/auth/verify-otp", {
-      method: "POST",
-      body: JSON.stringify({ email: formData.email, otp: formData.otp }),
-    });
-    if (res.ok) {
-      router.refresh();
-      router.replace(redirectUrl);
-    } else {
-      alert("Invalid Code");
+    try {
+      const provider = new GoogleAuthProvider();
+      const result = await signInWithPopup(auth, provider);
+      await createBackendSession(result.user);
+    } catch (error) {
+      addToast(error.message, "error");
       setLoading(false);
     }
-  }
+  };
+
+  // ... inside LoginPage component ...
+
+  // 3. Forgot Password Handler
+  const handleForgotPassword = async (e) => {
+    e.preventDefault();
+    if (!formData.email) {
+      return addToast("Please enter your email address", "error");
+    }
+
+    setLoading(true);
+    try {
+      await sendPasswordResetEmail(auth, formData.email);
+
+      // 👇 UPDATED: Added explicit instruction to check spam
+      addToast(
+        "Link sent! Please check your inbox and spam folder.",
+        "success"
+      );
+
+      setView("login"); // Return to login view
+    } catch (error) {
+      if (error.code === "auth/user-not-found") {
+        // Optional: You can confusingly return success here for security,
+        // but for this stage, keeping it explicit is fine.
+        addToast("No account found with this email", "error");
+      } else {
+        addToast(error.message, "error");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#FDFBF7] px-4">
-      <div className="w-full max-w-md bg-white p-8 rounded-xl shadow-lg border border-[#EDD8B4]">
-        <h1 className="text-3xl font-serif text-[#442D1C] mb-2 text-center">
-          Welcome Back
-        </h1>
+    <div className="min-h-screen flex items-center justify-center bg-[#FDFBF7] px-4 py-10">
+      <div className="bg-white p-8 rounded-3xl shadow-xl w-full max-w-[420px] border border-[#EDD8B4]">
+        {/* --- VIEW 1: FORGOT PASSWORD FORM --- */}
+        {view === "forgot" ? (
+          <div className="animate-in fade-in slide-in-from-right duration-300">
+            <button
+              onClick={() => setView("login")}
+              className="flex items-center gap-1 text-sm text-[#8E5022] hover:text-[#442D1C] mb-6 transition-colors"
+            >
+              <ArrowLeft size={16} /> Back to Login
+            </button>
 
-        {step === "input" ? (
-          <form
-            onSubmit={useOtp ? handleSendOtp : handlePasswordLogin}
-            className="space-y-5 mt-6"
-          >
-            {/* Email Input */}
-            <input
-              name="email"
-              type="email"
-              placeholder="Email Address"
-              required
-              onChange={handleChange}
-              className="w-full p-3 border border-[#EDD8B4] rounded-lg bg-[#FDFBF7]"
-            />
+            <div className="text-center mb-8">
+              <h1 className="font-serif text-3xl font-bold text-[#442D1C] mb-2">
+                Reset Password
+              </h1>
+              <p className="text-[#8E5022] text-sm">
+                Enter your email and we'll send you a link to reset your
+                password.
+              </p>
+            </div>
 
-            {/* Conditional Input: Password OR Checkbox */}
-            {!useOtp && (
-              <input
-                name="password"
-                type="password"
-                placeholder="Password"
-                required
-                onChange={handleChange}
-                className="w-full p-3 border border-[#EDD8B4] rounded-lg bg-[#FDFBF7]"
-              />
-            )}
+            <form onSubmit={handleForgotPassword} className="space-y-6">
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-[#8E5022] mb-1.5">
+                  Email Address
+                </label>
+                <input
+                  type="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 rounded-xl border border-[#EDD8B4] focus:border-[#C85428] focus:ring-1 focus:ring-[#C85428] outline-none bg-[#FDFBF7] transition-all"
+                  placeholder="basho-user@gmail.com"
+                  required
+                />
+              </div>
 
-            {/* The Checkbox Toggle */}
-            <div className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                id="otpToggle"
-                checked={useOtp}
-                onChange={() => setUseOtp(!useOtp)}
-                className="w-4 h-4 accent-[#442D1C]"
-              />
-              <label
-                htmlFor="otpToggle"
-                className="text-sm text-[#8E5022] cursor-pointer"
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full bg-[#442D1C] text-white py-3.5 rounded-xl hover:bg-[#652810] transition-all font-medium text-lg flex justify-center items-center gap-2 shadow-md hover:shadow-xl"
               >
-                Log in with OTP code instead
-              </label>
+                {loading ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  "Send Reset Link"
+                )}
+              </button>
+            </form>
+          </div>
+        ) : (
+          /* --- VIEW 2: LOGIN FORM (Standard) --- */
+          <div className="animate-in fade-in slide-in-from-left duration-300">
+            <div className="text-center mb-8">
+              <h1 className="font-serif text-3xl font-bold text-[#442D1C] mb-2">
+                Welcome Back
+              </h1>
+              <p className="text-[#8E5022] text-sm">
+                Sign in to continue your journey
+              </p>
+            </div>
+
+            <form onSubmit={handleLogin} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-[#8E5022] mb-1.5">
+                  Email Address
+                </label>
+                <input
+                  type="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 rounded-xl border border-[#EDD8B4] focus:border-[#C85428] focus:ring-1 focus:ring-[#C85428] outline-none bg-[#FDFBF7] transition-all"
+                  placeholder="basho-user@gmail.com"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-[#8E5022] mb-1.5">
+                  Password
+                </label>
+                <div className="relative">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    name="password"
+                    value={formData.password}
+                    onChange={handleChange}
+                    className="w-full px-4 py-3 rounded-xl border border-[#EDD8B4] focus:border-[#C85428] focus:ring-1 focus:ring-[#C85428] outline-none bg-[#FDFBF7] transition-all pr-10"
+                    placeholder="••••••••"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-3.5 text-[#8E5022] hover:text-[#442D1C] transition-colors p-1"
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between text-sm pt-1">
+                <label className="flex items-center gap-2 cursor-pointer group">
+                  <div className="relative flex items-center">
+                    <input
+                      type="checkbox"
+                      className="peer h-4 w-4 cursor-pointer appearance-none rounded border border-[#EDD8B4] checked:border-[#C85428] checked:bg-[#C85428] transition-all"
+                      checked={rememberMe}
+                      onChange={(e) => setRememberMe(e.target.checked)}
+                    />
+                    {/* Checkmark SVG */}
+                    <div className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-white opacity-0 peer-checked:opacity-100">
+                      <svg
+                        width="10"
+                        height="8"
+                        viewBox="0 0 10 8"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path
+                          d="M1 4L3.5 6.5L9 1"
+                          stroke="currentColor"
+                          strokeWidth="1.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                    </div>
+                  </div>
+                  <span className="text-stone-600 group-hover:text-[#442D1C] transition-colors">
+                    Remember me
+                  </span>
+                </label>
+
+                {/* TOGGLE TO FORGOT PASSWORD VIEW */}
+                <button
+                  type="button"
+                  onClick={() => setView("forgot")}
+                  className="text-[#C85428] font-medium hover:text-[#A0401C] transition-colors text-sm"
+                >
+                  Forgot Password?
+                </button>
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full bg-[#442D1C] text-white py-3.5 rounded-xl hover:bg-[#652810] transition-all font-medium text-lg flex justify-center items-center gap-2 shadow-md hover:shadow-xl translate-y-0 hover:-translate-y-0.5"
+              >
+                {loading ? <Loader2 className="animate-spin" /> : "Sign In"}
+                {!loading && <ArrowRight size={20} />}
+              </button>
+            </form>
+
+            <div className="relative my-8">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-[#EDD8B4]/60"></div>
+              </div>
+              <div className="relative flex justify-center text-xs uppercase tracking-widest font-bold">
+                <span className="px-4 bg-white text-[#8E5022]">
+                  Or continue with
+                </span>
+              </div>
             </div>
 
             <button
+              onClick={handleGoogleLogin}
               disabled={loading}
-              className="w-full bg-[#442D1C] text-white py-3 rounded-lg hover:bg-[#C85428] transition-colors"
+              className="w-full bg-white border border-[#EDD8B4] text-[#442D1C] py-3 rounded-xl hover:bg-[#FDFBF7] hover:border-[#C85428] transition-all font-bold flex items-center justify-center gap-3 group shadow-sm hover:shadow-md"
             >
-              {loading
-                ? "Processing..."
-                : useOtp
-                ? "Get Verification Code"
-                : "Sign In"}
+              <img
+                src="https://www.svgrepo.com/show/475656/google-color.svg"
+                alt="Google"
+                className="w-5 h-5 group-hover:scale-110 transition-transform"
+              />
+              Sign in with Google
             </button>
-          </form>
-        ) : (
-          /* OTP Verification View */
-          <form onSubmit={handleVerifyOtp} className="space-y-5 mt-6">
-            <p className="text-center text-[#8E5022]">
-              Code sent to {formData.email}
-            </p>
-            <input
-              name="otp"
-              placeholder="Enter 6-digit Code"
-              required
-              onChange={handleChange}
-              className="w-full p-3 text-center text-xl tracking-widest border border-[#EDD8B4] rounded-lg"
-            />
-            <button
-              disabled={loading}
-              className="w-full bg-[#442D1C] text-white py-3 rounded-lg"
-            >
-              {loading ? "Verifying..." : "Verify & Login"}
-            </button>
-            <button
-              type="button"
-              onClick={() => setStep("input")}
-              className="w-full text-sm text-[#8E5022]"
-            >
-              Back to Login
-            </button>
-          </form>
-        )}
 
-        <div className="mt-6 text-center border-t border-[#EDD8B4]/30 pt-4">
-          <p className="text-[#8E5022]">
-            New here?{" "}
-            <Link href="/signup" className="font-bold underline">
-              Create Account
-            </Link>
-          </p>
-        </div>
+            <div className="text-center mt-8 text-sm text-stone-500">
+              New to Basho?{" "}
+              <Link
+                href="/signup"
+                className="text-[#C85428] font-bold hover:underline"
+              >
+                Create an Account
+              </Link>
+            </div>
+          </div>
+        )}
       </div>
     </div>
-  );
-}
-
-export default function LoginPage() {
-  return (
-    <Suspense>
-      <LoginForm />
-    </Suspense>
   );
 }

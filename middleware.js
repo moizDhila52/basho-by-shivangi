@@ -1,37 +1,46 @@
-// middleware.js
 import { NextResponse } from "next/server";
-import { getSession } from "@/lib/session";
+import { decrypt } from "@/lib/session";
+import { cookies } from "next/headers";
 
-export async function middleware(req) {
+// 1. Specify protected and public routes
+const protectedRoutes = ["/profile", "/cart", "/checkout"];
+const publicRoutes = ["/login", "/signup"];
+const adminRoutes = ["/admin"];
+
+export default async function middleware(req) {
+  // 2. Check for current path
   const path = req.nextUrl.pathname;
-  const isPublicRoute = ["/login", "/signup"].includes(path);
-  const isAdminRoute = path.startsWith("/admin");
+  const isProtectedRoute = protectedRoutes.some((route) =>
+    path.startsWith(route)
+  );
+  const isPublicRoute = publicRoutes.includes(path);
+  const isAdminRoute = adminRoutes.some((route) => path.startsWith(route));
 
-  // 1. Decrypt the session
-  const session = await getSession();
+  // 3. Decrypt the session from the cookie
+  const cookie = (await cookies()).get("basho_session")?.value;
+  const session = await decrypt(cookie);
 
-  // --- DEBUGGING LOGS (Check your VS Code Terminal when you refresh) ---
-  console.log(`[Middleware] Path: ${path}`);
-  console.log(`[Middleware] User Role: ${session?.role}`);
-  console.log(`[Middleware] Is Admin Route? ${isAdminRoute}`);
-  // --------------------------------------------------------------------
+  // 4. Redirect Logic
 
-  // 2. Redirect Logged-in Users AWAY from Login
+  // A. Authenticated user trying to access Login/Signup -> Send to Home
   if (isPublicRoute && session?.userId) {
     return NextResponse.redirect(new URL("/", req.nextUrl));
   }
 
-  // 3. Protect Admin Routes (The likely cause of your loop)
-  if (isAdminRoute && (!session || session.role !== "ADMIN")) {
-    console.log("[Middleware] ACCESS DENIED: Redirecting to Login");
-    return NextResponse.redirect(
-      new URL("/login?redirect=" + path, req.nextUrl)
-    );
+  // B. Unauthenticated user trying to access Protected Routes -> Send to Login
+  if ((isProtectedRoute || isAdminRoute) && !session?.userId) {
+    return NextResponse.redirect(new URL("/login", req.nextUrl));
+  }
+
+  // C. Non-Admin trying to access Admin Routes -> Send to Home (or 403 page)
+  if (isAdminRoute && session?.role !== "ADMIN") {
+    return NextResponse.redirect(new URL("/", req.nextUrl));
   }
 
   return NextResponse.next();
 }
 
+// Configuration to prevent middleware from running on static files/images
 export const config = {
   matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"],
 };

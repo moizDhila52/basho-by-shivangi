@@ -186,6 +186,8 @@ model User {
   id           String         @id @default(uuid())
   email        String         @unique
   name         String?
+  image        String? // For Google Profile Picture
+  firebaseUid  String?        @unique // Essential for your Auth Logic
   role         Role           @default(CUSTOMER)
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt
@@ -358,6 +360,9 @@ model CorporateInquiry {
   email       String
   phone       String?
   companySize String?
+  budget      String? // e.g. "5k-15k"
+  timeline    String? // e.g. "urgent"
+  service     String?
   interest    String[]
   message     String
   status      InquiryStatus @default(PENDING)
@@ -447,6 +452,7 @@ enum OrderStatus {
   SHIPPED
   DELIVERED
   CANCELLED
+  CONFIRMED
 }
 
 enum Role {
