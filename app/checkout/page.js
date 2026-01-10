@@ -252,10 +252,20 @@ export default function CheckoutPage() {
 
   const handleAddressSubmit = async (e) => {
     e.preventDefault();
-    const formEl = e.target;
-    const formEntries = new FormData(formEl);
-    const payload = Object.fromEntries(formEntries.entries());
-    payload.isDefault = formEntries.get('isDefault') === 'on';
+
+    // 👇 FIX 1: Find the parent form element (e.target is just the button)
+    const formEl = e.target.closest('form');
+    const formDataObj = new FormData(formEl);
+
+    // 👇 FIX 2: Manually pick only address fields
+    // (We do this so we don't accidentally send 'name' or 'email' to the Address API)
+    const payload = {
+      street: formDataObj.get('street'),
+      city: formDataObj.get('city'),
+      state: formDataObj.get('state'),
+      pincode: formDataObj.get('pincode'),
+      isDefault: formDataObj.get('isDefault') === 'on',
+    };
 
     const method = editingAddress ? 'PUT' : 'POST';
     if (editingAddress) payload.id = editingAddress.id;

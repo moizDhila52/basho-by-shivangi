@@ -213,12 +213,9 @@ model StoreSettings {
 }
 
 model User {
-<<<<<<< HEAD
   id           String         @id @default(uuid())
   email        String         @unique
   name         String?
-  image        String? // For Google Profile Picture
-  firebaseUid  String?        @unique // Essential for your Auth Logic
   role         Role           @default(CUSTOMER)
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt
@@ -229,33 +226,14 @@ model User {
   passwordHash String?
   phone        String?
   isSubscribed Boolean        @default(false)
+  firebaseUid  String?        @unique
+  image        String?
   Address      Address[]
   CustomOrder  CustomOrder[]
   Order        Order[]
   Review       Review[]
   Cart         Cart?          @relation(fields: [cartId], references: [id])
   WishlistItem WishlistItem[]
-=======
-  id             String         @id @default(uuid())
-  email          String         @unique
-  name           String?
-  role           Role           @default(CUSTOMER)
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
-  cartId         String?
-  gstNumber      String?
-  otp            String?
-  otpExpiresAt   DateTime?
-  passwordHash   String?
-  phone          String?
-  isSubscribed   Boolean        @default(false)
-  Address        Address[]
-  CustomOrder    CustomOrder[]
-  Order          Order[]
-  Review         Review[]
-  Cart           Cart?          @relation(fields: [cartId], references: [id])
-  WishlistItem   WishlistItem[]
->>>>>>> 120244e3a9e13e6db71362eefe85d9f57895e1c4
 }
 
 model WishlistItem {
@@ -272,9 +250,9 @@ model WishlistItem {
 }
 
 model Workshop {
-  id              String              @id @default(uuid())
+  id              String            @id @default(uuid())
   title           String
-  slug            String              @unique
+  slug            String            @unique
   description     String
   price           Float
   image           String
@@ -287,9 +265,9 @@ model Workshop {
   instructorName  String
   instructorRole  String
   instructorImage String
-  status          WorkshopStatus      @default(UPCOMING)
-  createdAt       DateTime            @default(now())
-  updatedAt       DateTime            @updatedAt
+  status          WorkshopStatus    @default(UPCOMING)
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
   instructorBio   String?
   testimonials    Testimonial[]
   WorkshopSession WorkshopSession[]
@@ -412,9 +390,6 @@ model CorporateInquiry {
   email       String
   phone       String?
   companySize String?
-  budget      String? // e.g. "5k-15k"
-  timeline    String? // e.g. "urgent"
-  service     String?
   interest    String[]
   message     String
   status      InquiryStatus @default(PENDING)
@@ -422,6 +397,9 @@ model CorporateInquiry {
   isActive    Boolean       @default(true)
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
+  budget      String?
+  service     String?
+  timeline    String?
 
   @@index([status])
   @@index([createdAt])
@@ -470,7 +448,6 @@ enum InquiryStatus {
 
 enum OrderStatus {
   PENDING
-  CONFIRMED
   PROCESSING
   SHIPPED
   DELIVERED
