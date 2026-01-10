@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useEffect, useState } from 'react';
+import { useParams, useRouter } from 'next/navigation';
 import {
   Users,
   Calendar,
@@ -12,9 +12,9 @@ import {
   DollarSign,
   ChevronDown,
   ChevronUp,
-} from "lucide-react";
-import { useToast } from "@/components/ToastProvider";
-import { motion, AnimatePresence } from "framer-motion";
+} from 'lucide-react';
+import { useToast } from '@/components/ToastProvider';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export default function AdminWorkshopDetail() {
   const { id } = useParams();
@@ -31,33 +31,34 @@ export default function AdminWorkshopDetail() {
         setWorkshop(data);
         // Auto-expand the first upcoming session
         const firstUpcoming = data.WorkshopSession?.find(
-          (s) => new Date(s.date) >= new Date()
+          (s) => new Date(s.date) >= new Date(),
         );
         if (firstUpcoming) setExpandedSession(firstUpcoming.id);
         setLoading(false);
       })
-      .catch(() => addToast("Failed to load workshop", "error"));
+      .catch(() => addToast('Failed to load workshop', 'error'));
   }, [id, addToast]);
 
   const handleExportCSV = (session) => {
     if (!session.WorkshopRegistration?.length)
-      return addToast("No attendees to export", "error");
+      return addToast('No attendees to export', 'error');
 
-    const headers = ["Name", "Email", "Status", "Amount", "Date"];
+    const headers = ['Name', 'Email', 'Status', 'Amount', 'Date'];
     const rows = session.WorkshopRegistration.map((reg) => [
       reg.customerName,
       reg.customerEmail,
+      reg.customerPhone || "",
       reg.paymentStatus,
       reg.amountPaid,
       new Date(reg.createdAt).toLocaleDateString(),
     ]);
 
-    const csvContent = [headers, ...rows].map((e) => e.join(",")).join("\n");
-    const blob = new Blob([csvContent], { type: "text/csv" });
+    const csvContent = [headers, ...rows].map((e) => e.join(',')).join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv' });
     const url = window.URL.createObjectURL(blob);
-    const a = document.createElement("a");
+    const a = document.createElement('a');
     a.href = url;
-    a.download = `attendees-${session.date.split("T")[0]}.csv`;
+    a.download = `attendees-${session.date.split('T')[0]}.csv`;
     a.click();
   };
 
@@ -95,7 +96,7 @@ export default function AdminWorkshopDetail() {
             <p className="text-[#8E5022] text-sm mt-0.5 flex items-center gap-2">
               <span
                 className={`w-2 h-2 rounded-full ${
-                  workshop.status === "ACTIVE" ? "bg-green-500" : "bg-gray-400"
+                  workshop.status === 'ACTIVE' ? 'bg-green-500' : 'bg-gray-400'
                 }`}
               ></span>
               {workshop.status} • {workshop.location}
@@ -148,8 +149,8 @@ export default function AdminWorkshopDetail() {
                 animate={{ opacity: 1, y: 0 }}
                 className={`bg-white border transition-all duration-300 rounded-xl overflow-hidden ${
                   isExpanded
-                    ? "border-[#C85428] ring-1 ring-[#C85428]/20 shadow-lg"
-                    : "border-[#EDD8B4] shadow-sm hover:border-[#C85428]/50"
+                    ? 'border-[#C85428] ring-1 ring-[#C85428]/20 shadow-lg'
+                    : 'border-[#EDD8B4] shadow-sm hover:border-[#C85428]/50'
                 }`}
               >
                 {/* Session Header (Clickable) */}
@@ -164,8 +165,8 @@ export default function AdminWorkshopDetail() {
                     <div className="flex items-center gap-4">
                       <div className="w-14 h-14 bg-[#EDD8B4]/20 rounded-xl flex flex-col items-center justify-center text-[#442D1C] border border-[#EDD8B4]">
                         <span className="text-xs font-bold uppercase">
-                          {new Date(session.date).toLocaleString("default", {
-                            month: "short",
+                          {new Date(session.date).toLocaleString('default', {
+                            month: 'short',
                           })}
                         </span>
                         <span className="text-xl font-serif font-bold">
@@ -174,8 +175,8 @@ export default function AdminWorkshopDetail() {
                       </div>
                       <div>
                         <h4 className="font-bold text-[#442D1C] flex items-center gap-2">
-                          {new Date(session.date).toLocaleDateString("en-US", {
-                            weekday: "long",
+                          {new Date(session.date).toLocaleDateString('en-US', {
+                            weekday: 'long',
                           })}
                           {isFull && (
                             <span className="text-[10px] bg-red-100 text-red-600 px-2 py-0.5 rounded-full uppercase">
@@ -204,10 +205,10 @@ export default function AdminWorkshopDetail() {
                           <div
                             className={`h-full rounded-full transition-all duration-500 ${
                               isFull
-                                ? "bg-red-500"
+                                ? 'bg-red-500'
                                 : occupancy > 50
-                                ? "bg-[#C85428]"
-                                : "bg-green-500"
+                                ? 'bg-[#C85428]'
+                                : 'bg-green-500'
                             }`}
                             style={{ width: `${occupancy}%` }}
                           />
@@ -227,7 +228,7 @@ export default function AdminWorkshopDetail() {
                   {isExpanded && (
                     <motion.div
                       initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: "auto", opacity: 1 }}
+                      animate={{ height: 'auto', opacity: 1 }}
                       exit={{ height: 0, opacity: 0 }}
                       className="border-t border-[#EDD8B4]"
                     >
@@ -259,6 +260,9 @@ export default function AdminWorkshopDetail() {
                                     Email
                                   </th>
                                   <th className="px-4 py-3 font-medium">
+                                    Phone
+                                  </th>
+                                  <th className="px-4 py-3 font-medium">
                                     Payment
                                   </th>
                                   <th className="px-4 py-3 font-medium text-right">
@@ -275,18 +279,41 @@ export default function AdminWorkshopDetail() {
                                     <td className="px-4 py-3 font-medium text-[#442D1C]">
                                       {reg.customerName}
                                     </td>
+
                                     <td className="px-4 py-3 text-stone-600">
                                       {reg.customerEmail}
                                     </td>
+
+                                    {/* DISPLAY PHONE NUMBER */}
+                                    <td className="px-4 py-3 text-stone-600 font-mono text-xs">
+                                      {reg.customerPhone || '-'}
+                                    </td>
                                     <td className="px-4 py-3">
-                                      <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-bold bg-green-50 text-green-700 border border-green-100">
-                                        <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>
+                                      {/* DYNAMIC BADGE COLOR */}
+                                      <span
+                                        className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-bold border ${
+                                          reg.paymentStatus === 'PAID'
+                                            ? 'bg-green-50 text-green-700 border-green-100'
+                                            : reg.paymentStatus === 'PENDING'
+                                            ? 'bg-yellow-50 text-yellow-700 border-yellow-100'
+                                            : 'bg-red-50 text-red-700 border-red-100'
+                                        }`}
+                                      >
+                                        <span
+                                          className={`w-1.5 h-1.5 rounded-full ${
+                                            reg.paymentStatus === 'PAID'
+                                              ? 'bg-green-500'
+                                              : reg.paymentStatus === 'PENDING'
+                                              ? 'bg-yellow-500'
+                                              : 'bg-red-500'
+                                          }`}
+                                        ></span>
                                         {reg.paymentStatus}
                                       </span>
                                     </td>
                                     <td className="px-4 py-3 text-right text-stone-400 text-xs">
                                       {new Date(
-                                        reg.createdAt
+                                        reg.createdAt,
                                       ).toLocaleDateString()}
                                     </td>
                                   </tr>

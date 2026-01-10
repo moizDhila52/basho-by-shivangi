@@ -1,18 +1,11 @@
-import { prisma } from "@/lib/db";
-import { notFound } from "next/navigation";
-import Image from "next/image";
-import {
-  Clock,
-  Users,
-  MapPin,
-  Globe,
-  CheckCircle,
-  Calendar,
-} from "lucide-react";
-import BookingWidget from "@/components/workshops/BookingWidget"; // Created below
+import { prisma } from '@/lib/prisma'; // Ensure this matches your actual db import path
+import { notFound } from 'next/navigation';
+import Image from 'next/image';
+import { Clock, Users, MapPin, Globe } from 'lucide-react';
+import BookingWidget from '@/components/workshops/BookingWidget';
 
 // Force dynamic because availability changes
-export const dynamic = "force-dynamic";
+export const dynamic = 'force-dynamic';
 
 export default async function WorkshopDetailPage({ params }) {
   const { id } = await params;
@@ -22,7 +15,7 @@ export default async function WorkshopDetailPage({ params }) {
     include: {
       WorkshopSession: {
         where: { date: { gte: new Date() } },
-        orderBy: { date: "asc" },
+        orderBy: { date: 'asc' },
       },
     },
   });
@@ -37,7 +30,7 @@ export default async function WorkshopDetailPage({ params }) {
           {/* Header Image */}
           <div className="relative aspect-video rounded-3xl overflow-hidden shadow-2xl">
             <Image
-              src={workshop.image || "/placeholder.jpg"}
+              src={workshop.image || '/placeholder.jpg'}
               alt={workshop.title}
               fill
               className="object-cover"
@@ -107,7 +100,7 @@ export default async function WorkshopDetailPage({ params }) {
           <div className="bg-[#442D1C] text-[#EDD8B4] p-8 rounded-3xl flex flex-col md:flex-row items-center gap-8">
             <div className="relative w-32 h-32 flex-shrink-0">
               <Image
-                src={workshop.instructorImage || "/placeholder-user.jpg"}
+                src={workshop.instructorImage || '/placeholder-user.jpg'}
                 alt={workshop.instructorName}
                 fill
                 className="object-cover rounded-full border-4 border-[#EDD8B4]/20"
@@ -157,6 +150,7 @@ export default async function WorkshopDetailPage({ params }) {
         {/* RIGHT COL: Booking Widget */}
         <div className="lg:col-span-1">
           <div className="sticky top-24">
+            {/* The logic for 'You're Going!' and 'Sold Out' is handled inside this widget */}
             <BookingWidget
               workshopId={workshop.id}
               price={workshop.price}

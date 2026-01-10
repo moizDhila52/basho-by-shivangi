@@ -1,6 +1,6 @@
-"use client";
-
-import { useEffect, useState, useMemo } from "react";
+'use client';
+import Link from 'next/link';
+import { useEffect, useState, useMemo } from 'react';
 import {
   Search,
   Filter,
@@ -22,45 +22,45 @@ import {
   MapPin,
   ExternalLink,
   X,
-  ClipboardCheck, // Added for Confirmed Icon
-} from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
-import { format } from "date-fns";
-import { useToast } from "@/components/ToastProvider";
-import React from "react";
+  ClipboardCheck,
+} from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { format } from 'date-fns';
+import { useToast } from '@/components/ToastProvider';
+import React from 'react';
 
-// UPDATED: Added CONFIRMED to the flow
+// UPDATED: Removed CANCELLED from flow
 const STATUS_FLOW = [
-  "PENDING",
-  "CONFIRMED",
-  "PROCESSING",
-  "SHIPPED",
-  "DELIVERED",
+  'PENDING',
+  'CONFIRMED',
+  'PROCESSING',
+  'SHIPPED',
+  'DELIVERED',
 ];
 
 export default function AdminOrdersPage() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [selectedStatus, setSelectedStatus] = useState("ALL");
-  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedStatus, setSelectedStatus] = useState('ALL');
+  const [searchQuery, setSearchQuery] = useState('');
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [updatingOrder, setUpdatingOrder] = useState(null);
-  const [dateRange, setDateRange] = useState("all");
+  const [dateRange, setDateRange] = useState('all');
 
-  const { addToast } = useToast(); // Hook was missing in your snippet, ensuring it works
+  const { addToast } = useToast();
 
   // Fetch Orders
   const fetchOrders = async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/admin/orders"); // Ensure this endpoint exists as discussed
-      if (!res.ok) throw new Error("Failed to fetch orders");
+      const res = await fetch('/api/admin/orders');
+      if (!res.ok) throw new Error('Failed to fetch orders');
       const data = await res.json();
       setOrders(data);
     } catch (error) {
-      console.error("Error fetching orders:", error);
-      addToast("Failed to load orders", "error");
+      console.error('Error fetching orders:', error);
+      addToast('Failed to load orders', 'error');
     } finally {
       setLoading(false);
     }
@@ -75,19 +75,25 @@ export default function AdminOrdersPage() {
     return orders.filter((order) => {
       // Status Filter
       const matchesStatus =
-        selectedStatus === "ALL" || order.status === selectedStatus;
+        selectedStatus === 'ALL' || order.status === selectedStatus;
 
-      // Search Filter
+      // Search Filter (FIXED: Now searches ID correctly)
       const searchLower = searchQuery.toLowerCase();
+
+      // Determine the ID displayed to the user to make search intuitive
+      const displayId = order.orderNumber || order.id.slice(-8);
+
       const matchesSearch =
-        searchQuery === "" ||
+        searchQuery === '' ||
+        displayId.toLowerCase().includes(searchLower) || // Search by displayed ID
+        order.id.toLowerCase().includes(searchLower) || // Search by full UUID
         order.orderNumber?.toLowerCase().includes(searchLower) ||
         order.customerName?.toLowerCase().includes(searchLower) ||
         order.customerEmail?.toLowerCase().includes(searchLower);
 
       // Date Filter
       let matchesDate = true;
-      if (dateRange !== "all") {
+      if (dateRange !== 'all') {
         const orderDate = new Date(order.createdAt);
         const today = new Date();
         const daysAgo = parseInt(dateRange);
@@ -106,21 +112,19 @@ export default function AdminOrdersPage() {
     // Optimistic UI Update
     setOrders((prev) =>
       prev.map((order) =>
-        order.id === orderId ? { ...order, status: newStatus } : order
-      )
+        order.id === orderId ? { ...order, status: newStatus } : order,
+      ),
     );
     setUpdatingOrder(orderId);
 
     try {
-      // Assuming you created the route app/api/admin/orders/update/route.js
-      // or similar based on previous steps. Adjust URL if needed.
       const res = await fetch(`/api/admin/orders/update`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: orderId, status: newStatus }),
       });
 
-      if (!res.ok) throw new Error("Failed to update");
+      if (!res.ok) throw new Error('Failed to update');
 
       const data = await res.json();
       const updatedOrder = data.order || {
@@ -130,19 +134,18 @@ export default function AdminOrdersPage() {
 
       // Sync with server data
       setOrders((prev) =>
-        prev.map((order) => (order.id === orderId ? updatedOrder : order))
+        prev.map((order) => (order.id === orderId ? updatedOrder : order)),
       );
 
-      addToast(`Order updated to ${newStatus}`, "success");
+      addToast(`Order updated to ${newStatus}`, 'success');
 
-      // If modal is open with this order, update it too
       if (selectedOrder && selectedOrder.id === orderId) {
         setSelectedOrder(updatedOrder);
       }
     } catch (error) {
-      console.error("Error updating order:", error);
-      setOrders(oldOrders); // Revert
-      addToast("Failed to update status", "error");
+      console.error('Error updating order:', error);
+      setOrders(oldOrders);
+      addToast('Failed to update status', 'error');
     } finally {
       setUpdatingOrder(null);
     }
@@ -157,22 +160,21 @@ export default function AdminOrdersPage() {
   const stats = useMemo(() => {
     const totalRevenue = orders.reduce(
       (sum, order) => sum + (order.total || 0),
-      0
+      0,
     );
     const today = new Date().toDateString();
 
     return {
-      totalRevenue: totalRevenue.toLocaleString("en-IN", {
-        style: "currency",
-        currency: "INR",
+      totalRevenue: totalRevenue.toLocaleString('en-IN', {
+        style: 'currency',
+        currency: 'INR',
       }),
       totalOrders: orders.length,
-      // Group Pending and Confirmed as "Action Needed" or keep separate
       pendingOrders: orders.filter(
-        (o) => o.status === "PENDING" || o.status === "CONFIRMED"
+        (o) => o.status === 'PENDING' || o.status === 'CONFIRMED',
       ).length,
       todayOrders: orders.filter(
-        (o) => new Date(o.createdAt).toDateString() === today
+        (o) => new Date(o.createdAt).toDateString() === today,
       ).length,
     };
   }, [orders]);
@@ -180,35 +182,35 @@ export default function AdminOrdersPage() {
   // CSV Export
   const handleExportOrders = () => {
     const csvData = filteredOrders.map((order) => ({
-      "Order ID": order.orderNumber,
+      'Order ID': order.orderNumber || order.id,
       Customer: order.customerName,
       Email: order.customerEmail,
-      Phone: order.customerPhone || "N/A",
-      GSTIN: order.customerGst || "N/A",
+      Phone: order.customerPhone || 'N/A',
+      GSTIN: order.customerGst || 'N/A',
       Amount: order.total,
       Status: order.status,
-      Date: format(new Date(order.createdAt), "dd/MM/yyyy"),
+      Date: format(new Date(order.createdAt), 'dd/MM/yyyy'),
       Items: order.OrderItem?.map(
-        (item) => `${item.productName} (x${item.quantity})`
-      ).join("; "),
+        (item) => `${item.productName} (x${item.quantity})`,
+      ).join('; '),
     }));
 
     const headers = Object.keys(csvData[0] || {});
     if (headers.length === 0) return;
 
     const rows = csvData.map((row) =>
-      headers.map((header) => JSON.stringify(row[header])).join(",")
+      headers.map((header) => JSON.stringify(row[header])).join(','),
     );
-    const csv = [headers.join(","), ...rows].join("\n");
+    const csv = [headers.join(','), ...rows].join('\n');
 
-    const blob = new Blob([csv], { type: "text/csv" });
+    const blob = new Blob([csv], { type: 'text/csv' });
     const url = window.URL.createObjectURL(blob);
-    const a = document.createElement("a");
+    const a = document.createElement('a');
     a.href = url;
-    a.download = `orders-${format(new Date(), "yyyy-MM-dd")}.csv`;
+    a.download = `orders-${format(new Date(), 'yyyy-MM-dd')}.csv`;
     a.click();
     window.URL.revokeObjectURL(url);
-    addToast("Export downloaded successfully", "success");
+    addToast('Export downloaded successfully', 'success');
   };
 
   if (loading) {
@@ -308,23 +310,22 @@ export default function AdminOrdersPage() {
         </div>
 
         <div className="flex flex-wrap gap-2">
-          {/* UPDATED: Added CONFIRMED to filter list */}
+          {/* UPDATED: Removed CANCELLED */}
           {[
-            "ALL",
-            "PENDING",
-            "CONFIRMED",
-            "PROCESSING",
-            "SHIPPED",
-            "DELIVERED",
-            "CANCELLED",
+            'ALL',
+            'PENDING',
+            'CONFIRMED',
+            'PROCESSING',
+            'SHIPPED',
+            'DELIVERED',
           ].map((status) => (
             <button
               key={status}
               onClick={() => setSelectedStatus(status)}
               className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
                 selectedStatus === status
-                  ? "bg-[#442D1C] text-[#EDD8B4]"
-                  : "bg-[#FDFBF7] text-[#8E5022] border border-[#EDD8B4] hover:border-[#C85428]"
+                  ? 'bg-[#442D1C] text-[#EDD8B4]'
+                  : 'bg-[#FDFBF7] text-[#8E5022] border border-[#EDD8B4] hover:border-[#C85428]'
               }`}
             >
               {status}
@@ -358,12 +359,12 @@ export default function AdminOrdersPage() {
                       #{order.orderNumber || order.id.slice(-8).toUpperCase()}
                     </span>
                     <div className="text-xs text-[#8E5022] mt-1">
-                      {format(new Date(order.createdAt), "MMM dd, HH:mm")}
+                      {format(new Date(order.createdAt), 'MMM dd, HH:mm')}
                     </div>
                   </td>
                   <td className="p-4">
                     <div className="font-medium">
-                      {order.customerName || "Guest"}
+                      {order.customerName || 'Guest'}
                     </div>
                     <div className="text-xs text-[#8E5022]">
                       {order.customerEmail}
@@ -401,7 +402,7 @@ export default function AdminOrdersPage() {
                             className={`flex-1 rounded-full ${
                               STATUS_FLOW.indexOf(order.status) >= i
                                 ? getStatusColor(order.status, true)
-                                : "bg-[#EDD8B4]/30"
+                                : 'bg-[#EDD8B4]/30'
                             }`}
                           />
                         ))}
@@ -410,6 +411,7 @@ export default function AdminOrdersPage() {
                   </td>
                   <td className="p-4">
                     <div className="flex items-center gap-2">
+                      {/* UPDATED: Removed Cancelled Option */}
                       <select
                         value={order.status}
                         onChange={(e) =>
@@ -419,12 +421,10 @@ export default function AdminOrdersPage() {
                         className="bg-white border border-[#EDD8B4] rounded-lg text-xs py-1.5 px-2 focus:ring-1 focus:ring-[#C85428] outline-none disabled:opacity-50 cursor-pointer"
                       >
                         <option value="PENDING">Pending</option>
-                        {/* UPDATED: Added Confirmed option */}
                         <option value="CONFIRMED">Confirmed</option>
                         <option value="PROCESSING">Processing</option>
                         <option value="SHIPPED">Shipped</option>
                         <option value="DELIVERED">Delivered</option>
-                        <option value="CANCELLED">Cancelled</option>
                       </select>
                       <button
                         onClick={() => viewOrderDetails(order)}
@@ -471,7 +471,7 @@ export default function AdminOrdersPage() {
                   <p className="text-sm text-[#8E5022] mt-1">
                     {format(
                       new Date(selectedOrder.createdAt),
-                      "MMMM dd, yyyy 'at' HH:mm"
+                      "MMMM dd, yyyy 'at' HH:mm",
                     )}
                   </p>
                 </div>
@@ -498,7 +498,7 @@ export default function AdminOrdersPage() {
                         </div>
                         <div>
                           <p className="font-bold text-[#442D1C]">
-                            {selectedOrder.customerName || "Guest"}
+                            {selectedOrder.customerName || 'Guest'}
                           </p>
                           <p className="text-[#8E5022]">
                             {selectedOrder.customerEmail}
@@ -507,7 +507,7 @@ export default function AdminOrdersPage() {
                       </div>
                       {selectedOrder.customerPhone && (
                         <div className="flex items-center gap-2 text-[#442D1C] ml-11">
-                          <Phone className="w-3 h-3 text-[#8E5022]" />{" "}
+                          <Phone className="w-3 h-3 text-[#8E5022]" />{' '}
                           {selectedOrder.customerPhone}
                         </div>
                       )}
@@ -543,12 +543,12 @@ export default function AdminOrdersPage() {
                             {selectedOrder.address.street}
                           </p>
                           <p>
-                            {selectedOrder.address.city},{" "}
+                            {selectedOrder.address.city},{' '}
                             {selectedOrder.address.state}
                           </p>
                           <p>{selectedOrder.address.pincode}</p>
                           <p className="text-[#8E5022] text-xs mt-1 uppercase font-bold">
-                            {selectedOrder.address.country || "India"}
+                            {selectedOrder.address.country || 'India'}
                           </p>
                         </div>
                       </div>
@@ -635,31 +635,45 @@ export default function AdminOrdersPage() {
               </div>
 
               {/* Footer */}
-              <div className="p-4 bg-[#FDFBF7] border-t border-[#EDD8B4] flex justify-between items-center">
-                <div className="text-xs text-[#8E5022]">
-                  Update Status:
+              <div className="p-6 bg-[#FDFBF7] border-t border-[#EDD8B4] flex flex-col sm:flex-row justify-between items-center gap-4">
+                <div className="text-xs text-[#8E5022] w-full sm:w-auto">
+                  <span className="font-bold mr-2">Update Status:</span>
                   <select
                     value={selectedOrder.status}
                     onChange={(e) =>
                       updateOrderStatus(selectedOrder.id, e.target.value)
                     }
-                    className="ml-2 bg-white border border-[#EDD8B4] rounded p-1 focus:ring-1 focus:ring-[#C85428] outline-none cursor-pointer"
+                    className="bg-white border border-[#EDD8B4] rounded p-2 focus:ring-1 focus:ring-[#C85428] outline-none cursor-pointer text-sm"
                   >
                     <option value="PENDING">Pending</option>
-                    {/* UPDATED: Added Confirmed option */}
                     <option value="CONFIRMED">Confirmed</option>
                     <option value="PROCESSING">Processing</option>
                     <option value="SHIPPED">Shipped</option>
                     <option value="DELIVERED">Delivered</option>
-                    <option value="CANCELLED">Cancelled</option>
                   </select>
                 </div>
-                <button
-                  onClick={() => window.print()}
-                  className="flex items-center gap-2 text-[#442D1C] hover:text-[#C85428] text-sm font-medium"
-                >
-                  <Printer className="w-4 h-4" /> Print Invoice
-                </button>
+
+                <div className="flex items-center gap-3 w-full sm:w-auto">
+                  {/* Shipping Label Button */}
+                  <Link
+                    href={`/admin/orders/label/${selectedOrder.id}`}
+                    target="_blank"
+                    className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 border border-[#442D1C] text-[#442D1C] rounded-lg hover:bg-[#EDD8B4]/20 transition-colors text-sm font-medium"
+                  >
+                    <Package className="w-4 h-4" />
+                    Shipping Label
+                  </Link>
+
+                  {/* Invoice Button */}
+                  <Link
+                    href={`/invoice/${selectedOrder.id}`}
+                    target="_blank"
+                    className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-[#442D1C] text-white rounded-lg hover:bg-[#2c1d12] transition-colors text-sm font-medium shadow-sm"
+                  >
+                    <Printer className="w-4 h-4" />
+                    Print Invoice
+                  </Link>
+                </div>
               </div>
             </motion.div>
           </div>
@@ -686,24 +700,21 @@ function StatCard({ label, value, icon, color }) {
 }
 
 function StatusBadge({ status }) {
-  // UPDATED: Added CONFIRMED style
+  // UPDATED: Removed CANCELLED style
   const styles = {
-    PENDING: "bg-yellow-100 text-yellow-800 border-yellow-200",
-    CONFIRMED: "bg-indigo-100 text-indigo-800 border-indigo-200", // New Style
-    PROCESSING: "bg-blue-100 text-blue-800 border-blue-200",
-    SHIPPED: "bg-purple-100 text-purple-800 border-purple-200",
-    DELIVERED: "bg-green-100 text-green-800 border-green-200",
-    CANCELLED: "bg-red-100 text-red-800 border-red-200",
+    PENDING: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+    CONFIRMED: 'bg-indigo-100 text-indigo-800 border-indigo-200',
+    PROCESSING: 'bg-blue-100 text-blue-800 border-blue-200',
+    SHIPPED: 'bg-purple-100 text-purple-800 border-purple-200',
+    DELIVERED: 'bg-green-100 text-green-800 border-green-200',
   };
 
-  // UPDATED: Added CONFIRMED Icon
   const icons = {
     PENDING: Clock,
-    CONFIRMED: ClipboardCheck, // New Icon
+    CONFIRMED: ClipboardCheck,
     PROCESSING: Package,
     SHIPPED: Truck,
     DELIVERED: CheckCircle,
-    CANCELLED: AlertCircle,
   };
 
   const Icon = icons[status] || AlertCircle;
@@ -711,7 +722,7 @@ function StatusBadge({ status }) {
   return (
     <span
       className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold border ${
-        styles[status] || "bg-gray-100 text-gray-800"
+        styles[status] || 'bg-gray-100 text-gray-800'
       }`}
     >
       <Icon className="w-3 h-3" /> {status}
@@ -720,21 +731,18 @@ function StatusBadge({ status }) {
 }
 
 function getStatusColor(status, bg = false) {
-  // UPDATED: Added CONFIRMED Color Logic
   switch (status) {
-    case "PENDING":
-      return bg ? "bg-yellow-400" : "text-yellow-600";
-    case "CONFIRMED":
-      return bg ? "bg-indigo-400" : "text-indigo-600"; // New Color
-    case "PROCESSING":
-      return bg ? "bg-blue-400" : "text-blue-600";
-    case "SHIPPED":
-      return bg ? "bg-purple-400" : "text-purple-600";
-    case "DELIVERED":
-      return bg ? "bg-green-400" : "text-green-600";
-    case "CANCELLED":
-      return bg ? "bg-red-400" : "text-red-600";
+    case 'PENDING':
+      return bg ? 'bg-yellow-400' : 'text-yellow-600';
+    case 'CONFIRMED':
+      return bg ? 'bg-indigo-400' : 'text-indigo-600';
+    case 'PROCESSING':
+      return bg ? 'bg-blue-400' : 'text-blue-600';
+    case 'SHIPPED':
+      return bg ? 'bg-purple-400' : 'text-purple-600';
+    case 'DELIVERED':
+      return bg ? 'bg-green-400' : 'text-green-600';
     default:
-      return bg ? "bg-gray-400" : "text-gray-600";
+      return bg ? 'bg-gray-400' : 'text-gray-600';
   }
 }

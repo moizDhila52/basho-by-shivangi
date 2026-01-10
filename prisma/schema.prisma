@@ -213,26 +213,27 @@ model StoreSettings {
 }
 
 model User {
-  id           String         @id @default(uuid())
-  email        String         @unique
-  name         String?
-  image        String?
-  firebaseUid  String?        @unique
-  role         Role           @default(CUSTOMER)
-  createdAt    DateTime       @default(now())
-  updatedAt    DateTime       @updatedAt
-  gstNumber    String?
-  otp          String?
-  otpExpiresAt DateTime?
-  passwordHash String?
-  phone        String?
-  isSubscribed Boolean        @default(false)
-  Address      Address[]
-  Cart         Cart?
-  CustomOrder  CustomOrder[]
-  Order        Order[]
-  Review       Review[]
-  WishlistItem WishlistItem[]
+  id                   String                 @id @default(uuid())
+  email                String                 @unique
+  name                 String?
+  image                String?
+  firebaseUid          String?                @unique
+  role                 Role                   @default(CUSTOMER)
+  createdAt            DateTime               @default(now())
+  updatedAt            DateTime               @updatedAt
+  gstNumber            String?
+  otp                  String?
+  otpExpiresAt         DateTime?
+  passwordHash         String?
+  phone                String?
+  isSubscribed         Boolean                @default(false)
+  Address              Address[]
+  Cart                 Cart?
+  CustomOrder          CustomOrder[]
+  Order                Order[]
+  Review               Review[]
+  WishlistItem         WishlistItem[]
+  WorkshopRegistration WorkshopRegistration[]
 }
 
 model WishlistItem {
@@ -275,23 +276,6 @@ model Workshop {
   @@index([status])
 }
 
-model WorkshopRegistration {
-  id              String          @id @default(uuid())
-  customerName    String
-  customerEmail   String
-  amountPaid      Float
-  sessionId       String
-  createdAt       DateTime        @default(now())
-  customerPhone   String?
-  paymentId       String?
-  paymentStatus   String?         @default("pending")
-  razorpayOrderId String?
-  WorkshopSession WorkshopSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-
-  @@index([customerEmail])
-  @@index([sessionId])
-}
-
 model WorkshopSession {
   id                   String                 @id @default(uuid())
   date                 DateTime
@@ -326,6 +310,7 @@ model Event {
   isActive         Boolean       @default(true)
   createdAt        DateTime      @default(now())
   updatedAt        DateTime      @updatedAt
+  interestedCount  Int           @default(0)
   galleryItems     GalleryItem[]
   Testimonial      Testimonial[]
 
@@ -371,6 +356,7 @@ model Testimonial {
   isActive     Boolean   @default(true)
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
+  isAnonymous  Boolean   @default(false)
   Event        Event?    @relation(fields: [eventId], references: [id])
   Product      Product?  @relation(fields: [productId], references: [id])
   Workshop     Workshop? @relation(fields: [workshopId], references: [id])
@@ -411,6 +397,26 @@ model NewsletterSubscriber {
   source    String   @default("checkout")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model WorkshopRegistration {
+  id              String          @id @default(uuid())
+  customerName    String
+  customerEmail   String
+  amountPaid      Float
+  sessionId       String
+  createdAt       DateTime        @default(now())
+  customerPhone   String?
+  paymentId       String?
+  paymentStatus   String?         @default("PENDING")
+  razorpayOrderId String?
+  userId          String?
+  WorkshopSession WorkshopSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  User            User?           @relation(fields: [userId], references: [id])
+
+  @@index([customerEmail])
+  @@index([sessionId])
+  @@index([userId])
 }
 
 enum EventType {
