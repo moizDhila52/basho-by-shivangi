@@ -389,9 +389,6 @@ model CorporateInquiry {
   email       String
   phone       String?
   companySize String?
-  budget      String? // e.g. "5k-15k"
-  timeline    String? // e.g. "urgent"
-  service     String?
   interest    String[]
   message     String
   status      InquiryStatus @default(PENDING)
@@ -399,6 +396,9 @@ model CorporateInquiry {
   isActive    Boolean       @default(true)
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
+  budget      String?
+  service     String?
+  timeline    String?
 
   @@index([status])
   @@index([createdAt])
