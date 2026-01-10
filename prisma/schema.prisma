@@ -227,6 +227,7 @@ model User {
   passwordHash         String?
   phone                String?
   isSubscribed         Boolean                @default(false)
+  lastLogin            DateTime?              @default(now())
   Address              Address[]
   Cart                 Cart?
   CustomOrder          CustomOrder[]

@@ -21,8 +21,9 @@ export default function WorkshopCheckout() {
 
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
-  const [verifying, setVerifying] = useState(false); // <--- NEW STATE
+  const [verifying, setVerifying] = useState(false);
   const [sessionData, setSessionData] = useState(null);
+  const [checkingAuth, setCheckingAuth] = useState(true); // New loading state for auth check
 
   const [formData, setFormData] = useState({
     name: '',
@@ -30,8 +31,37 @@ export default function WorkshopCheckout() {
     phone: '',
   });
 
-  // Fetch Session Details
+  // 1. GATEKEEPER: Check if user already booked this session
   useEffect(() => {
+    const checkExistingBooking = async () => {
+      try {
+        const res = await fetch('/api/user/workshops');
+        if (res.ok) {
+          const bookings = await res.json();
+          // Check if current sessionId exists in their paid bookings
+          const alreadyBooked = bookings.some(
+            (booking) => booking.sessionId === sessionId,
+          );
+
+          if (alreadyBooked) {
+            addToast('You are already enrolled in this workshop!', 'success');
+            router.replace('/profile/workshops'); // Redirect immediately
+            return;
+          }
+        }
+      } catch (error) {
+        console.error('Auth check failed', error);
+      } finally {
+        setCheckingAuth(false);
+      }
+    };
+    checkExistingBooking();
+  }, [sessionId, router, addToast]);
+
+  // 2. Fetch Session Details (Only runs if not redirected)
+  useEffect(() => {
+    if (checkingAuth) return; // Wait for auth check to finish
+
     const fetchSession = async () => {
       try {
         const res = await fetch(`/api/workshops/session/${sessionId}`);
@@ -46,14 +76,13 @@ export default function WorkshopCheckout() {
       }
     };
     if (sessionId) fetchSession();
-  }, [sessionId, addToast]);
+  }, [sessionId, addToast, checkingAuth]);
 
   const handlePayment = async () => {
     if (!sessionData) return;
     setProcessing(true);
 
     try {
-      // 1. Initialize Order
       const res = await fetch('/api/workshops/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -68,7 +97,6 @@ export default function WorkshopCheckout() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
 
-      // 2. Open Razorpay
       const options = {
         key: data.key,
         amount: data.amount,
@@ -77,11 +105,7 @@ export default function WorkshopCheckout() {
         description: sessionData.Workshop.title,
         order_id: data.orderId,
         handler: async function (response) {
-          // --- NEW: Trigger Verification Overlay ---
           setVerifying(true);
-          // ----------------------------------------
-
-          // Verify Payment
           try {
             const verifyRes = await fetch('/api/workshops/verify', {
               method: 'POST',
@@ -97,7 +121,7 @@ export default function WorkshopCheckout() {
             if (verifyRes.ok) {
               router.push('/workshops/success');
             } else {
-              setVerifying(false); // Hide overlay if failed
+              setVerifying(false);
               addToast('Payment verification failed', 'error');
             }
           } catch (err) {
@@ -126,7 +150,7 @@ export default function WorkshopCheckout() {
     }
   };
 
-  // --- NEW: Verification Overlay Component ---
+  // Verification Overlay
   if (verifying) {
     return (
       <div className="fixed inset-0 bg-white/90 backdrop-blur-sm z-50 flex flex-col items-center justify-center p-4">
@@ -146,7 +170,8 @@ export default function WorkshopCheckout() {
     );
   }
 
-  if (loading) {
+  // Loading State (Shows while checking both Auth and Data)
+  if (loading || checkingAuth) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#FDFBF7]">
         <Loader2 className="animate-spin text-[#C85428] w-10 h-10" />
@@ -154,6 +179,7 @@ export default function WorkshopCheckout() {
     );
   }
 
+  // Error State (If session ID is invalid)
   if (!sessionData) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-[#FDFBF7] text-center p-4">

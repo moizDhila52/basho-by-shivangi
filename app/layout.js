@@ -1,14 +1,15 @@
 //import { Inter, Noto_Serif_JP } from 'next/font/google';
-import { AuthProvider } from "@/components/AuthProvider";
-import { CartProvider } from "@/context/CartContext";
-import Header from "@/components/layout/Header";
-import { Toaster } from "react-hot-toast";
-import { ToastProvider } from "@/components/ToastProvider"; // <--- 1. Import this
-import "./globals.css";
+import { AuthProvider } from '@/components/AuthProvider';
+import { CartProvider } from '@/context/CartContext';
+import Header from '@/components/layout/Header';
+import Footer from '@/components/layout/Footer'; // <--- 1. Imported Footer
+import { Toaster } from 'react-hot-toast';
+import { ToastProvider } from '@/components/ToastProvider';
+import './globals.css';
 // These appear to be custom local fonts/icons you added
-import "../public/fonts/fonts.css";
-import "../public/icons/material-symbols.css";
-import { Car } from "lucide-react";
+import '../public/fonts/fonts.css';
+import '../public/icons/material-symbols.css';
+import { Car } from 'lucide-react';
 
 /*
 const inter = Inter({ 
@@ -25,8 +26,8 @@ const notoSerif = Noto_Serif_JP({
 });
 */
 export const metadata = {
-  title: "Basho Pottery | Handcrafted Japanese Ceramics",
-  description: "Artisanal pottery by Shivangi.",
+  title: 'Basho Pottery | Handcrafted Japanese Ceramics',
+  description: 'Artisanal pottery by Shivangi.',
 };
 
 export default function RootLayout({ children }) {
@@ -42,6 +43,9 @@ export default function RootLayout({ children }) {
               <main className="min-h-screen">
                 <AuthProvider>{children}</AuthProvider>
               </main>
+
+              {/* <--- 2. Added Footer Here */}
+              <Footer />
             </CartProvider>
           </AuthProvider>
           <Toaster
@@ -49,25 +53,25 @@ export default function RootLayout({ children }) {
             toastOptions={{
               duration: 3000,
               style: {
-                background: "#442D1C",
-                color: "#EDD8B4",
-                borderRadius: "12px",
-                padding: "16px 24px",
-                fontSize: "14px",
-                fontWeight: "500",
+                background: '#442D1C',
+                color: '#EDD8B4',
+                borderRadius: '12px',
+                padding: '16px 24px',
+                fontSize: '14px',
+                fontWeight: '500',
               },
               success: {
                 duration: 3000,
                 iconTheme: {
-                  primary: "#EDD8B4",
-                  secondary: "#10B981",
+                  primary: '#EDD8B4',
+                  secondary: '#10B981',
                 },
               },
               error: {
                 duration: 4000,
                 iconTheme: {
-                  primary: "#EDD8B4",
-                  secondary: "#EF4444",
+                  primary: '#EDD8B4',
+                  secondary: '#EF4444',
                 },
               },
             }}
