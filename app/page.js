@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import {
   motion,
   useScroll,
@@ -10,20 +10,19 @@ import {
 import {
   ArrowRight,
   Leaf,
-  Utensils,
   Flame,
-  Heart,
   Droplet,
   Sparkles,
-  ChevronDown,
-  Moon,
-  Sun,
+  ChevronLeft,
+  ChevronRight,
   Mountain,
-  Waves,
+  Utensils,
+  Heart,
+  ChevronDown, // Added for scroll indicator if needed later, though not used in the carousel version
 } from "lucide-react";
 import Link from "next/link";
 
-// --- Brand Colors from Palette ---
+// --- Brand Colors ---
 const COLORS = {
   dark: "#442D1C",
   brown: "#652810",
@@ -33,7 +32,85 @@ const COLORS = {
   background: "#FDFBF7",
 };
 
-// --- Enhanced Animation Variants ---
+// --- Hero Carousel Data ---
+const HERO_SLIDES = [
+  {
+    id: 1,
+    title: "The Art of Earth",
+    subtitle: "Handcrafted ceramics for mindful living.",
+    cta: "Shop Collection",
+    link: "/products",
+    // Using the image from your previous hero section as the main shop image
+    image: "/images/others/landing-page-hero.jpg",
+    position: "center 30%",
+  },
+  {
+    id: 2,
+    title: "Touch the Clay",
+    subtitle: "Join our hands-on workshops in Surat.",
+    cta: "Book a Session",
+    link: "/workshops",
+    // Using one of your product images for the workshop slide
+    image: "/showcase/products/1.png",
+    position: "center center",
+  },
+  {
+    id: 3,
+    title: "Join Our Circle",
+    subtitle: "Connect with artisans and admirers.",
+    cta: "Read Our Story",
+    link: "/connect",
+    // Using the founder image for the connect slide
+    image: "/brand/founder.jpg",
+    position: "center 20%",
+  },
+];
+
+// --- Animation Variants (Combined) ---
+
+// Carousel Specific Variants
+const slideVariants = {
+  enter: (direction) => ({
+    x: direction > 0 ? 1000 : -1000,
+    opacity: 0,
+    scale: 1.1,
+  }),
+  center: {
+    zIndex: 1,
+    x: 0,
+    opacity: 1,
+    scale: 1,
+    transition: {
+      x: { type: "spring", stiffness: 300, damping: 30 },
+      opacity: { duration: 0.2 },
+      scale: { duration: 6, ease: "linear" }, // Ken Burns effect
+    },
+  },
+  exit: (direction) => ({
+    zIndex: 0,
+    x: direction < 0 ? 1000 : -1000,
+    opacity: 0,
+    transition: {
+      x: { type: "spring", stiffness: 300, damping: 30 },
+      opacity: { duration: 0.2 },
+    },
+  }),
+};
+
+const textReveal = {
+  hidden: { y: 40, opacity: 0 },
+  visible: (i) => ({
+    y: 0,
+    opacity: 1,
+    transition: {
+      delay: i * 0.1 + 0.3,
+      duration: 0.8,
+      ease: [0.22, 1, 0.36, 1],
+    },
+  }),
+};
+
+// General Page Variants
 const fadeInUp = {
   hidden: { opacity: 0, y: 40 },
   visible: {
@@ -69,29 +146,20 @@ const staggerContainer = {
   },
 };
 
-const floatAnimation = {
-  initial: { y: 0 },
-  animate: {
-    y: [-10, 10, -10],
-    transition: {
-      duration: 6,
-      repeat: Infinity,
-      ease: "easeInOut",
-    },
-  },
-};
-
 export default function LandingPage() {
-  const [scrolled, setScrolled] = useState(false);
+  // --- States for Custom Cursor & Particles (From Original) ---
   const [particles, setParticles] = useState([]);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const { scrollY } = useScroll();
 
-  const heroOpacity = useTransform(scrollY, [0, 300], [1, 0]);
-  const heroScale = useTransform(scrollY, [0, 300], [1, 1.1]);
+  // --- States for Carousel (From New Hero) ---
+  const [index, setIndex] = useState(0);
+  const [direction, setDirection] = useState(0);
+  const [isAutoPlaying, setIsAutoPlaying] = useState(true);
+  const timeoutRef = useRef(null);
 
+  // --- Effects for Custom Cursor & Particles ---
   useEffect(() => {
-    // This runs ONLY on the browser, preventing the mismatch
     setParticles(
       [...Array(21)].map((_, i) => ({
         id: i,
@@ -100,22 +168,12 @@ export default function LandingPage() {
         duration: Math.random() * 10 + 10,
       }))
     );
-  }, []);
-
-  useEffect(() => {
-    const handleScroll = () => {
-      setScrolled(window.scrollY > 50);
-    };
 
     const handleMouseMove = (e) => {
       setMousePosition({ x: e.clientX, y: e.clientY });
     };
-
-    window.addEventListener("scroll", handleScroll);
     window.addEventListener("mousemove", handleMouseMove);
-
     return () => {
-      window.removeEventListener("scroll", handleScroll);
       window.removeEventListener("mousemove", handleMouseMove);
     };
   }, []);
@@ -130,6 +188,34 @@ export default function LandingPage() {
     [0, 1000],
     [mousePosition.y, mousePosition.y * 0.5]
   );
+
+  // --- Effects & Logic for Carousel ---
+  useEffect(() => {
+    if (isAutoPlaying) {
+      timeoutRef.current = setTimeout(() => {
+        paginate(1);
+      }, 6000); // 6 seconds per slide
+    }
+    return () => clearTimeout(timeoutRef.current);
+  }, [index, isAutoPlaying]);
+
+  const paginate = (newDirection) => {
+    setDirection(newDirection);
+    setIndex((prevIndex) => {
+      let nextIndex = prevIndex + newDirection;
+      if (nextIndex < 0) nextIndex = HERO_SLIDES.length - 1;
+      if (nextIndex >= HERO_SLIDES.length) nextIndex = 0;
+      return nextIndex;
+    });
+  };
+
+  const handleDotClick = (newIndex) => {
+    setDirection(newIndex > index ? 1 : -1);
+    setIndex(newIndex);
+    setIsAutoPlaying(false); // Stop autoplay if user interacts
+  };
+
+  const currentSlide = HERO_SLIDES[index];
 
   return (
     <main className="min-h-screen bg-[#FDFBF7] text-stone-800 font-sans overflow-x-hidden">
@@ -147,19 +233,12 @@ export default function LandingPage() {
         style={{ scaleX: useTransform(scrollY, [0, 1000], [0, 1]) }}
       />
 
-      {/* 1. HERO SECTION with Enhanced Visuals */}
-      <section className="relative h-screen w-full flex items-center justify-center overflow-hidden">
-        {/* Animated Background Elements */}
-        <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-br from-[#FDFBF7] via-[#FDFBF7] to-[#EDD8B4]/30" />
-
-          {/* Floating Particles */}
-          {/* Floating Particles - FIXED */}
-          {particles.map((p) => (
+      {/* Floating Particles (Background) */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden">
+         {particles.map((p) => (
             <motion.div
               key={p.id}
-              className="absolute w-5 h-5 z-10 rounded-full bg-[#8E5022]/20"
-              // Use stored values instead of Math.random()
+              className="absolute w-5 h-5 z-0 rounded-full bg-[#8E5022]/10"
               initial={{ x: `${p.x}vw`, y: `${p.y}vh` }}
               animate={{
                 x: [null, `${Math.random() * 100}vw`],
@@ -172,91 +251,140 @@ export default function LandingPage() {
               }}
             />
           ))}
+      </div>
 
-          {/* Hero Image with Parallax */}
+
+      {/* =========================================
+          1. NEW CAROUSEL HERO SECTION
+      ========================================= */}
+      <section className="relative h-screen w-full overflow-hidden bg-[#442D1C]">
+        <AnimatePresence initial={false} custom={direction}>
           <motion.div
-            className="absolute inset-0"
-            style={{ scale: heroScale, opacity: heroOpacity }}
+            key={index}
+            custom={direction}
+            variants={slideVariants}
+            initial="enter"
+            animate="center"
+            exit="exit"
+            className="absolute inset-0 w-full h-full"
           >
-            <img
-              src="/images/others/landing-page-hero.jpg"
-              alt="Basho Ceramics"
-              className="w-full h-full object-cover"
-              style={{ objectPosition: "center 30%" }}
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-black/20 to-transparent" />
-            <div className="absolute inset-0 bg-gradient-to-r from-black/10 to-transparent" />
+            {/* Image */}
+            <div className="absolute inset-0">
+              <img
+                src={currentSlide.image}
+                alt={currentSlide.title}
+                className="w-full h-full object-cover"
+                style={{ objectPosition: currentSlide.position }}
+              />
+              {/* Cinematic Overlay: Gradient for text readability */}
+              <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/30 to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-t from-[#442D1C]/50 to-transparent" />
+            </div>
           </motion.div>
+        </AnimatePresence>
+
+        {/* Text Content Layer */}
+        <div className="absolute inset-0 z-20 flex items-center px-4 md:px-16 lg:px-24">
+          <div className="max-w-3xl overflow-hidden">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={index} // Remount text on slide change
+                initial="hidden"
+                animate="visible"
+                exit={{ opacity: 0, y: -20, transition: { duration: 0.2 } }}
+              >
+                <motion.div custom={0} variants={textReveal} className="mb-4">
+                  <div className="inline-flex items-center gap-3">
+                    <div className="w-12 h-[1px] bg-[#EDD8B4]" />
+                    <span className="text-[#EDD8B4] uppercase tracking-[0.3em] text-sm font-medium">
+                      Bashō Pottery
+                    </span>
+                  </div>
+                </motion.div>
+
+                <motion.h1
+                  custom={1}
+                  variants={textReveal}
+                  className="font-serif text-5xl md:text-7xl lg:text-8xl text-white mb-6 leading-[1.1]"
+                >
+                  {currentSlide.title}
+                </motion.h1>
+
+                <motion.p
+                  custom={2}
+                  variants={textReveal}
+                  className="text-lg md:text-2xl text-stone-200 font-light mb-10 max-w-xl leading-relaxed"
+                >
+                  {currentSlide.subtitle}
+                </motion.p>
+
+                <motion.div custom={3} variants={textReveal}>
+                  <Link href={currentSlide.link}>
+                    <motion.button
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      className="group bg-[#EDD8B4] text-[#442D1C] px-8 py-4 md:px-10 md:py-5 rounded-full font-medium text-lg flex items-center gap-3 shadow-[0_0_20px_rgba(237,216,180,0.3)] hover:shadow-[0_0_30px_rgba(237,216,180,0.5)] transition-shadow"
+                    >
+                      {currentSlide.cta}
+                      <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                    </motion.button>
+                  </Link>
+                </motion.div>
+              </motion.div>
+            </AnimatePresence>
+          </div>
         </div>
 
-        {/* Hero Content */}
-        <motion.div
-          initial="hidden"
-          animate="visible"
-          variants={staggerContainer}
-          className="relative z-10 text-center px-4 max-w-6xl mx-auto text-white"
-        >
-          <motion.div variants={fadeInUp} className="mb-8 pt-8">
-            {/* <Sparkles className="w-8 h-8 mx-auto mb-4 text-[#EDD8B4]" /> */}
-            <p className="font-sans text-sm md:text-base tracking-[0.3em] uppercase mb-4 opacity-95">
-              Handcrafted Japanese Ceramics
-            </p>
-          </motion.div>
-
-          <motion.h1
-            variants={fadeInUp}
-            className="font-serif text-6xl md:text-8xl lg:text-9xl mb-8 leading-[0.9] tracking-tight"
-          >
-            <span className="block text-[#EDD8B4]">Bashō</span>
-            <span className="block text-4xl md:text-6xl lg:text-7xl mt-4 font-light">
-              The Beauty of <span className="italic">Impermanence</span>
-            </span>
-          </motion.h1>
-
-          <motion.p
-            variants={fadeInUp}
-            className="text-xl md:text-2xl font-light mb-12 max-w-3xl mx-auto opacity-95 leading-relaxed"
-          >
-            Earth whispers through clay, water shapes the form, fire gives it
-            soul. Inspired by Matsuo Bashō's poetry, we create living objects
-            for mindful moments.
-          </motion.p>
-
-          <motion.div
-            variants={fadeInUp}
-            className="flex flex-col sm:flex-row gap-6 justify-center items-center"
-          >
-            <Link href="/products">
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className="bg-[#EDD8B4] text-[#442D1C] px-10 py-4 rounded-full font-medium text-lg hover:bg-[#E8D0A0] transition-all shadow-lg hover:shadow-xl min-w-[180px] flex items-center justify-center gap-3 group"
+        {/* Carousel Controls */}
+        <div className="absolute bottom-8 left-0 right-0 z-30 px-4 md:px-16 lg:px-24 flex items-center justify-between">
+          {/* Progress / Dots */}
+          <div className="flex gap-4">
+            {HERO_SLIDES.map((_, i) => (
+              <button
+                key={i}
+                onClick={() => handleDotClick(i)}
+                className="group relative py-2" // Larger hit area
               >
-                Shop Collection
-                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-              </motion.button>
-            </Link>
-            <Link href="/about">
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className="bg-transparent border-2 border-[#EDD8B4] text-[#EDD8B4] px-10 py-4 rounded-full font-medium text-lg hover:bg-[#EDD8B4]/10 transition-all backdrop-blur-sm min-w-[180px]"
-              >
-                Our Story
-              </motion.button>
-            </Link>
-          </motion.div>
+                <div
+                  className={`h-1 transition-all duration-500 rounded-full ${
+                    i === index ? "w-12 bg-[#EDD8B4]" : "w-6 bg-white/30"
+                  }`}
+                />
+              </button>
+            ))}
+          </div>
 
-          {/* Scroll Indicator */}
-          <motion.div
-            animate="animate"
-            variants={floatAnimation}
-            className="absolute bottom-8 left-1/2 transform -translate-x-1/2"
-          >
-            <ChevronDown className="w-8 h-8 text-[#EDD8B4] animate-pulse" />
-          </motion.div>
-        </motion.div>
+          {/* Arrows */}
+          <div className="flex gap-4">
+            <motion.button
+              whileHover={{ scale: 1.1, backgroundColor: "rgba(255,255,255,0.2)" }}
+              whileTap={{ scale: 0.9 }}
+              onClick={() => {
+                paginate(-1);
+                setIsAutoPlaying(false);
+              }}
+              className="w-12 h-12 rounded-full border border-white/30 flex items-center justify-center text-white backdrop-blur-md transition-colors"
+            >
+              <ChevronLeft className="w-6 h-6" />
+            </motion.button>
+            <motion.button
+              whileHover={{ scale: 1.1, backgroundColor: "rgba(255,255,255,0.2)" }}
+              whileTap={{ scale: 0.9 }}
+              onClick={() => {
+                paginate(1);
+                setIsAutoPlaying(false);
+              }}
+              className="w-12 h-12 rounded-full border border-white/30 flex items-center justify-center text-white backdrop-blur-md transition-colors"
+            >
+              <ChevronRight className="w-6 h-6" />
+            </motion.button>
+          </div>
+        </div>
       </section>
+
+      {/* =========================================
+          2. REST OF THE CONTENT (From Original)
+      ========================================= */}
 
       {/* 2. PHILOSOPHY SECTION with Interactive Cards */}
       <section className="py-32 px-4 md:px-8 max-w-7xl mx-auto relative">
@@ -389,12 +517,12 @@ export default function LandingPage() {
 
               <div className="space-y-6 mb-10">
                 <CollectionLink
-                  href="/products/tea-ware"
+                  href="/products?category=tea-ware"
                   title="Tea Ceremony Collection"
                   description="Matcha bowls, teapots, and incense holders"
                 />
                 <CollectionLink
-                  href="/products/dinnerware"
+                  href="/products?category=dinnerware"
                   title="Dining Essentials"
                   description="Complete sets for 2-12 people"
                 />
@@ -660,7 +788,7 @@ export default function LandingPage() {
   );
 }
 
-// --- Enhanced Sub Components ---
+// --- Enhanced Sub Components (From Original) ---
 
 function PhilosophyCard({
   title,
