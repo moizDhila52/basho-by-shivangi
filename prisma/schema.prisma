@@ -30,8 +30,8 @@ model Cart {
   sessionId String?    @unique
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
-  CartItem  CartItem[]
   User      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  CartItem  CartItem[]
 
   @@index([sessionId])
   @@index([userId])
@@ -216,8 +216,8 @@ model User {
   id           String         @id @default(uuid())
   email        String         @unique
   name         String?
-  image        String?        // Google Profile Picture
-  firebaseUid  String?        @unique 
+  image        String?
+  firebaseUid  String?        @unique
   role         Role           @default(CUSTOMER)
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt
@@ -228,10 +228,10 @@ model User {
   phone        String?
   isSubscribed Boolean        @default(false)
   Address      Address[]
+  Cart         Cart?
   CustomOrder  CustomOrder[]
   Order        Order[]
   Review       Review[]
-  Cart         Cart?
   WishlistItem WishlistItem[]
 }
 
@@ -389,6 +389,9 @@ model CorporateInquiry {
   email       String
   phone       String?
   companySize String?
+  budget      String?
+  timeline    String?
+  service     String?
   interest    String[]
   message     String
   status      InquiryStatus @default(PENDING)
@@ -396,9 +399,6 @@ model CorporateInquiry {
   isActive    Boolean       @default(true)
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
-  budget      String?
-  service     String?
-  timeline    String?
 
   @@index([status])
   @@index([createdAt])
@@ -447,11 +447,11 @@ enum InquiryStatus {
 
 enum OrderStatus {
   PENDING
-  CONFIRMED
   PROCESSING
   SHIPPED
   DELIVERED
   CANCELLED
+  CONFIRMED
 }
 
 enum Role {
