@@ -31,7 +31,7 @@ model Cart {
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
   CartItem  CartItem[]
-  User      User[]
+  User      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([sessionId])
   @@index([userId])
@@ -213,16 +213,14 @@ model StoreSettings {
 }
 
 model User {
-<<<<<<< HEAD
   id           String         @id @default(uuid())
   email        String         @unique
   name         String?
-  image        String? // For Google Profile Picture
-  firebaseUid  String?        @unique // Essential for your Auth Logic
+  image        String?        // Google Profile Picture
+  firebaseUid  String?        @unique 
   role         Role           @default(CUSTOMER)
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt
-  cartId       String?
   gstNumber    String?
   otp          String?
   otpExpiresAt DateTime?
@@ -233,29 +231,8 @@ model User {
   CustomOrder  CustomOrder[]
   Order        Order[]
   Review       Review[]
-  Cart         Cart?          @relation(fields: [cartId], references: [id])
+  Cart         Cart?
   WishlistItem WishlistItem[]
-=======
-  id             String         @id @default(uuid())
-  email          String         @unique
-  name           String?
-  role           Role           @default(CUSTOMER)
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
-  cartId         String?
-  gstNumber      String?
-  otp            String?
-  otpExpiresAt   DateTime?
-  passwordHash   String?
-  phone          String?
-  isSubscribed   Boolean        @default(false)
-  Address        Address[]
-  CustomOrder    CustomOrder[]
-  Order          Order[]
-  Review         Review[]
-  Cart           Cart?          @relation(fields: [cartId], references: [id])
-  WishlistItem   WishlistItem[]
->>>>>>> 120244e3a9e13e6db71362eefe85d9f57895e1c4
 }
 
 model WishlistItem {
@@ -272,9 +249,9 @@ model WishlistItem {
 }
 
 model Workshop {
-  id              String              @id @default(uuid())
+  id              String            @id @default(uuid())
   title           String
-  slug            String              @unique
+  slug            String            @unique
   description     String
   price           Float
   image           String
@@ -287,9 +264,9 @@ model Workshop {
   instructorName  String
   instructorRole  String
   instructorImage String
-  status          WorkshopStatus      @default(UPCOMING)
-  createdAt       DateTime            @default(now())
-  updatedAt       DateTime            @updatedAt
+  status          WorkshopStatus    @default(UPCOMING)
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
   instructorBio   String?
   testimonials    Testimonial[]
   WorkshopSession WorkshopSession[]
@@ -475,7 +452,6 @@ enum OrderStatus {
   SHIPPED
   DELIVERED
   CANCELLED
-  CONFIRMED
 }
 
 enum Role {
