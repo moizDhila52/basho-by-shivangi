@@ -134,9 +134,17 @@ export default function MyWorkshopsPage() {
 
                 {/* Action */}
                 <div className="w-full md:w-auto">
-                  <button className="w-full md:w-auto px-6 py-3 bg-[#442D1C] text-[#EDD8B4] rounded-xl font-bold text-sm hover:bg-[#2c1d12] transition-colors">
+                  <a
+                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+                      reg.WorkshopSession.Workshop.location,
+                    )}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center justify-center w-full md:w-auto px-6 py-3 bg-[#442D1C] text-[#EDD8B4] rounded-xl font-bold text-sm hover:bg-[#2c1d12] transition-colors gap-2"
+                  >
+                    <MapPin size={16} /> {/* Add icon for visual cue */}
                     Get Directions
-                  </button>
+                  </a>
                 </div>
               </div>
             ))}
