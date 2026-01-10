@@ -1,365 +1,605 @@
-// app/testimonials/page.js
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { motion } from "framer-motion";
-import { Star, Quote, Play, Filter, X, MessageSquare } from "lucide-react";
-
-const COLORS = {
-  dark: "#442D1C",
-  brown: "#652810",
-  clay: "#8E5022",
-  terracotta: "#C85428",
-  cream: "#EDD8B4",
-  background: "#FDFBF7",
-};
-
-const SOURCE_FILTERS = [
-  { value: "all", label: "All Sources" },
-  { value: "Website", label: "Website" },
-  { value: "Google", label: "Google" },
-  { value: "Instagram", label: "Instagram" },
-  { value: "Facebook", label: "Facebook" },
-];
-
-const RATING_FILTERS = [
-  { value: "all", label: "All Ratings" },
-  { value: "5", label: "5 Stars" },
-  { value: "4", label: "4+ Stars" },
-  { value: "3", label: "3+ Stars" },
-];
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  Plus,
+  X,
+  Upload,
+  Star,
+  Video,
+  Image as ImageIcon,
+  Loader2,
+  CheckCircle,
+  Eye,
+  EyeOff,
+  User
+} from "lucide-react";
+import { useAuth } from "@/components/AuthProvider";
+import { cn } from "@/lib/utils";
+// Import your UI component
+import { InfiniteMovingCards } from "@/components/ui/infinite-moving-cards";
 
 export default function TestimonialsPage() {
   const [testimonials, setTestimonials] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [selectedSource, setSelectedSource] = useState("all");
-  const [selectedRating, setSelectedRating] = useState("all");
-  const [showFeatured, setShowFeatured] = useState(false);
-  const [activeVideo, setActiveVideo] = useState(null);
-
-  useEffect(() => {
-    fetchTestimonials();
-  }, [selectedSource, selectedRating, showFeatured]);
+  
+  // State for Submission Modal
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  
+  // State for Read More Modal
+  const [selectedTestimonial, setSelectedTestimonial] = useState(null);
 
   const fetchTestimonials = async () => {
     try {
       setLoading(true);
-      const params = new URLSearchParams();
-      if (selectedSource !== "all") params.append("source", selectedSource);
-      if (selectedRating !== "all") params.append("minRating", selectedRating);
-      if (showFeatured) params.append("featured", "true");
-
+      const params = new URLSearchParams({ approved: "true" });
       const response = await fetch(`/api/testimonials?${params.toString()}`);
       const data = await response.json();
-
       if (data.success) {
         setTestimonials(data.data);
       }
     } catch (error) {
-      console.error("Error fetching testimonials:", error);
+      console.error(error);
     } finally {
       setLoading(false);
     }
   };
 
-  const renderStars = (rating) => {
-    return Array.from({ length: 5 }, (_, i) => (
-      <Star
-        key={i}
-        className={`w-5 h-5 ${
-          i < Math.floor(rating)
-            ? "fill-[#C85428] text-[#C85428]"
-            : "text-stone-300"
-        }`}
-      />
-    ));
-  };
+  useEffect(() => {
+    fetchTestimonials();
+  }, []);
 
-  const playVideo = (videoUrl) => {
-    setActiveVideo(videoUrl);
-  };
+  // Format data for the Cards Component
+  const formattedTestimonials = testimonials.map((t) => ({
+    quote: t.content,
+    name: t.customerName,
+    title: t.customerRole || "Verified Customer",
+    image: t.image,        // Attachment Image
+    video: t.videoUrl,     // Attachment Video
+    rating: t.rating,
+    isAnonymous: t.isAnonymous 
+  }));
+
+  // Split Logic: If > 7 items, create two rows.
+  const firstRow = formattedTestimonials.slice(0, 7);
+  const secondRow = formattedTestimonials.length > 7 ? formattedTestimonials.slice(7) : [];
 
   return (
-    <main className="min-h-screen bg-[#FDFBF7] text-stone-800">
-      {/* Hero Section */}
-      <section className="relative bg-gradient-to-b from-white to-[#EDD8B4]/20 pt-32 pb-20 px-4">
-        <div className="max-w-7xl mx-auto text-center">
+    <main className="min-h-screen bg-[#FDFBF7] text-stone-800 overflow-hidden font-sans">
+      <section className="relative pt-32 pb-20 px-4 flex flex-col items-center justify-center min-h-[85vh]">
+        
+        {/* Header Section */}
+        <div className="max-w-7xl mx-auto text-center mb-12">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
           >
             <span className="text-[#8E5022] uppercase tracking-[0.3em] text-sm font-medium mb-4 inline-block">
-              Stories That Inspire
+              Community Love
             </span>
             <h1 className="font-serif text-5xl md:text-7xl text-[#442D1C] mb-6 leading-tight">
-              Voices of Our <span className="text-[#C85428]">Community</span>
+              Voices of <span className="text-[#C85428]">Bashō</span>
             </h1>
-            <p className="text-xl text-stone-600 max-w-2xl mx-auto">
-              Hear from collectors, workshop participants, and art lovers who
-              have experienced Bashō firsthand.
+            <p className="text-stone-600 max-w-2xl mx-auto text-lg">
+              Hear from the artisans, collectors, and students who make our community special.
             </p>
           </motion.div>
         </div>
-      </section>
 
-      {/* Filters */}
-      <section className="px-4 pb-12">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex flex-col lg:flex-row gap-6 items-start lg:items-center justify-between mb-8">
-            {/* Source Filters */}
-            <div className="flex-1 overflow-x-auto">
-              <div className="flex gap-2">
-                {SOURCE_FILTERS.map((source) => (
-                  <button
-                    key={source.value}
-                    onClick={() => setSelectedSource(source.value)}
-                    className={`px-6 py-3 rounded-full font-medium whitespace-nowrap transition-all ${
-                      selectedSource === source.value
-                        ? "bg-[#442D1C] text-white shadow-md"
-                        : "bg-white text-stone-600 hover:bg-stone-100 shadow-sm"
-                    }`}
-                  >
-                    {source.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Rating & Featured Filters */}
-            <div className="flex items-center gap-4">
-              <div className="flex gap-2">
-                {RATING_FILTERS.map((rating) => (
-                  <button
-                    key={rating.value}
-                    onClick={() => setSelectedRating(rating.value)}
-                    className={`px-4 py-2 rounded-xl font-medium transition-all ${
-                      selectedRating === rating.value
-                        ? "bg-[#8E5022] text-white"
-                        : "bg-white text-stone-600 hover:bg-stone-100 border border-stone-200"
-                    }`}
-                  >
-                    {rating.label}
-                  </button>
-                ))}
-              </div>
-
-              <button
-                onClick={() => setShowFeatured(!showFeatured)}
-                className={`flex items-center gap-2 px-6 py-3 rounded-xl font-medium transition-all ${
-                  showFeatured
-                    ? "bg-[#C85428] text-white"
-                    : "bg-white text-stone-600 hover:bg-stone-100 border border-stone-200"
-                }`}
-              >
-                <Star className="w-4 h-4" />
-                Featured Only
-              </button>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Testimonials Grid */}
-      <section className="px-4 pb-32">
-        <div className="max-w-7xl mx-auto">
+        {/* INFINITE CARDS CONTAINER */}
+        <div className="flex flex-col gap-6 w-full items-center justify-center relative overflow-hidden min-h-[400px]">
           {loading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {[1, 2, 3, 4, 5, 6].map((i) => (
-                <div
-                  key={i}
-                  className="bg-white rounded-3xl shadow-lg animate-pulse p-6"
-                >
-                  <div className="flex items-center gap-4 mb-4">
-                    <div className="w-12 h-12 rounded-full bg-stone-200"></div>
-                    <div className="space-y-2">
-                      <div className="h-4 bg-stone-200 rounded w-24"></div>
-                      <div className="h-3 bg-stone-200 rounded w-16"></div>
-                    </div>
-                  </div>
-                  <div className="space-y-3">
-                    <div className="h-4 bg-stone-200 rounded w-full"></div>
-                    <div className="h-4 bg-stone-200 rounded w-3/4"></div>
-                  </div>
-                </div>
-              ))}
+            <div className="flex items-center gap-3 text-[#8E5022]">
+              <Loader2 className="animate-spin" size={24} />
+              <span className="font-medium">Loading community stories...</span>
             </div>
-          ) : testimonials.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {testimonials.map((testimonial, index) => (
-                <TestimonialCard
-                  key={testimonial.id}
-                  testimonial={testimonial}
-                  index={index}
-                  onPlayVideo={playVideo}
+          ) : formattedTestimonials.length > 0 ? (
+            <>
+              {/* Row 1: Moves Right */}
+              <InfiniteMovingCards
+                items={firstRow}
+                direction="right"
+                speed="slow"
+                // Pass handler for Read More
+                onReadMore={(item) => setSelectedTestimonial(item)} 
+              />
+              
+              {/* Row 2: Moves Left (Only if we have enough items) */}
+              {secondRow.length > 0 && (
+                <InfiniteMovingCards
+                  items={secondRow}
+                  direction="left"
+                  speed="slow"
+                  // Pass handler for Read More
+                  onReadMore={(item) => setSelectedTestimonial(item)}
                 />
-              ))}
-            </div>
+              )}
+            </>
           ) : (
-            <div className="text-center py-20">
-              <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-stone-100 flex items-center justify-center">
-                <MessageSquare className="w-12 h-12 text-stone-400" />
-              </div>
-              <h3 className="font-serif text-3xl text-[#442D1C] mb-4">
-                No testimonials found
-              </h3>
-              <p className="text-stone-600 mb-8 max-w-md mx-auto">
-                No testimonials match your filters. Try different criteria or
-                check back soon!
-              </p>
-              <button
-                onClick={() => {
-                  setSelectedSource("all");
-                  setSelectedRating("all");
-                  setShowFeatured(false);
-                }}
-                className="bg-[#8E5022] text-white px-8 py-3 rounded-xl font-medium hover:bg-[#652810] transition-colors"
-              >
-                View All Testimonials
-              </button>
+            <div className="text-center p-8 bg-white/50 rounded-2xl border border-stone-200">
+              <p className="text-stone-500 mb-4">No stories yet. Be the first to share yours!</p>
             </div>
           )}
         </div>
+
+        <div className="mt-12">
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="group bg-[#442D1C] text-white px-8 py-4 rounded-xl font-medium shadow-lg hover:bg-[#652810] hover:shadow-xl transition-all flex items-center gap-3 mx-auto transform hover:-translate-y-1"
+          >
+            <Plus size={20} className="group-hover:rotate-90 transition-transform" />
+            Share Your Story
+          </button>
+        </div>
       </section>
 
-      {/* Video Modal */}
-      {activeVideo && (
-        <div
-          className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4"
-          onClick={() => setActiveVideo(null)}
-        >
-          <div
-            className="relative max-w-4xl w-full"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button
-              onClick={() => setActiveVideo(null)}
-              className="absolute -top-12 right-0 z-10 w-10 h-10 rounded-full bg-white/20 flex items-center justify-center hover:bg-white/30 transition-colors"
-            >
-              <X className="w-5 h-5 text-white" />
-            </button>
-            <div className="aspect-video rounded-lg overflow-hidden">
-              <iframe
-                src={activeVideo}
-                className="w-full h-full"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-              />
-            </div>
-          </div>
-        </div>
-      )}
+      {/* SUBMISSION MODAL */}
+      <AnimatePresence>
+        {isModalOpen && (
+          <SubmissionModal onClose={() => setIsModalOpen(false)} />
+        )}
+      </AnimatePresence>
+
+      {/* READ MORE MODAL */}
+      <AnimatePresence>
+        {selectedTestimonial && (
+          <ReadMoreModal 
+            item={selectedTestimonial} 
+            onClose={() => setSelectedTestimonial(null)} 
+          />
+        )}
+      </AnimatePresence>
     </main>
   );
 }
 
-function TestimonialCard({ testimonial, index, onPlayVideo }) {
+// ==========================================
+// COMPONENT: READ MORE MODAL
+// ==========================================
+function ReadMoreModal({ item, onClose }) {
+  const isAnonymous = item.isAnonymous;
+
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, delay: index * 0.1 }}
-      whileHover={{ y: -4 }}
-      className={`bg-white rounded-3xl p-6 shadow-lg hover:shadow-2xl transition-all duration-300 relative ${
-        testimonial.featured ? "border-2 border-[#C85428]" : ""
-      }`}
-    >
-      {testimonial.featured && (
-        <div className="absolute -top-3 left-6">
-          <div className="bg-[#C85428] text-white px-4 py-1.5 rounded-full text-sm font-medium flex items-center gap-2">
-            <Star className="w-3 h-3 fill-white" />
-            Featured
+    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95, y: 20 }}
+        className="bg-white rounded-3xl w-full max-w-2xl overflow-hidden relative shadow-2xl max-h-[90vh] flex flex-col"
+      >
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 p-2 bg-white/80 hover:bg-stone-100 rounded-full text-stone-500 transition-colors z-10"
+        >
+          <X size={20} />
+        </button>
+
+        <div className="p-8 overflow-y-auto custom-scrollbar">
+          {/* Header User Info */}
+          <div className="flex items-center gap-4 mb-6">
+            <div className="w-14 h-14 rounded-full bg-[#EDD8B4] flex items-center justify-center text-[#442D1C] font-bold text-xl shadow-inner shrink-0">
+               {isAnonymous ? <User size={24} /> : (item.name ? item.name.charAt(0).toUpperCase() : "?")}
+            </div>
+            <div>
+              <h3 className="font-serif text-2xl text-[#442D1C]">
+                {isAnonymous ? "Anonymous" : item.name}
+              </h3>
+              <div className="flex items-center gap-2 text-sm text-stone-500">
+                <span>{isAnonymous ? "Verified Buyer" : item.title}</span>
+                {/* Stars */}
+                <div className="flex gap-0.5 ml-2">
+                  {[...Array(5)].map((_, i) => (
+                    <Star
+                      key={i}
+                      size={12}
+                      className={cn(
+                        "fill-[#C85428] text-[#C85428]",
+                        i >= (item.rating || 5) && "opacity-30"
+                      )}
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Full Content */}
+          <div className="space-y-6">
+            <p className="text-stone-700 text-lg leading-relaxed italic">
+              "{item.quote}"
+            </p>
+
+            {/* Media in Modal */}
+            <div className="grid gap-6">
+              {item.video && (
+                <div className="rounded-2xl overflow-hidden bg-black aspect-video shadow-sm">
+                  <video
+                    src={item.video}
+                    className="w-full h-full object-contain"
+                    controls
+                    autoPlay={false}
+                  />
+                </div>
+              )}
+              {item.image && (
+                <div className="rounded-2xl overflow-hidden shadow-sm">
+                  <img
+                    src={item.image}
+                    alt="Full size attachment"
+                    className="w-full h-auto object-cover"
+                  />
+                </div>
+              )}
+            </div>
           </div>
         </div>
-      )}
+        
+        <div className="p-6 border-t border-stone-100 bg-stone-50 text-center shrink-0">
+           <button 
+             onClick={onClose}
+             className="text-[#8E5022] font-bold hover:underline"
+           >
+             Close Review
+           </button>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
 
-      <div className="flex items-start gap-4 mb-4">
-        {/* Customer Image or Avatar */}
-        <div className="flex-shrink-0">
-          {testimonial.image ? (
-            <img
-              src={testimonial.image}
-              alt={testimonial.customerName}
-              className="w-14 h-14 rounded-full object-cover border-2 border-[#EDD8B4]"
-            />
+// ==========================================
+// COMPONENT: SUBMISSION MODAL
+// ==========================================
+function SubmissionModal({ onClose }) {
+  const { user } = useAuth(); // Ensure AuthProvider exists
+  const [step, setStep] = useState(1);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Loading states
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [uploadingVideo, setUploadingVideo] = useState(false);
+
+  const [formData, setFormData] = useState({
+    customerName: user?.name || "",
+    customerRole: "",
+    content: "",
+    rating: 5,
+    image: "",
+    videoUrl: "",
+    source: "Website",
+    isAnonymous: false,
+  });
+
+  const handleUpload = async (file, type) => {
+    if (type === "image") setUploadingImage(true);
+    if (type === "video") setUploadingVideo(true);
+
+    const data = new FormData();
+    data.append("file", file);
+    data.append("upload_preset", process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET);
+
+    try {
+      const res = await fetch(
+        `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/${type}/upload`,
+        { method: "POST", body: data }
+      );
+      const result = await res.json();
+
+      if (type === "image") setUploadingImage(false);
+      if (type === "video") setUploadingVideo(false);
+
+      if (result.error) throw new Error(result.error.message);
+      return result.secure_url;
+    } catch (err) {
+      console.error("Upload failed", err);
+      if (type === "image") setUploadingImage(false);
+      if (type === "video") setUploadingVideo(false);
+      alert("Upload failed. Please try again.");
+      return null;
+    }
+  };
+
+  const handleFileChange = async (e, type) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const url = await handleUpload(file, type);
+    if (url) {
+      setFormData((prev) => ({
+        ...prev,
+        [type === "video" ? "videoUrl" : "image"]: url,
+      }));
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (uploadingImage || uploadingVideo) return;
+
+    setIsSubmitting(true);
+
+    try {
+      const res = await fetch("/api/testimonials", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+      const data = await res.json();
+
+      if (data.success) {
+        setStep(2);
+      } else {
+        alert(data.error || "Submission failed");
+      }
+    } catch (error) {
+      console.error(error);
+      alert("Something went wrong");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95, y: 20 }}
+        className="bg-white rounded-3xl w-full max-w-lg overflow-hidden relative shadow-2xl max-h-[90vh] overflow-y-auto"
+      >
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 p-2 hover:bg-stone-100 rounded-full text-stone-500 transition-colors z-10"
+        >
+          <X size={20} />
+        </button>
+
+        <div className="p-8">
+          {step === 1 ? (
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div>
+                <h2 className="font-serif text-3xl text-[#442D1C] mb-1">
+                  Share experience
+                </h2>
+                <p className="text-stone-500 text-sm">We'd love to hear from you!</p>
+              </div>
+
+              {/* Rating */}
+              <div>
+                <label className="block text-sm font-medium text-stone-600 mb-2">
+                  How was your experience?
+                </label>
+                <div className="flex gap-2">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <button
+                      key={star}
+                      type="button"
+                      onClick={() => setFormData({ ...formData, rating: star })}
+                      className="focus:outline-none transition-transform hover:scale-110 active:scale-95"
+                    >
+                      <Star
+                        className={`w-8 h-8 ${
+                          star <= formData.rating
+                            ? "fill-[#C85428] text-[#C85428]"
+                            : "text-stone-200"
+                        }`}
+                      />
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Info & Anonymous Toggle */}
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-stone-600 mb-1">
+                      Name
+                    </label>
+                    <input
+                      required
+                      type="text"
+                      disabled={formData.isAnonymous}
+                      value={formData.customerName}
+                      onChange={(e) =>
+                        setFormData({ ...formData, customerName: e.target.value })
+                      }
+                      className={cn(
+                        "w-full px-4 py-3 rounded-xl border outline-none transition-all",
+                        formData.isAnonymous
+                          ? "bg-stone-100 border-stone-200 text-stone-400"
+                          : "border-stone-200 focus:ring-2 focus:ring-[#8E5022]/20 focus:border-[#8E5022]"
+                      )}
+                      placeholder="Your Name"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-stone-600 mb-1">
+                      Role (Optional)
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.customerRole}
+                      onChange={(e) =>
+                        setFormData({ ...formData, customerRole: e.target.value })
+                      }
+                      className="w-full px-4 py-3 rounded-xl border border-stone-200 focus:ring-2 focus:ring-[#8E5022]/20 focus:border-[#8E5022] outline-none transition-all"
+                      placeholder="e.g. Art Lover"
+                    />
+                  </div>
+                </div>
+
+                {/* Anonymous Checkbox */}
+                <label className="flex items-center gap-3 cursor-pointer group">
+                  <div
+                    className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${
+                      formData.isAnonymous
+                        ? "bg-[#442D1C] border-[#442D1C]"
+                        : "border-stone-300 group-hover:border-[#442D1C]"
+                    }`}
+                  >
+                    {formData.isAnonymous && <CheckCircle size={14} className="text-white" />}
+                  </div>
+                  <input
+                    type="checkbox"
+                    className="hidden"
+                    checked={formData.isAnonymous}
+                    onChange={(e) =>
+                      setFormData((prev) => ({ ...prev, isAnonymous: e.target.checked }))
+                    }
+                  />
+                  <div className="flex items-center gap-2 text-sm text-stone-600">
+                    {formData.isAnonymous ? <EyeOff size={16} /> : <Eye size={16} />}
+                    <span>Keep me anonymous</span>
+                  </div>
+                </label>
+              </div>
+
+              {/* Content */}
+              <div>
+                <label className="block text-sm font-medium text-stone-600 mb-1">
+                  Your Story
+                </label>
+                <textarea
+                  required
+                  value={formData.content}
+                  onChange={(e) =>
+                    setFormData({ ...formData, content: e.target.value })
+                  }
+                  className="w-full px-4 py-3 rounded-xl border border-stone-200 h-32 outline-none resize-none focus:ring-2 focus:ring-[#8E5022]/20 focus:border-[#8E5022] transition-all"
+                  placeholder="Tell us about your experience with Bashō..."
+                />
+              </div>
+
+              {/* Upload Section */}
+              <div className="grid grid-cols-2 gap-4">
+                {/* IMAGE UPLOAD CARD */}
+                <div
+                  className={`relative border-2 border-dashed rounded-xl p-4 text-center transition-all duration-300 ${
+                    formData.image
+                      ? "border-green-400 bg-green-50"
+                      : uploadingImage
+                      ? "border-[#8E5022] bg-amber-50"
+                      : "border-stone-200 hover:bg-stone-50 hover:border-stone-300"
+                  }`}
+                >
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => handleFileChange(e, "image")}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20"
+                    disabled={uploadingImage}
+                  />
+                  <div className="flex flex-col items-center gap-2 relative z-10">
+                    {uploadingImage ? (
+                      <>
+                        <Loader2 className="animate-spin text-green-600" size={24} />
+                        <span className="text-xs text-green-700 font-medium animate-pulse">
+                          Uploading...
+                        </span>
+                      </>
+                    ) : formData.image ? (
+                      <>
+                        <div className="bg-green-100 p-2 rounded-full">
+                          <CheckCircle size={20} className="text-green-600" />
+                        </div>
+                        <span className="text-xs text-green-700 font-bold">
+                          Image Attached
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        <ImageIcon size={24} className="text-stone-400" />
+                        <span className="text-xs text-stone-500 font-medium">
+                          Add Photo
+                        </span>
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                {/* VIDEO UPLOAD CARD */}
+                <div
+                  className={`relative border-2 border-dashed rounded-xl p-4 text-center transition-all duration-300 ${
+                    formData.videoUrl
+                      ? "border-green-400 bg-green-50"
+                      : uploadingVideo
+                      ? "border-[#8E5022] bg-amber-50"
+                      : "border-stone-200 hover:bg-stone-50 hover:border-stone-300"
+                  }`}
+                >
+                  <input
+                    type="file"
+                    accept="video/*"
+                    onChange={(e) => handleFileChange(e, "video")}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20"
+                    disabled={uploadingVideo}
+                  />
+                  <div className="flex flex-col items-center gap-2 relative z-10">
+                    {uploadingVideo ? (
+                      <>
+                        <Loader2 className="animate-spin text-green-600" size={24} />
+                        <span className="text-xs text-green-700 font-medium animate-pulse">
+                          Uploading...
+                        </span>
+                      </>
+                    ) : formData.videoUrl ? (
+                      <>
+                        <div className="bg-green-100 p-2 rounded-full">
+                          <CheckCircle size={20} className="text-green-600" />
+                        </div>
+                        <span className="text-xs text-green-700 font-bold">
+                          Video Attached
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        <Video size={24} className="text-stone-400" />
+                        <span className="text-xs text-stone-500 font-medium">
+                          Add Video
+                        </span>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={isSubmitting || uploadingImage || uploadingVideo}
+                className="w-full bg-[#442D1C] text-white py-4 rounded-xl font-medium hover:bg-[#2B1B12] disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-lg shadow-[#442D1C]/20"
+              >
+                {isSubmitting ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <Loader2 className="animate-spin" size={18} /> Submitting...
+                  </span>
+                ) : (
+                  "Submit Review"
+                )}
+              </button>
+            </form>
           ) : (
-            <div className="w-14 h-14 rounded-full bg-gradient-to-br from-[#EDD8B4] to-[#C85428] flex items-center justify-center text-white font-serif text-xl">
-              {testimonial.customerName.charAt(0)}
+            // SUCCESS VIEW
+            <div className="text-center py-8">
+              <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6 text-green-600 animate-bounce">
+                <Upload size={32} />
+              </div>
+              <h3 className="font-serif text-3xl mb-3 text-[#442D1C]">Thank you!</h3>
+              <p className="text-stone-600 mb-8 px-4">
+                Your review has been submitted successfully. It will appear on our page once approved by our team.
+              </p>
+              <button
+                onClick={onClose}
+                className="bg-stone-100 text-stone-800 px-10 py-3 rounded-xl font-medium hover:bg-stone-200 transition-colors w-full"
+              >
+                Close
+              </button>
             </div>
           )}
         </div>
-
-        <div>
-          <h4 className="font-medium text-stone-800">
-            {testimonial.customerName}
-          </h4>
-          {testimonial.customerRole && (
-            <p className="text-sm text-stone-500">{testimonial.customerRole}</p>
-          )}
-          <div className="flex items-center gap-1 mt-1">
-            {Array.from({ length: 5 }, (_, i) => (
-              <Star
-                key={i}
-                className={`w-4 h-4 ${
-                  i < Math.floor(testimonial.rating)
-                    ? "fill-[#C85428] text-[#C85428]"
-                    : "text-stone-300"
-                }`}
-              />
-            ))}
-            <span className="text-sm text-stone-500 ml-2">
-              {testimonial.rating.toFixed(1)}
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* Quote Icon */}
-      <div className="mb-4">
-        <Quote className="w-8 h-8 text-[#EDD8B4]" />
-      </div>
-
-      {/* Testimonial Content */}
-      <p className="text-stone-600 italic mb-6 line-clamp-5">
-        "{testimonial.content}"
-      </p>
-
-      {/* Source & Associated Item */}
-      <div className="flex items-center justify-between mt-6 pt-6 border-t border-stone-100">
-        <div className="flex items-center gap-3">
-          <span className="text-xs text-stone-500">
-            Via {testimonial.source}
-          </span>
-
-          {testimonial.Product && (
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-[#8E5022]"></div>
-              <span className="text-xs text-stone-600 truncate max-w-[100px]">
-                {testimonial.Product.name}
-              </span>
-            </div>
-          )}
-
-          {testimonial.Workshop && (
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-[#652810]"></div>
-              <span className="text-xs text-stone-600 truncate max-w-[100px]">
-                {testimonial.Workshop.title}
-              </span>
-            </div>
-          )}
-        </div>
-
-        {/* Video Play Button */}
-        {testimonial.videoUrl && (
-          <button
-            onClick={() => onPlayVideo(testimonial.videoUrl)}
-            className="w-10 h-10 rounded-full bg-[#C85428] flex items-center justify-center hover:bg-[#B54418] transition-colors"
-          >
-            <Play className="w-5 h-5 text-white fill-white" />
-          </button>
-        )}
-      </div>
-    </motion.div>
+      </motion.div>
+    </div>
   );
 }
