@@ -97,6 +97,146 @@ const removeFromWishlistAPI = async (productId) => {
   }
 };
 
+// Review Form Component
+function ReviewForm({ productSlug, onReviewSubmitted }) {
+  const [rating, setRating] = useState(0);
+  const [hoveredRating, setHoveredRating] = useState(0);
+  const [comment, setComment] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    if (!rating) {
+      toast.error("Please select a rating");
+      return;
+    }
+
+    setSubmitting(true);
+
+    try {
+      const response = await fetch(`/api/products/${productSlug}/review`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({
+          rating,
+          comment,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to submit review");
+      }
+
+      toast.success("Review submitted successfully!");
+      setRating(0);
+      setComment("");
+
+      if (onReviewSubmitted) {
+        onReviewSubmitted();
+      }
+    } catch (error) {
+      console.error("Error submitting review:", error);
+      toast.error(error.message || "Failed to submit review");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="bg-white shadow-md rounded-3xl p-8 mb-10">
+      <h4 className="font-serif text-xl text-[#442D1C] mb-6">Write a Review</h4>
+      <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Rating Stars */}
+        <div>
+          <label className="block text-sm font-medium text-stone-700 mb-3">
+            Your Rating *
+          </label>
+          <div className="flex items-center gap-2">
+            {[1, 2, 3, 4, 5].map((star) => (
+              <button
+                key={star}
+                type="button"
+                onClick={() => setRating(star)}
+                onMouseEnter={() => setHoveredRating(star)}
+                onMouseLeave={() => setHoveredRating(0)}
+                className="transition-transform hover:scale-110"
+              >
+                <Star
+                  className={`w-8 h-8 ${
+                    star <= (hoveredRating || rating)
+                      ? "fill-[#C85428] text-[#C85428]"
+                      : "text-stone-300"
+                  }`}
+                />
+              </button>
+            ))}
+            {rating > 0 && (
+              <span className="ml-3 text-stone-600">
+                {rating === 1 && "Poor"}
+                {rating === 2 && "Fair"}
+                {rating === 3 && "Good"}
+                {rating === 4 && "Very Good"}
+                {rating === 5 && "Excellent"}
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Comment */}
+        <div>
+          <label
+            htmlFor="comment"
+            className="block text-sm font-medium text-stone-700 mb-3"
+          >
+            Your Review (Optional)
+          </label>
+          <textarea
+            id="comment"
+            value={comment}
+            onChange={(e) => setComment(e.target.value)}
+            rows={4}
+            placeholder="Share your experience with this product..."
+            className="w-full px-4 py-3 border-2 border-stone-200 rounded-xl focus:border-[#8E5022] focus:ring-2 focus:ring-[#8E5022]/20 outline-none transition-all resize-none"
+            maxLength={500}
+          />
+          <div className="text-sm text-stone-500 mt-2 text-right">
+            {comment.length}/500 characters
+          </div>
+        </div>
+
+        {/* Submit Button */}
+        <button
+          type="submit"
+          disabled={submitting || !rating}
+          className={`w-full py-4 rounded-xl font-medium text-lg transition-all flex items-center justify-center gap-3 ${
+            submitting || !rating
+              ? "bg-stone-200 text-stone-400 cursor-not-allowed"
+              : "bg-[#8E5022] text-white hover:bg-[#652810]"
+          }`}
+        >
+          {submitting ? (
+            <>
+              <Loader2 className="w-5 h-5 animate-spin" />
+              Submitting...
+            </>
+          ) : (
+            <>
+              <Check className="w-5 h-5" />
+              Submit Review
+            </>
+          )}
+        </button>
+      </form>
+    </div>
+  );
+}
+
 export default function ProductDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -111,6 +251,10 @@ export default function ProductDetailPage() {
   const [quantity, setQuantity] = useState(1);
   const [wishlist, setWishlist] = useState(new Set());
   const [wishlistLoading, setWishlistLoading] = useState(false);
+
+  // Add these states
+  const [canReview, setCanReview] = useState(false);
+  const [reviewEligibility, setReviewEligibility] = useState(null);
 
   const productId = params.slug;
   const quantityInCart = product ? getItemQuantity(product.id) : 0;
@@ -150,6 +294,33 @@ export default function ProductDetailPage() {
       loadProduct();
     }
   }, [productId]);
+
+  // Check review eligibility
+  useEffect(() => {
+    async function checkReviewEligibility() {
+      if (!user || !product) {
+        setCanReview(false);
+        return;
+      }
+
+      try {
+        const response = await fetch(`/api/products/${productId}/review`, {
+          credentials: "include",
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          setReviewEligibility(data);
+          setCanReview(data.canReview);
+        }
+      } catch (error) {
+        console.error("Error checking review eligibility:", error);
+        setCanReview(false);
+      }
+    }
+
+    checkReviewEligibility();
+  }, [user, product, productId]);
 
   // Load wishlist
   useEffect(() => {
@@ -234,6 +405,20 @@ export default function ProductDetailPage() {
       setWishlistLoading(false);
     }
   }, [product, user, authLoading, router, productId, wishlist]);
+
+  // Callback to refresh product after review submission
+  const handleReviewSubmitted = () => {
+    if (productId) {
+      fetch(`/api/products/${productId}`)
+        .then((res) => res.json())
+        .then((data) => {
+          setProduct(data.product);
+          setCanReview(false);
+          setReviewEligibility({ ...reviewEligibility, hasReviewed: true });
+        })
+        .catch((err) => console.error("Error reloading product:", err));
+    }
+  };
 
   // Image navigation
   const nextImage = () => {
@@ -751,19 +936,62 @@ export default function ProductDetailPage() {
             </div>
 
             {/* Reviews */}
-            {product.reviews && product.reviews.length > 0 && (
-              <div className="mb-12">
-                <h3 className="font-serif text-2xl text-[#442D1C] mb-6">
-                  Customer Reviews
-                </h3>
+            <div className="mb-12">
+              <h3 className="font-serif text-2xl text-[#442D1C] mb-6">
+                Customer Reviews
+              </h3>
+
+              {/* Show review form if eligible */}
+              {user && canReview && (
+                <ReviewForm
+                  productSlug={productId}
+                  onReviewSubmitted={handleReviewSubmitted}
+                />
+              )}
+
+              {/* Show message if user has purchased but already reviewed */}
+              {user && reviewEligibility?.hasReviewed && (
+                <div className="bg-blue-50 border-2 border-blue-200 rounded-2xl p-6 mb-8">
+                  <div className="flex items-center gap-3">
+                    <Check className="w-5 h-5 text-blue-600" />
+                    <p className="text-blue-800 font-medium">
+                      You have already reviewed this product. Thank you for your
+                      feedback!
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Show message if user hasn't purchased */}
+              {user && reviewEligibility && !reviewEligibility.hasPurchased && (
+                <div className="bg-amber-50 border-2 border-amber-200 rounded-2xl p-6 mb-8">
+                  <div className="flex items-center gap-3">
+                    <AlertCircle className="w-5 h-5 text-amber-600" />
+                    <p className="text-amber-800 font-medium">
+                      Purchase this product to leave a review
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Existing reviews */}
+              {product.reviews && product.reviews.length > 0 ? (
                 <div className="space-y-6">
                   {product.reviews.slice(0, 3).map((review) => (
                     <div
                       key={review.id}
-                      className="border-b border-stone-200 pb-6"
+                      className="border-b border-stone-200 pb-6 last:border-0"
                     >
                       <div className="flex items-center gap-4 mb-3">
-                        <div className="flex items-center">
+                        {/* Avatar Circle */}
+                        <div className="w-10 h-10 bg-[#EDD8B4] rounded-full flex items-center justify-center text-[#442D1C] font-serif font-bold text-lg border-2 border-transparent hover:border-[#C85428] transition-all">
+                          {review.User?.name
+                            ? review.User.name[0].toUpperCase()
+                            : review.User?.email
+                            ? review.User.email[0].toUpperCase()
+                            : "A"}
+                        </div>
+                        <div className="flex items-center gap-2">
                           {[...Array(5)].map((_, i) => (
                             <Star
                               key={i}
@@ -776,20 +1004,34 @@ export default function ProductDetailPage() {
                           ))}
                         </div>
                         <span className="font-medium">
-                          {review.user?.name || "Anonymous"}
+                          {review.User?.name || "Anonymous"}
                         </span>
-                        <span className="text-sm text-stone-500">
+                        {review.isVerified && (
+                          <span className="bg-green-100 text-green-700 text-xs font-medium px-2 py-1 rounded-full flex items-center gap-1">
+                            <Check className="w-3 h-3" />
+                            Verified Purchase
+                          </span>
+                        )}
+                        <span className="text-sm text-stone-500 ml-auto">
                           {new Date(review.createdAt).toLocaleDateString()}
                         </span>
                       </div>
                       {review.comment && (
-                        <p className="text-stone-600">{review.comment}</p>
+                        <p className="text-stone-600 ml-14">{review.comment}</p>
                       )}
                     </div>
                   ))}
                 </div>
-              </div>
-            )}
+              ) : (
+                <div className="text-center py-12 bg-stone-50 rounded-2xl">
+                  <Star className="w-12 h-12 text-stone-300 mx-auto mb-3" />
+                  <p className="text-stone-500 mb-2">No reviews yet</p>
+                  <p className="text-sm text-stone-400">
+                    Be the first to review this product!
+                  </p>
+                </div>
+              )}
+            </div>
 
             {/* Share */}
             <div>
