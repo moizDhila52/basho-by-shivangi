@@ -1,30 +1,28 @@
 "use client";
 import { useAuth } from "@/components/AuthProvider";
-import { ToastProvider } from "@/components/ToastProvider"; // <--- 1. Import this
+import { ToastProvider } from "@/components/ToastProvider";
 import { useRouter, usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   LayoutDashboard,
   ShoppingBag,
-  Users,
-  Settings,
+  Users, // Customer DB
   Package,
   LogOut,
   Menu,
   Bell,
-  Search,
-  Image as ImageIcon,
-  MessageSquare,
+  MessageSquare, // Testimonials
   FileText,
   Truck,
   Palette,
   Briefcase,
+  Calendar, // Events
+  Image as ImageIcon, // Gallery
 } from "lucide-react";
 import { signOut } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 
-// ... (Your existing THEME and constants) ...
 const THEME = {
   sidebar: "bg-[#442D1C]",
   sidebarText: "text-[#EDD8B4]",
@@ -33,7 +31,6 @@ const THEME = {
 };
 
 const NAVIGATION_GROUPS = [
-  // ... (Your existing navigation items) ...
   {
     group: "Overview",
     items: [
@@ -46,6 +43,11 @@ const NAVIGATION_GROUPS = [
         name: "Analytics",
         icon: <FileText size={20} />,
         path: "/admin/analytics",
+      },
+      {
+        name: "Customers", // Added Customer Database Management
+        icon: <Users size={20} />,
+        path: "/admin/customers",
       },
     ],
   },
@@ -75,6 +77,26 @@ const NAVIGATION_GROUPS = [
     ],
   },
   {
+    group: "Content Management", // Added Group for Events/Gallery/Testimonials
+    items: [
+      {
+        name: "Events & Exhibitions",
+        icon: <Calendar size={20} />,
+        path: "/admin/events",
+      },
+      {
+        name: "Gallery",
+        icon: <ImageIcon size={20} />,
+        path: "/admin/gallery",
+      },
+      {
+        name: "Testimonials",
+        icon: <MessageSquare size={20} />,
+        path: "/admin/testimonials",
+      },
+    ],
+  },
+  {
     group: "Experience",
     items: [
       {
@@ -84,7 +106,6 @@ const NAVIGATION_GROUPS = [
       },
     ],
   },
-  // ... any other groups
 ];
 
 export default function AdminLayout({ children }) {
@@ -108,33 +129,26 @@ export default function AdminLayout({ children }) {
   if (!user) return null;
 
   return (
-    // 2. CRITICAL FIX: Wrap the entire return block in ToastProvider
     <ToastProvider>
-      <div
-        className={`flex h-screen w-full ${THEME.background} text-[#442D1C] font-sans overflow-hidden`}
-      >
-        {/* --- SIDEBAR --- */}
+      <div className={`flex h-screen w-full ${THEME.background} text-[#442D1C] font-sans overflow-hidden`}>
+        {/* SIDEBAR */}
         <aside
           className={`${THEME.sidebar} ${THEME.sidebarText} 
             flex flex-col transition-all duration-300 ease-in-out border-r border-[#652810]
-            ${
-              isSidebarOpen
-                ? "w-64 translate-x-0"
-                : "w-0 -translate-x-full lg:w-20 lg:translate-x-0"
-            } 
+            ${isSidebarOpen ? "w-64 translate-x-0" : "w-0 -translate-x-full lg:w-20 lg:translate-x-0"} 
             fixed lg:relative z-30 h-full`}
         >
+          {/* Logo */}
           <div className="h-16 flex items-center justify-center border-b border-[#652810] px-4">
             {isSidebarOpen ? (
-              <h1 className="font-serif text-2xl tracking-wide font-bold">
-                Bashō.
-              </h1>
+              <h1 className="font-serif text-2xl tracking-wide font-bold">Bashō.</h1>
             ) : (
               <span className="font-serif text-xl font-bold">B.</span>
             )}
           </div>
 
-          <div className="flex-1 overflow-y-auto py-4">
+          {/* Nav Items */}
+          <div className="flex-1 overflow-y-auto py-4 scrollbar-hide">
             <nav className="space-y-6 px-3">
               {NAVIGATION_GROUPS.map((group, idx) => (
                 <div key={idx}>
@@ -150,23 +164,14 @@ export default function AdminLayout({ children }) {
                         <li key={item.path}>
                           <Link
                             href={item.path}
-                            className={`
-                              flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
-                              ${
-                                isActive
-                                  ? `${THEME.sidebarActive} text-white shadow-sm`
-                                  : "text-[#EDD8B4]/80 hover:bg-[#652810]/50 hover:text-white"
-                              }
-                            `}
+                            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
+                              ${isActive 
+                                ? `${THEME.sidebarActive} text-white shadow-sm` 
+                                : "text-[#EDD8B4]/80 hover:bg-[#652810]/50 hover:text-white"
+                              }`}
                             title={item.name}
                           >
-                            <span
-                              className={`${
-                                isActive
-                                  ? "text-[#EDD8B4]"
-                                  : "text-[#EDD8B4]/70"
-                              }`}
-                            >
+                            <span className={`${isActive ? "text-[#EDD8B4]" : "text-[#EDD8B4]/70"}`}>
                               {item.icon}
                             </span>
                             {isSidebarOpen && <span>{item.name}</span>}
@@ -180,20 +185,15 @@ export default function AdminLayout({ children }) {
             </nav>
           </div>
 
+          {/* User Footer */}
           <div className="p-4 border-t border-[#652810]">
-            <div
-              className={`flex items-center gap-3 ${
-                !isSidebarOpen && "justify-center"
-              }`}
-            >
+            <div className={`flex items-center gap-3 ${!isSidebarOpen && "justify-center"}`}>
               <div className="w-8 h-8 rounded-full bg-[#EDD8B4] flex items-center justify-center text-[#442D1C] font-bold">
                 {user.email?.[0].toUpperCase()}
               </div>
               {isSidebarOpen && (
                 <div className="flex-1 overflow-hidden">
-                  <p className="text-sm font-medium truncate">
-                    {user.name || "Admin"}
-                  </p>
+                  <p className="text-sm font-medium truncate">{user.name || "Admin"}</p>
                   <button
                     onClick={handleLogout}
                     className="text-xs text-[#EDD8B4]/60 hover:text-[#C85428] flex items-center gap-1 transition-colors"
@@ -206,7 +206,7 @@ export default function AdminLayout({ children }) {
           </div>
         </aside>
 
-        {/* --- MAIN CONTENT --- */}
+        {/* MAIN CONTENT */}
         <div className="flex-1 flex flex-col h-screen overflow-hidden">
           <header className="h-16 bg-white border-b border-[#EDD8B4] flex items-center justify-between px-6 z-20">
             <div className="flex items-center gap-4">
@@ -217,13 +217,9 @@ export default function AdminLayout({ children }) {
                 <Menu size={20} />
               </button>
               <h2 className="font-serif text-xl font-bold text-[#442D1C] hidden md:block">
-                {NAVIGATION_GROUPS.flatMap((g) => g.items).find(
-                  (i) => i.path === pathname
-                )?.name || "Dashboard"}
+                {NAVIGATION_GROUPS.flatMap((g) => g.items).find((i) => i.path === pathname)?.name || "Dashboard"}
               </h2>
             </div>
-
-            {/* Right Header Actions */}
             <div className="flex items-center gap-4">
               <button className="relative p-2 hover:bg-[#FDFBF7] rounded-full transition-colors text-[#652810]">
                 <Bell size={20} />

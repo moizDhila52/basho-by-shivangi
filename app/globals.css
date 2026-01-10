@@ -17,6 +17,14 @@
   --animate-fade-in: fade-in 0.5s ease-out;
   --animate-slide-up: slide-up 0.3s ease-out;
 
+  --animate-scroll: scroll var(--animation-duration, 40s) var(--animation-direction, forwards) linear infinite;
+  
+  @keyframes scroll {
+    to {
+      transform: translate(calc(-50% - 0.5rem));
+    }
+  }
+
   @keyframes fade-in {
     from { opacity: 0; }
     to { opacity: 1; }
@@ -51,6 +59,10 @@ body {
   --noto-serif: "Noto Serif";
   --lexend: "Lexend";
   --figtree: "Figtree";
+}
+
+.animate-scroll {
+  animation: scroll var(--animation-duration, 40s) var(--animation-direction, forwards) linear infinite;
 }
 
 main.landing-page {

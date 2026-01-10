@@ -1,82 +1,44 @@
-// app/api/testimonials/route.js
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/lib/prisma"; // Ensure you have your singleton prisma instance
 
+// ==========================================
+// GET HANDLER
+// Fetches testimonials with optional filters
+// ==========================================
 export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
+    
+    // 1. FILTER LOGIC
+    // If "approved=true", fetch only active & approved (Public View)
+    // If param missing, fetch ALL (Admin View)
+    const approvedOnly = searchParams.get("approved") === "true";
+    const source = searchParams.get("source");
+    const minRating = searchParams.get("minRating");
     const featured = searchParams.get("featured");
-    const productId = searchParams.get("productId");
-    const workshopId = searchParams.get("workshopId");
-    const eventId = searchParams.get("eventId");
-    const limit = searchParams.get("limit")
-      ? parseInt(searchParams.get("limit"))
-      : 20;
-    const page = searchParams.get("page")
-      ? parseInt(searchParams.get("page"))
-      : 1;
-    const skip = (page - 1) * limit;
 
     const where = {
-      approved: true,
-      isActive: true,
+      ...(approvedOnly && { approved: true, isActive: true }),
+      ...(source && source !== "all" && { source }),
+      ...(featured === "true" && { featured: true }),
+      ...(minRating && minRating !== "all" && {
+        rating: { gte: parseFloat(minRating) },
+      }),
     };
 
-    if (featured === "true") where.featured = true;
-    if (productId) where.productId = productId;
-    if (workshopId) where.workshopId = workshopId;
-    if (eventId) where.eventId = eventId;
-
-    const [testimonials, total] = await Promise.all([
-      prisma.testimonial.findMany({
-        where,
-        include: {
-          Product: {
-            select: {
-              id: true,
-              name: true,
-              slug: true,
-              images: true,
-            },
-          },
-          Workshop: {
-            select: {
-              id: true,
-              title: true,
-              slug: true,
-            },
-          },
-          Event: {
-            select: {
-              id: true,
-              title: true,
-              slug: true,
-            },
-          },
-        },
-        orderBy: [
-          { featured: "desc" },
-          { rating: "desc" },
-          { createdAt: "desc" },
-        ],
-        skip,
-        take: limit,
-      }),
-      prisma.testimonial.count({ where }),
-    ]);
-
-    return NextResponse.json({
-      success: true,
-      data: testimonials,
-      meta: {
-        total,
-        page,
-        limit,
-        pages: Math.ceil(total / limit),
+    // 2. DB FETCH
+    const testimonials = await prisma.testimonial.findMany({
+      where,
+      include: {
+        Product: { select: { name: true, slug: true } },
+        Workshop: { select: { title: true } },
       },
+      orderBy: { createdAt: "desc" },
     });
+
+    return NextResponse.json({ success: true, data: testimonials });
   } catch (error) {
-    console.error("Error fetching testimonials:", error);
+    console.error("Testimonials API Error:", error);
     return NextResponse.json(
       { success: false, error: "Failed to fetch testimonials" },
       { status: 500 }
@@ -84,40 +46,61 @@ export async function GET(request) {
   }
 }
 
+// ==========================================
+// POST HANDLER
+// Creates a new testimonial (Anonymous aware)
+// ==========================================
 export async function POST(request) {
   try {
     const body = await request.json();
-
-    if (!body.customerName || !body.content) {
+    
+    // 1. DESTRUCTURE FIELDS
+    const { 
+      customerName, 
+      customerRole, 
+      content, 
+      rating, 
+      image, 
+      videoUrl, 
+      isAnonymous, // <--- Key addition from your request
+      source,
+      productId,
+      workshopId
+    } = body;
+    
+    // 2. VALIDATION
+    if (!customerName || !content || !rating) {
       return NextResponse.json(
-        { success: false, error: "Name and content are required" },
+        { success: false, error: "Missing required fields" },
         { status: 400 }
       );
     }
 
+    // 3. CREATE ENTRY
     const testimonial = await prisma.testimonial.create({
       data: {
-        customerName: body.customerName,
-        customerRole: body.customerRole,
-        content: body.content,
-        rating: body.rating || 5,
-        image: body.image,
-        videoUrl: body.videoUrl,
-        source: body.source || "Website",
-        productId: body.productId,
-        workshopId: body.workshopId,
-        eventId: body.eventId,
-        approved: false,
+        customerName,
+        customerRole,
+        content,
+        rating: parseFloat(rating), // Handle decimals (e.g. 4.5)
+        image,
+        videoUrl,
+        source: source || "Website",
+        
+        // STATUS FLAGS
+        approved: false, // Default false (Admin must approve)
+        isActive: true,
+        isAnonymous: isAnonymous || false, // <--- Correctly saves boolean
+        
+        // OPTIONAL RELATIONS
+        productId: productId || null,
+        workshopId: workshopId || null,
       },
     });
 
-    return NextResponse.json({
-      success: true,
-      data: testimonial,
-      message: "Testimonial submitted for review",
-    });
+    return NextResponse.json({ success: true, data: testimonial });
   } catch (error) {
-    console.error("Error creating testimonial:", error);
+    console.error("Create Testimonial Error:", error);
     return NextResponse.json(
       { success: false, error: "Failed to submit testimonial" },
       { status: 500 }
