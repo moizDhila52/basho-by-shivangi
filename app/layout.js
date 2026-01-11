@@ -1,6 +1,7 @@
 //import { Inter, Noto_Serif_JP } from 'next/font/google';
 import { AuthProvider } from '@/components/AuthProvider';
 import { CartProvider } from '@/context/CartContext';
+import { WishlistProvider } from "@/context/WishlistContext"; // <-- Import this
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer'; // <--- 1. Imported Footer
 import { Toaster } from 'react-hot-toast';
@@ -38,6 +39,7 @@ export default function RootLayout({ children }) {
           <AuthProvider>
             {/* Header is inside AuthProvider so it can check login state */}
             <CartProvider>
+              <WishlistProvider>
               <Header />
 
               <main className="min-h-screen">
@@ -46,6 +48,7 @@ export default function RootLayout({ children }) {
 
               {/* <--- 2. Added Footer Here */}
               <Footer />
+              </WishlistProvider>
             </CartProvider>
           </AuthProvider>
           <Toaster

@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useMemo } from "react";
 import {
-  DollarSign,
+  DollarSign, // Can rename this to IndianRupee if you prefer, but icon name is fine
   ShoppingBag,
   Package,
   Users,
@@ -25,6 +25,7 @@ import {
   Percent,
   Clock,
   Award,
+  IndianRupee, // Imported for the icon
 } from "lucide-react";
 import {
   LineChart,
@@ -380,7 +381,7 @@ export default function AdminDashboard() {
       body: [
         [
           "Total Revenue",
-          `$${dashboardData.summary.totalRevenue.toLocaleString()}`,
+          `₹${dashboardData.summary.totalRevenue.toLocaleString()}`,
           `${dashboardData.summary.revenueChange}%`,
         ],
         [
@@ -395,7 +396,7 @@ export default function AdminDashboard() {
         ],
         [
           "Avg Order Value",
-          `$${dashboardData.summary.avgOrderValue.toFixed(2)}`,
+          `₹${dashboardData.summary.avgOrderValue.toFixed(2)}`,
           "-",
         ],
         ["Pending Orders", dashboardData.summary.pendingOrders, "-"],
@@ -414,7 +415,7 @@ export default function AdminDashboard() {
       body: dashboardData.recentOrders.map((order) => [
         order.orderNumber || `#${order.id.slice(0, 8)}`,
         order.customerName || "Guest",
-        `$${order.total?.toFixed(2)}`,
+        `₹${order.total?.toFixed(2)}`,
         order.status,
         format(new Date(order.createdAt), "MMM dd, yyyy"),
       ]),
@@ -496,10 +497,10 @@ export default function AdminDashboard() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard
           title="Total Revenue"
-          value={`$${dashboardData.summary.totalRevenue.toLocaleString()}`}
+          value={`₹${dashboardData.summary.totalRevenue.toLocaleString()}`}
           change={dashboardData.summary.revenueChange}
           isPositive={dashboardData.summary.revenueChange >= 0}
-          icon={<DollarSign className="w-5 h-5" />}
+          icon={<IndianRupee className="w-5 h-5" />}
           color="from-[#C85428] to-[#8E5022]"
           delay={0}
           description="Based on actual orders"
@@ -526,7 +527,7 @@ export default function AdminDashboard() {
         />
         <StatCard
           title="Avg Order Value"
-          value={`$${dashboardData.summary.avgOrderValue.toFixed(2)}`}
+          value={`₹${dashboardData.summary.avgOrderValue.toFixed(2)}`}
           change="0%"
           isPositive={true}
           icon={<CreditCard className="w-5 h-5" />}
@@ -611,7 +612,7 @@ export default function AdminDashboard() {
                 <YAxis
                   stroke="#8E5022"
                   fontSize={12}
-                  tickFormatter={(value) => `$${value.toLocaleString()}`}
+                  tickFormatter={(value) => `₹${value.toLocaleString()}`}
                 />
                 <Tooltip
                   contentStyle={{
@@ -621,7 +622,9 @@ export default function AdminDashboard() {
                     color: COLORS.dark,
                   }}
                   formatter={(value, name) => [
-                    name === "revenue" ? `$${value.toLocaleString()}` : value,
+                    name === "revenue"
+                      ? `₹${value.toLocaleString()}`
+                      : value,
                     name === "revenue" ? "Revenue" : "Orders",
                   ]}
                   labelFormatter={(label) => `Date: ${label}`}
@@ -840,7 +843,7 @@ export default function AdminDashboard() {
                         {format(new Date(order.createdAt), "MMM dd, HH:mm")}
                       </td>
                       <td className="py-3 px-4 font-bold text-[#442D1C]">
-                        ${order.total?.toFixed(2) || "0.00"}
+                        ₹{order.total?.toFixed(2) || "0.00"}
                       </td>
                       <td className="py-3 px-4">
                         <StatusBadge status={order.status} />
@@ -871,11 +874,11 @@ export default function AdminDashboard() {
       >
         <QuickStat
           title="Today's Revenue"
-          value={`$${
+          value={`₹${
             dashboardData.dailyStats.todayRevenue?.toFixed(2) || "0.00"
           }`}
           change={dashboardData.dailyStats.revenueChange}
-          icon={<DollarSign className="w-5 h-5" />}
+          icon={<IndianRupee className="w-5 h-5" />}
           isRevenue={true}
         />
         <QuickStat

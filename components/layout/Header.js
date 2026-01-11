@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import Image from "next/image"; // Added for Logo
 import { usePathname } from "next/navigation";
 import {
   ShoppingBag,
@@ -9,28 +10,28 @@ import {
   X,
   LayoutDashboard,
   Heart,
-  Search,
   User,
   LogOut,
+  ChevronDown,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/components/AuthProvider";
 import { motion, AnimatePresence } from "framer-motion";
 import UserMenu from "@/components/UserMenu";
 import { useCart } from "@/context/CartContext";
-import Image from "next/image";
+import { useWishlist } from "@/context/WishlistContext"; // Added Wishlist hook
 
 export default function Header() {
   const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  
   const { getTotalItems } = useCart();
+  const { getWishlistCount } = useWishlist(); // Use Wishlist State
   const { user, loading } = useAuth();
 
-  // Check if we are on the homepage
   const isHomePage = pathname === "/";
 
-  // Handle Scroll Effect
   useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 20);
@@ -39,7 +40,6 @@ export default function Header() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Logout Function
   const handleLogout = async () => {
     try {
       await fetch("/api/auth/logout", { method: "POST" });
@@ -50,26 +50,38 @@ export default function Header() {
     }
   };
 
+  // New Navigation Structure
   const navLinks = [
     {
-      href: "/products",
       label: "Shop",
+      href: "/products",
       submenu: [
+        { href: "/products", label: "All Products" },
         { href: "/products?category=tea-ware", label: "Tea Ceremony" },
         { href: "/products?category=dinnerware", label: "Dining" },
         { href: "/products?category=seasonal", label: "Special Edition" },
       ],
     },
+    { href: "/custom-order", label: "Custom Order" },
     { href: "/workshops", label: "Workshops" },
-    { href: "/gallery", label: "Gallery" },
     { href: "/connect", label: "Connect" },
+    {
+      label: "More",
+      href: "#", // Placeholder for dropdown parent
+      submenu: [
+        { href: "/events", label: "Events" },
+        { href: "/gallery", label: "Gallery" },
+        { href: "/testimonials", label: "Testimonials" },
+      ],
+    },
   ];
 
-  // Don't show header on Admin Dashboard layout
   if (pathname && pathname.startsWith("/admin")) return null;
 
-  // Header Style Logic
+  // Header Logic
+  // isHeaderWhite = True when scrolled OR not on homepage
   const isHeaderWhite = !isHomePage || isScrolled;
+  
   const textColorClass = isHeaderWhite ? "text-[#442D1C]" : "text-white";
   const hoverBgClass = isHeaderWhite
     ? "hover:bg-[#EDD8B4]/20"
@@ -85,6 +97,7 @@ export default function Header() {
         }`}
       >
         <div className="container mx-auto flex h-14 items-center justify-between px-4 md:px-8">
+          
           {/* 1. Mobile Menu Trigger */}
           <div className="md:hidden z-50">
             <Button
@@ -101,33 +114,33 @@ export default function Header() {
             </Button>
           </div>
 
-          {/* 2. Logo */}
+          {/* 2. Logo Logic */}
           <Link
             href="/"
             className="relative z-50 transform transition-transform hover:scale-105"
           >
-            {/* Text Logo as Fallback/Primary */}
-            <div className="flex items-center gap-2">
-              <span
-                className={`font-serif text-3xl font-bold tracking-tight ${textColorClass}`}
-              >
-                Bashō
-              </span>
-              <span
-                className={`w-2 h-2 rounded-full mt-2 ${
-                  isHeaderWhite ? "bg-[#C85428]" : "bg-[#EDD8B4]"
-                }`}
-              ></span>
+            <div className="relative h-10 w-32">
+                {/* Logic:
+                   If White Header (Light Theme context) -> Show img2 (Dark Logo)
+                   If Transparent Header (Dark Theme context) -> Show img1 (Light Logo)
+                */}
+                <Image 
+                    src={isHeaderWhite ? "/brand/logo-basho-byy-shivangi.png" : "/brand/logo-basho-byy-shivangi.png"}
+                    alt="Basho Logo"
+                    fill
+                    className="object-contain"
+                    priority
+                />
             </div>
           </Link>
 
           {/* 3. Desktop Navigation */}
           <nav className="hidden md:flex items-center gap-1 absolute left-1/2 transform -translate-x-1/2">
             {navLinks.map((link) => (
-              <div key={link.href} className="relative group px-1">
+              <div key={link.label} className="relative group px-1">
                 <Link href={link.href}>
                   <div
-                    className={`px-5 py-2 rounded-full transition-all ${hoverBgClass}`}
+                    className={`px-4 py-2 rounded-full transition-all flex items-center gap-1 ${hoverBgClass}`}
                   >
                     <span
                       className={`text-sm font-medium ${
@@ -138,6 +151,9 @@ export default function Header() {
                     >
                       {link.label}
                     </span>
+                    {link.submenu && (
+                        <ChevronDown size={14} className={`opacity-70 ${textColorClass}`} />
+                    )}
                   </div>
                 </Link>
 
@@ -163,18 +179,24 @@ export default function Header() {
 
           {/* 4. Right Actions */}
           <div className="flex items-center gap-2">
-            {/* Wishlist */}
+            
+            {/* Wishlist with Badge */}
             <Link href="/wishlist">
               <Button
                 variant="ghost"
                 size="icon"
-                className={`rounded-full hidden sm:flex ${hoverBgClass} ${textColorClass}`}
+                className={`rounded-full hidden sm:flex relative ${hoverBgClass} ${textColorClass}`}
               >
                 <Heart className="h-5 w-5" />
+                {getWishlistCount() > 0 && (
+                  <span className="absolute top-0 right-0 h-4 w-4 rounded-full bg-[#C85428] flex items-center justify-center text-[10px] text-white font-bold animate-in zoom-in">
+                    {getWishlistCount()}
+                  </span>
+                )}
               </Button>
             </Link>
 
-            {/* Cart */}
+            {/* Cart with Badge */}
             <Link href="/cart">
               <Button
                 variant="ghost"
@@ -236,9 +258,9 @@ export default function Header() {
               <div className="p-6 flex flex-col h-full">
                 {/* Mobile Header */}
                 <div className="flex items-center justify-between mb-10">
-                  <span className="font-serif text-3xl font-bold text-[#442D1C]">
-                    Bashō
-                  </span>
+                  <div className="relative h-8 w-24">
+                     <Image src="/img2.png" alt="Logo" fill className="object-contain" />
+                  </div>
                   <Button
                     variant="ghost"
                     size="icon"
@@ -251,27 +273,32 @@ export default function Header() {
                 {/* Mobile Links */}
                 <div className="flex-1 space-y-6">
                   {navLinks.map((link) => (
-                    <div key={link.href}>
-                      <Link
-                        href={link.href}
-                        onClick={() => setIsMobileMenuOpen(false)}
-                        className="text-xl font-medium text-[#442D1C] block mb-2"
-                      >
-                        {link.label}
-                      </Link>
-                      {link.submenu && (
-                        <div className="pl-4 border-l-2 border-[#EDD8B4] space-y-3">
-                          {link.submenu.map((sub) => (
-                            <Link
-                              key={sub.href}
-                              href={sub.href}
-                              onClick={() => setIsMobileMenuOpen(false)}
-                              className="block text-sm text-[#8E5022] font-medium"
-                            >
-                              {sub.label}
-                            </Link>
-                          ))}
-                        </div>
+                    <div key={link.label}>
+                      {/* If it has a submenu, just show label, otherwise link */}
+                      {link.submenu ? (
+                          <div className="mb-2">
+                              <span className="text-xl font-medium text-[#442D1C] block mb-2">{link.label}</span>
+                              <div className="pl-4 border-l-2 border-[#EDD8B4] space-y-3">
+                                  {link.submenu.map((sub) => (
+                                      <Link
+                                          key={sub.href}
+                                          href={sub.href}
+                                          onClick={() => setIsMobileMenuOpen(false)}
+                                          className="block text-sm text-[#8E5022] font-medium"
+                                      >
+                                          {sub.label}
+                                      </Link>
+                                  ))}
+                              </div>
+                          </div>
+                      ) : (
+                          <Link
+                            href={link.href}
+                            onClick={() => setIsMobileMenuOpen(false)}
+                            className="text-xl font-medium text-[#442D1C] block mb-2"
+                          >
+                            {link.label}
+                          </Link>
                       )}
                     </div>
                   ))}
