@@ -230,8 +230,8 @@ model User {
   otpExpiresAt         DateTime?
   passwordHash         String?
   phone                String?
+  lastLogin     DateTime? @default(now())
   isSubscribed         Boolean                @default(false)
-  lastLogin            DateTime?              @default(now())
   Address              Address[]
   Cart                 Cart?
   CustomOrder          CustomOrder[]

@@ -235,24 +235,23 @@ export default function LandingPage() {
 
       {/* Floating Particles (Background) */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
-         {particles.map((p) => (
-            <motion.div
-              key={p.id}
-              className="absolute w-5 h-5 z-0 rounded-full bg-[#8E5022]/10"
-              initial={{ x: `${p.x}vw`, y: `${p.y}vh` }}
-              animate={{
-                x: [null, `${Math.random() * 100}vw`],
-                y: [null, `${Math.random() * 100}vh`],
-              }}
-              transition={{
-                duration: p.duration,
-                repeat: Infinity,
-                ease: "linear",
-              }}
-            />
-          ))}
+        {particles.map((p) => (
+          <motion.div
+            key={p.id}
+            className="absolute w-5 h-5 z-0 rounded-full bg-[#8E5022]/10"
+            initial={{ x: `${p.x}vw`, y: `${p.y}vh` }}
+            animate={{
+              x: [null, `${Math.random() * 100}vw`],
+              y: [null, `${Math.random() * 100}vh`],
+            }}
+            transition={{
+              duration: p.duration,
+              repeat: Infinity,
+              ease: "linear",
+            }}
+          />
+        ))}
       </div>
-
 
       {/* =========================================
           1. NEW CAROUSEL HERO SECTION
@@ -277,7 +276,7 @@ export default function LandingPage() {
                 style={{ objectPosition: currentSlide.position }}
               />
               {/* Cinematic Overlay: Gradient for text readability */}
-              <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/30 to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/60 to-transparent" />
               <div className="absolute inset-0 bg-gradient-to-t from-[#442D1C]/50 to-transparent" />
             </div>
           </motion.div>
@@ -357,7 +356,10 @@ export default function LandingPage() {
           {/* Arrows */}
           <div className="flex gap-4">
             <motion.button
-              whileHover={{ scale: 1.1, backgroundColor: "rgba(255,255,255,0.2)" }}
+              whileHover={{
+                scale: 1.1,
+                backgroundColor: "rgba(255,255,255,0.2)",
+              }}
               whileTap={{ scale: 0.9 }}
               onClick={() => {
                 paginate(-1);
@@ -368,7 +370,10 @@ export default function LandingPage() {
               <ChevronLeft className="w-6 h-6" />
             </motion.button>
             <motion.button
-              whileHover={{ scale: 1.1, backgroundColor: "rgba(255,255,255,0.2)" }}
+              whileHover={{
+                scale: 1.1,
+                backgroundColor: "rgba(255,255,255,0.2)",
+              }}
               whileTap={{ scale: 0.9 }}
               onClick={() => {
                 paginate(1);

@@ -721,16 +721,16 @@ export default function ProductDetailPage() {
             <div className="mb-8 p-8 bg-gradient-to-r from-[#FDFBF7] to-[#EDD8B4]/20 rounded-3xl">
               <div className="flex items-baseline gap-4 mb-4">
                 <span className="font-serif text-6xl text-[#442D1C]">
-                  ${product.price.toFixed(2)}
+                  ₹{product.price.toFixed(2)}
                 </span>
                 {product.originalPrice &&
                   product.originalPrice > product.price && (
                     <>
                       <span className="text-2xl text-stone-400 line-through">
-                        ${product.originalPrice.toFixed(2)}
+                        ₹{product.originalPrice.toFixed(2)}
                       </span>
                       <span className="bg-[#C85428] text-white text-sm font-medium px-4 py-1.5 rounded-full">
-                        Save $
+                        Save ₹
                         {(product.originalPrice - product.price).toFixed(2)}
                       </span>
                     </>

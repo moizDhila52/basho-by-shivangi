@@ -7,18 +7,19 @@ import Link from "next/link";
 import {
   LayoutDashboard,
   ShoppingBag,
-  Users, // Customer DB
+  Users,
   Package,
   LogOut,
   Menu,
   Bell,
-  MessageSquare, // Testimonials
-  FileText,
+  MessageSquare,
+  FileText, // Used for Custom Orders now
   Truck,
   Palette,
   Briefcase,
-  Calendar, // Events
-  Image as ImageIcon, // Gallery
+  Calendar,
+  Image as ImageIcon,
+  PenTool, // Icon for Custom Orders
 } from "lucide-react";
 import { signOut } from "firebase/auth";
 import { auth } from "@/lib/firebase";
@@ -39,13 +40,9 @@ const NAVIGATION_GROUPS = [
         icon: <LayoutDashboard size={20} />,
         path: "/admin",
       },
+      // Analytics Removed
       {
-        name: "Analytics",
-        icon: <FileText size={20} />,
-        path: "/admin/analytics",
-      },
-      {
-        name: "Customers", // Added Customer Database Management
+        name: "Customers",
         icon: <Users size={20} />,
         path: "/admin/customers",
       },
@@ -65,7 +62,12 @@ const NAVIGATION_GROUPS = [
         path: "/admin/orders",
       },
       {
-        name: "Inquiries",
+        name: "Custom Orders", // Added Custom Orders
+        icon: <PenTool size={20} />,
+        path: "/admin/custom-orders",
+      },
+      {
+        name: "Corporate Inquiries",
         icon: <Briefcase size={20} />,
         path: "/admin/inquiries",
       },
@@ -77,7 +79,7 @@ const NAVIGATION_GROUPS = [
     ],
   },
   {
-    group: "Content Management", // Added Group for Events/Gallery/Testimonials
+    group: "Content Management",
     items: [
       {
         name: "Events & Exhibitions",
