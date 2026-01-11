@@ -214,7 +214,7 @@ const SORT_OPTIONS = [
 ];
 
 const FILTERS = {
-  price: ["Under $100", "$100 - $250", "$250 - $500", "Over $500"],
+  price: ["Under ₹100", "₹100 - ₹250", "₹250 - ₹500", "Over ₹500"],
   material: ["Stoneware", "Porcelain", "Raku", "Unglazed Clay"],
   features: [
     "Dishwasher Safe",
@@ -367,12 +367,12 @@ const ProductCard = memo(
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-baseline gap-2">
               <span className="font-serif text-3xl text-[#442D1C]">
-                ${product.price.toFixed(2)}
+                ₹{product.price.toFixed(2)}
               </span>
               {product.originalPrice &&
                 product.originalPrice > product.price && (
                   <span className="text-stone-400 line-through">
-                    ${product.originalPrice.toFixed(2)}
+                    ₹{product.originalPrice.toFixed(2)}
                   </span>
                 )}
             </div>
@@ -655,15 +655,15 @@ function ProductsPageContent() {
         // Add price filters
         if (selectedFilters.price.length > 0) {
           selectedFilters.price.forEach((priceRange) => {
-            if (priceRange === "Under $100") {
+            if (priceRange === "Under ₹100") {
               params.maxPrice = "100";
-            } else if (priceRange === "$100 - $250") {
+            } else if (priceRange === "₹100 - ₹250") {
               params.minPrice = "100";
               params.maxPrice = "250";
-            } else if (priceRange === "$250 - $500") {
+            } else if (priceRange === "₹250 - ₹500") {
               params.minPrice = "250";
               params.maxPrice = "500";
-            } else if (priceRange === "Over $500") {
+            } else if (priceRange === "Over ₹500") {
               params.minPrice = "500";
             }
           });
