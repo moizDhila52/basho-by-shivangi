@@ -138,15 +138,11 @@ model CustomOrder {
   adminNotes          String?
   createdAt           DateTime          @default(now())
   updatedAt           DateTime          @updatedAt
+  estimatedCompletion String?
   paymentId           String?
   paymentStatus       String?           @default("PENDING")
   razorpayOrderId     String?
-  estimatedCompletion String?
   User                User?             @relation(fields: [userId], references: [id])
-  razorpayOrderId String?
-  paymentId       String?
-  paymentStatus   String?   @default("PENDING") 
-  estimatedCompletion String?
 
   @@index([userId])
   @@index([status])
@@ -235,9 +231,11 @@ model User {
   passwordHash         String?
   phone                String?
   isSubscribed         Boolean                @default(false)
+  lastLogin            DateTime?              @default(now())
   Address              Address[]
   Cart                 Cart?
   CustomOrder          CustomOrder[]
+  Notification         Notification[]
   Order                Order[]
   Review               Review[]
   WishlistItem         WishlistItem[]
@@ -424,6 +422,21 @@ model WorkshopRegistration {
 
   @@index([customerEmail])
   @@index([sessionId])
+  @@index([userId])
+}
+
+model Notification {
+  id        String   @id
+  userId    String
+  title     String
+  message   String
+  type      String
+  link      String?
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  User      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([isRead])
   @@index([userId])
 }
 

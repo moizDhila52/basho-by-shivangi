@@ -5,7 +5,7 @@ import { createSession } from "@/lib/session";
 export async function POST(req) {
   try {
     const body = await req.json();
-    const { email, uid, name, image } = body;
+    const { email, uid, name, image ,phone} = body;
 
     if (!email || !uid) {
       return NextResponse.json(
@@ -22,6 +22,7 @@ export async function POST(req) {
       where: { email },
       update: {
         image: image || undefined,
+        phone: phone || undefined, // <--- Update phone if provided
         firebaseUid: uid,
         // NEVER update role here, or an ADMIN logging in via Google becomes a CUSTOMER
       },
@@ -30,6 +31,7 @@ export async function POST(req) {
         firebaseUid: uid,
         name: name || "User",
         image: image || null,
+        phone: phone || null,      // <--- Save phone on creation
         role: "CUSTOMER",
       },
     });
