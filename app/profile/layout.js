@@ -1,9 +1,10 @@
 import Link from 'next/link';
-import { LayoutDashboard, Package, MapPin, Star, LogOut } from 'lucide-react';
+import { LayoutDashboard, Package, MapPin, Star, LogOut, Ticket } from 'lucide-react';
 
 export default function ProfileLayout({ children }) {
   const navItems = [
     { href: '/profile', label: 'Overview', icon: LayoutDashboard },
+    { href: '/profile/workshops', label: 'My Workshops', icon: Ticket },
     { href: '/profile/orders', label: 'My Orders', icon: Package },
     { href: '/profile/address', label: 'Addresses', icon: MapPin },
     { href: '/profile/reviews', label: 'My Reviews', icon: Star },

@@ -1,22 +1,47 @@
-import { prisma } from "@/lib/db";
-import WorkshopFeed from "@/components/workshops/WorkshopFeed"; // We will create this below
+import { prisma } from '@/lib/prisma'; // Make sure path is correct
+import WorkshopFeed from '@/components/workshops/WorkshopFeed';
 
 export const metadata = {
-  title: "Pottery Workshops | Basho",
-  description: "Join our hands-on pottery workshops in Surat.",
+  title: 'Pottery Workshops | Basho',
+  description: 'Join our hands-on pottery workshops in Surat.',
 };
 
 // Server Component: Fetches Data
 export default async function WorkshopsPage() {
-  const workshops = await prisma.workshop.findMany({
-    where: { status: "ACTIVE" },
-    include: {
+  const today = new Date();
+
+  // 1. Fetch Active/Upcoming Workshops
+  const activeWorkshops = await prisma.workshop.findMany({
+    where: {
+      status: 'ACTIVE',
+      // Logic: Only show workshops that have at least one future session
       WorkshopSession: {
-        where: { date: { gte: new Date() } }, // Only future sessions
-        orderBy: { date: "asc" },
+        some: { date: { gte: today } },
       },
     },
-    orderBy: { createdAt: "desc" },
+    include: {
+      WorkshopSession: {
+        where: { date: { gte: today } }, // Only fetch future sessions for display
+        orderBy: { date: 'asc' },
+      },
+    },
+    orderBy: { createdAt: 'desc' },
+  });
+
+  // 2. Fetch Past Workshops (For "Previous Editions" section)
+  // Logic: Workshops that are COMPLETED or have no future sessions
+  const pastWorkshops = await prisma.workshop.findMany({
+    where: {
+      OR: [
+        { status: 'COMPLETED' },
+        {
+          status: 'ACTIVE',
+          WorkshopSession: { none: { date: { gte: today } } },
+        },
+      ],
+    },
+    take: 3, // Limit to 3 recent past workshops
+    orderBy: { updatedAt: 'desc' },
   });
 
   return (
@@ -38,8 +63,11 @@ export default async function WorkshopsPage() {
         </div>
       </section>
 
-      {/* Interactive Feed */}
-      <WorkshopFeed initialWorkshops={workshops} />
+      {/* Interactive Feed (Active Workshops) */}
+      <WorkshopFeed
+        initialWorkshops={activeWorkshops}
+        pastWorkshops={pastWorkshops}
+      />
     </main>
   );
 }

@@ -228,6 +228,7 @@ model User {
   phone                String?
   lastLogin     DateTime? @default(now())
   isSubscribed         Boolean                @default(false)
+  lastLogin            DateTime?              @default(now())
   Address              Address[]
   Cart                 Cart?
   CustomOrder          CustomOrder[]
@@ -275,26 +276,6 @@ model Workshop {
 
   @@index([slug])
   @@index([status])
-}
-
-model WorkshopRegistration {
-  id              String          @id @default(uuid())
-  customerName    String
-  customerEmail   String
-  amountPaid      Float
-  sessionId       String
-  createdAt       DateTime        @default(now())
-  customerPhone   String?
-  paymentId       String?
-  paymentStatus   String?         @default("PENDING")
-  razorpayOrderId String?
-  userId          String?
-  WorkshopSession WorkshopSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  User            User?           @relation(fields: [userId], references: [id])
-
-  @@index([customerEmail])
-  @@index([sessionId])
-  @@index([userId])
 }
 
 model WorkshopSession {
@@ -418,6 +399,26 @@ model NewsletterSubscriber {
   source    String   @default("checkout")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model WorkshopRegistration {
+  id              String          @id @default(uuid())
+  customerName    String
+  customerEmail   String
+  amountPaid      Float
+  sessionId       String
+  createdAt       DateTime        @default(now())
+  customerPhone   String?
+  paymentId       String?
+  paymentStatus   String?         @default("PENDING")
+  razorpayOrderId String?
+  userId          String?
+  WorkshopSession WorkshopSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  User            User?           @relation(fields: [userId], references: [id])
+
+  @@index([customerEmail])
+  @@index([sessionId])
+  @@index([userId])
 }
 
 enum EventType {

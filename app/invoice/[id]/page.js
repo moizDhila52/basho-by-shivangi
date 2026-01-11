@@ -22,8 +22,13 @@ export default async function InvoicePage({ params }) {
     include: { OrderItem: true },
   });
 
-  // Security: Ensure the user owns this order
-  if (!order || order.userId !== session.userId) {
+  // 🟢 NEW CHECK (Allows Admins):
+  if (!order) {
+    notFound();
+  }
+  
+  // If user is NOT the owner AND NOT an admin, block them
+  if (order.userId !== session.userId && session.role !== 'ADMIN') {
     notFound();
   }
 
