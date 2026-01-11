@@ -1,36 +1,66 @@
-import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
-import { getSession } from "@/lib/session";
+import { NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
+import { sendNewsletterWelcomeEmail } from '@/lib/mailer';
+import { getSession } from '@/lib/session';
 
 export async function POST(req) {
   try {
-    const { email, isSubscribed } = await req.json();
+    const body = await req.json();
+
+    const { email, isSubscribed = true, source = 'footer' } = body;
+
+    if (!email || !email.includes('@')) {
+      return NextResponse.json(
+        { error: 'Invalid email address' },
+        { status: 400 },
+      );
+    }
+
     const session = await getSession();
 
-    // 1. Update User Profile if logged in
-    if (session?.userId) {
-      await prisma.user.update({
-        where: { id: session.userId },
-        data: { isSubscribed },
-      });
-    }
-
-    // 2. Manage the dedicated Subscriber List
     if (isSubscribed) {
-      // Upsert: Create if new, update if exists
-      await prisma.newsletterSubscriber.upsert({
+      const subscriber = await prisma.newsletterSubscriber.upsert({
         where: { email },
-        update: { isActive: true },
-        create: { email, source: "checkout" },
+        update: {
+          isActive: true,
+        },
+        create: {
+          email,
+          source: source,
+          isActive: true,
+        },
       });
+
+      await prisma.user.updateMany({
+        where: { email },
+        data: { isSubscribed: true },
+      });
+
+      try {
+        await sendNewsletterWelcomeEmail(email);
+      } catch (emailError) {
+        console.error('Failed to send welcome email:', emailError);
+      }
     } else {
-      // Optional: Mark as inactive if they uncheck it explicitly
-      // await prisma.newsletterSubscriber.update({ ... isActive: false })
+      await prisma.newsletterSubscriber
+        .update({
+          where: { email },
+          data: { isActive: false },
+        })
+        .catch(() => {});
+
+      await prisma.user.updateMany({
+        where: { email },
+        data: { isSubscribed: false },
+      });
     }
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({
+      success: true,
+      message: isSubscribed ? 'Subscribed successfully' : 'Unsubscribed',
+    });
   } catch (error) {
-    console.error("Newsletter error:", error);
-    return NextResponse.json({ error: "Failed to update subscription" }, { status: 500 });
+    console.error('Newsletter Error:', error);
+    return NextResponse.json({ error: 'Operation failed' }, { status: 500 });
   }
 }

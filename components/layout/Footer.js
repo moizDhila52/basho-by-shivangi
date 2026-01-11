@@ -1,8 +1,10 @@
 'use client';
 
+import { useState } from 'react'; // <--- Add useState
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
+import { useToast } from '@/components/ToastProvider'; // <--- Import Toast
 import {
   Instagram,
   Facebook,
@@ -14,15 +16,46 @@ import {
   ArrowUp,
   ArrowUpRight,
   Copyright,
+  Loader2, // <--- Import Loader
 } from 'lucide-react';
 
 export default function Footer() {
   const pathname = usePathname();
+  const { addToast } = useToast(); // <--- Init Toast
+  const [email, setEmail] = useState('');
+  const [loading, setLoading] = useState(false);
 
   // Hide on Admin pages
   if (pathname && pathname.startsWith('/admin')) {
     return null;
   }
+
+  const handleSubscribe = async (e) => {
+    e.preventDefault();
+    if (!email) return;
+
+    setLoading(true);
+    try {
+      const res = await fetch('/api/newsletter/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        addToast('Welcome to the family! Check your inbox.', 'success');
+        setEmail('');
+      } else {
+        addToast(data.error || 'Something went wrong', 'error');
+      }
+    } catch (error) {
+      addToast('Failed to connect. Please try again.', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const fadeInUp = {
     hidden: { opacity: 0, y: 20 },
@@ -64,7 +97,6 @@ export default function Footer() {
               <div className="mb-6">
                 <Link href="/" className="inline-block">
                   <div className="flex items-center gap-3 mb-4">
-                    {/* Logo handling with fallback */}
                     <img
                       src="/images/Basho - logotm-03.jpg"
                       alt="Basho Logo"
@@ -115,7 +147,7 @@ export default function Footer() {
                 {[
                   { href: '/products', label: 'Shop Collection' },
                   { href: '/workshops', label: 'Pottery Workshops' },
-                  { href: '/custom', label: 'Custom Orders' },
+                  { href: '/custom-order', label: 'Custom Orders' },
                   { href: '/gallery', label: 'Gallery' },
                   { href: '/events', label: 'Events' },
                 ].map((item) => (
@@ -170,7 +202,7 @@ export default function Footer() {
                       Studio Bashō
                     </p>
                     <p className="text-xs text-stone-500">
-                      Vadodara, Gujarat, India 390001
+                      Surat, Gujarat, India
                     </p>
                   </div>
                 </div>
@@ -184,25 +216,30 @@ export default function Footer() {
                   </a>
                 </div>
 
-                {/* Newsletter */}
+                {/* Newsletter Form */}
                 <div className="mt-6 pt-6 border-t border-[#EDD8B4]/30">
                   <p className="text-[10px] font-bold text-[#8E5022] uppercase tracking-wider mb-2">
                     Newsletter
                   </p>
-                  <form
-                    className="flex gap-2"
-                    onSubmit={(e) => e.preventDefault()}
-                  >
+                  <form className="flex gap-2" onSubmit={handleSubscribe}>
                     <input
                       type="email"
+                      required
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
                       placeholder="Email address"
                       className="flex-1 px-3 py-2 rounded-lg border border-[#EDD8B4] bg-white/50 focus:outline-none focus:border-[#8E5022] focus:ring-1 focus:ring-[#8E5022] text-xs transition-all"
                     />
                     <button
                       type="submit"
-                      className="px-4 py-2 rounded-lg bg-[#442D1C] text-[#EDD8B4] text-xs font-bold hover:bg-[#652810] transition-colors"
+                      disabled={loading}
+                      className="px-4 py-2 rounded-lg bg-[#442D1C] text-[#EDD8B4] text-xs font-bold hover:bg-[#652810] transition-colors disabled:opacity-70 flex items-center justify-center min-w-[60px]"
                     >
-                      Join
+                      {loading ? (
+                        <Loader2 className="animate-spin w-4 h-4" />
+                      ) : (
+                        'Join'
+                      )}
                     </button>
                   </form>
                 </div>
@@ -210,7 +247,6 @@ export default function Footer() {
             </motion.div>
           </div>
 
-          {/* Divider */}
           <div className="h-px w-full bg-gradient-to-r from-transparent via-[#EDD8B4]/50 to-transparent mb-6" />
 
           {/* Bottom Bar */}
@@ -241,17 +277,9 @@ export default function Footer() {
               </Link>
             </div>
           </div>
-
-          {/* Japanese Signature */}
-          <div className="mt-6 text-center">
-            <p className="text-[10px] text-stone-400 tracking-[0.2em] font-medium opacity-60 hover:opacity-100 transition-opacity cursor-default">
-              手作り陶器 · 心を込めて
-            </p>
-          </div>
         </motion.div>
       </div>
 
-      {/* Back to Top Button */}
       <motion.button
         onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
         whileHover={{ y: -3 }}
