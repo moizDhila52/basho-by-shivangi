@@ -1,19 +1,18 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
-import Link from "next/link";
+import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import {
   Plus,
   Calendar,
   Users,
   Clock,
   MapPin,
-  MoreVertical,
   Edit2,
   Trash2,
-} from "lucide-react";
-import { motion } from "framer-motion";
-import { useToast } from "@/components/ToastProvider";
+} from 'lucide-react';
+import { motion } from 'framer-motion';
+import { useToast } from '@/components/ToastProvider';
 
 export default function AdminWorkshopsPage() {
   const { addToast } = useToast();
@@ -22,10 +21,10 @@ export default function AdminWorkshopsPage() {
 
   const fetchWorkshops = async () => {
     try {
-      const res = await fetch("/api/admin/workshops");
+      const res = await fetch('/api/admin/workshops');
       if (res.ok) setWorkshops(await res.json());
     } catch (error) {
-      addToast("Failed to load workshops", "error");
+      addToast('Failed to load workshops', 'error');
     } finally {
       setLoading(false);
     }
@@ -37,19 +36,30 @@ export default function AdminWorkshopsPage() {
 
   const handleDelete = async (id) => {
     if (
-      !confirm("Are you sure? This will delete the workshop and all sessions.")
+      !confirm('Are you sure? This will delete the workshop and all sessions.')
     )
       return;
     try {
       const res = await fetch(`/api/admin/workshops/${id}`, {
-        method: "DELETE",
+        method: 'DELETE',
       });
       if (res.ok) {
         setWorkshops((prev) => prev.filter((w) => w.id !== id));
-        addToast("Workshop deleted", "success");
+        addToast('Workshop deleted', 'success');
       }
     } catch (error) {
-      addToast("Failed to delete", "error");
+      addToast('Failed to delete', 'error');
+    }
+  };
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'ACTIVE':
+        return 'bg-green-100/90 text-green-800';
+      case 'COMPLETED':
+        return 'bg-stone-100/90 text-stone-600';
+      default:
+        return 'bg-gray-100/90 text-gray-800';
     }
   };
 
@@ -101,17 +111,19 @@ export default function AdminWorkshopsPage() {
               {/* Image */}
               <div className="relative h-48 bg-[#FDFBF7] overflow-hidden">
                 <img
-                  src={workshop.image || "/placeholder-workshop.jpg"}
+                  src={workshop.image || '/placeholder-workshop.jpg'}
                   alt={workshop.title}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  className={`w-full h-full object-cover transition-transform duration-500 ${
+                    workshop.status === 'COMPLETED'
+                      ? 'grayscale opacity-80'
+                      : 'group-hover:scale-105'
+                  }`}
                 />
                 <div className="absolute top-4 right-4 flex gap-2">
                   <span
-                    className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider backdrop-blur-md shadow-sm ${
-                      workshop.status === "ACTIVE"
-                        ? "bg-green-100/90 text-green-800"
-                        : "bg-gray-100/90 text-gray-800"
-                    }`}
+                    className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider backdrop-blur-md shadow-sm ${getStatusColor(
+                      workshop.status,
+                    )}`}
                   >
                     {workshop.status}
                   </span>
@@ -146,30 +158,36 @@ export default function AdminWorkshopsPage() {
                   <h4 className="text-[10px] font-bold text-[#8E5022] uppercase tracking-wider mb-3 flex items-center justify-between">
                     <span>Upcoming Sessions</span>
                     <span className="bg-[#EDD8B4] text-[#442D1C] px-1.5 py-0.5 rounded text-[10px]">
-                      {workshop.WorkshopSession?.length || 0}
+                      {workshop.WorkshopSession?.filter(
+                        (s) => new Date(s.date) >= new Date(),
+                      ).length || 0}
                     </span>
                   </h4>
                   <div className="space-y-2 max-h-24 overflow-y-auto custom-scrollbar">
                     {workshop.WorkshopSession?.length > 0 ? (
-                      workshop.WorkshopSession.slice(0, 3).map((session) => (
-                        <div
-                          key={session.id}
-                          className="flex justify-between text-sm items-center"
-                        >
-                          <span className="font-medium text-[#442D1C]">
-                            {new Date(session.date).toLocaleDateString(
-                              undefined,
-                              { day: "numeric", month: "short" }
-                            )}
-                          </span>
-                          <span className="text-[#8E5022]/80 text-xs bg-white px-2 py-0.5 rounded border border-[#EDD8B4]/50">
-                            {session.time}
-                          </span>
-                        </div>
-                      ))
+                      workshop.WorkshopSession.filter(
+                        (s) => new Date(s.date) >= new Date(),
+                      )
+                        .slice(0, 3)
+                        .map((session) => (
+                          <div
+                            key={session.id}
+                            className="flex justify-between text-sm items-center"
+                          >
+                            <span className="font-medium text-[#442D1C]">
+                              {new Date(session.date).toLocaleDateString(
+                                undefined,
+                                { day: 'numeric', month: 'short' },
+                              )}
+                            </span>
+                            <span className="text-[#8E5022]/80 text-xs bg-white px-2 py-0.5 rounded border border-[#EDD8B4]/50">
+                              {session.time}
+                            </span>
+                          </div>
+                        ))
                     ) : (
                       <p className="text-xs text-[#8E5022]/50 italic">
-                        No dates scheduled
+                        All sessions completed
                       </p>
                     )}
                   </div>
@@ -181,7 +199,7 @@ export default function AdminWorkshopsPage() {
                     href={`/admin/workshops/${workshop.id}`}
                     className="flex-1 flex items-center justify-center gap-2 bg-[#FDFBF7] hover:bg-[#EDD8B4]/20 border border-[#EDD8B4] text-[#442D1C] py-2 rounded-lg text-sm font-medium transition-colors"
                   >
-                    <Edit2 size={16} /> Edit
+                    <Edit2 size={16} /> Details
                   </Link>
                   <button
                     onClick={() => handleDelete(workshop.id)}

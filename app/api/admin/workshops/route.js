@@ -1,14 +1,14 @@
-import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
+import { NextResponse } from 'next/server';
+import { prisma } from '@/lib/db';
 
 // Helper for Slug
 const createSlug = (title) => {
   return (
     title
       .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/(^-|-$)+/g, "") +
-    "-" +
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)+/g, '') +
+    '-' +
     Date.now().toString().slice(-4)
   );
 };
@@ -18,15 +18,33 @@ export async function GET() {
     const workshops = await prisma.workshop.findMany({
       include: {
         WorkshopSession: {
-          orderBy: { date: "asc" },
-          where: { date: { gte: new Date() } }, // Filter future sessions
+          orderBy: { date: 'asc' },
+          // REMOVED: where: { date: { gte: new Date() } }
+          // Reason: Admin needs all sessions to calculate if it's completed
         },
       },
-      orderBy: { createdAt: "desc" },
+      orderBy: { createdAt: 'desc' },
     });
-    return NextResponse.json(workshops);
+
+    // Calculate Status Dynamically
+    const processedWorkshops = workshops.map((workshop) => {
+      const now = new Date();
+      const sessions = workshop.WorkshopSession || [];
+
+      // Check if all sessions are in the past
+      const isCompleted =
+        sessions.length > 0 && sessions.every((s) => new Date(s.date) < now);
+
+      return {
+        ...workshop,
+        // Override status for display purposes
+        status: isCompleted ? 'COMPLETED' : workshop.status,
+      };
+    });
+
+    return NextResponse.json(processedWorkshops);
   } catch (error) {
-    return NextResponse.json({ error: "Fetch failed" }, { status: 500 });
+    return NextResponse.json({ error: 'Fetch failed' }, { status: 500 });
   }
 }
 
@@ -41,7 +59,7 @@ export async function POST(req) {
         slug: createSlug(body.title),
         description: body.description,
         price: parseFloat(body.price),
-        image: body.image || "",
+        image: body.image || '',
         gallery: body.image ? [body.image] : [],
 
         duration: body.duration,
@@ -52,9 +70,9 @@ export async function POST(req) {
 
         instructorName: body.instructorName,
         instructorRole: body.instructorRole,
-        instructorImage: body.instructorImage || "",
+        instructorImage: body.instructorImage || '',
 
-        status: "ACTIVE",
+        status: 'ACTIVE',
 
         // Relation Magic: Create sessions
         WorkshopSession: {
@@ -70,7 +88,7 @@ export async function POST(req) {
 
     return NextResponse.json(workshop);
   } catch (error) {
-    console.error("Workshop Create Error:", error);
-    return NextResponse.json({ error: "Failed to create" }, { status: 500 });
+    console.error('Workshop Create Error:', error);
+    return NextResponse.json({ error: 'Failed to create' }, { status: 500 });
   }
 }

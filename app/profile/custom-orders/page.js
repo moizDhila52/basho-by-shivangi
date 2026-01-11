@@ -2,16 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import {
-  Sparkles,
-  Calendar,
-  ChevronRight,
-  Clock,
-  CheckCircle,
-  DollarSign,
-  Package,
-  Loader2,
-} from 'lucide-react';
+import { Sparkles, Calendar, Package, Loader2 } from 'lucide-react';
 
 export default function MyCustomOrdersPage() {
   const [orders, setOrders] = useState([]);
@@ -19,13 +10,23 @@ export default function MyCustomOrdersPage() {
 
   useEffect(() => {
     fetch('/api/custom-orders')
-      .then((res) => res.json())
+      .then((res) => {
+        if (!res.ok) throw new Error('Failed');
+        return res.json();
+      })
       .then((data) => {
-        setOrders(data);
+        // Ensure data is an array before setting
+        if (Array.isArray(data)) {
+          setOrders(data);
+        } else {
+          console.error('API returned non-array:', data);
+          setOrders([]);
+        }
         setLoading(false);
       })
       .catch((err) => {
         console.error(err);
+        setOrders([]);
         setLoading(false);
       });
   }, []);
@@ -35,6 +36,7 @@ export default function MyCustomOrdersPage() {
       case 'QUOTED':
         return 'bg-purple-100 text-purple-700 border-purple-200';
       case 'APPROVED':
+      case 'PAID':
       case 'IN_PROGRESS':
         return 'bg-blue-100 text-blue-700 border-blue-200';
       case 'COMPLETED':
@@ -53,7 +55,7 @@ export default function MyCustomOrdersPage() {
 
   if (orders.length === 0) {
     return (
-      <div className="bg-white rounded-2xl border border-dashed border-[#EDD8B4] p-12 text-center h-full flex flex-col items-center justify-center">
+      <div className="bg-white rounded-2xl border border-dashed border-[#EDD8B4] p-12 text-center h-full flex flex-col items-center justify-center min-h-[400px]">
         <Sparkles className="w-12 h-12 text-[#EDD8B4] mb-4" />
         <h3 className="font-serif text-xl text-[#442D1C] mb-2">
           No Custom Requests
@@ -63,7 +65,7 @@ export default function MyCustomOrdersPage() {
         </p>
         <Link
           href="/custom-order"
-          className="text-[#C85428] font-bold hover:underline"
+          className="text-[#C85428] font-bold hover:underline bg-[#FDFBF7] px-6 py-3 rounded-full border border-[#EDD8B4]"
         >
           Start a Request
         </Link>

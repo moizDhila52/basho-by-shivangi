@@ -21,15 +21,11 @@ function SuccessContent() {
     const duration = 3 * 1000;
     const animationEnd = Date.now() + duration;
     const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
-
     const randomInRange = (min, max) => Math.random() * (max - min) + min;
 
     const interval = setInterval(function () {
       const timeLeft = animationEnd - Date.now();
-
-      if (timeLeft <= 0) {
-        return clearInterval(interval);
-      }
+      if (timeLeft <= 0) return clearInterval(interval);
 
       const particleCount = 50 * (timeLeft / duration);
       confetti({
@@ -54,67 +50,73 @@ function SuccessContent() {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6, ease: 'easeOut' }}
-      className="bg-white p-8 md:p-12 rounded-3xl shadow-2xl border border-stone-100 max-w-lg w-full text-center relative overflow-hidden"
+      // CHANGED: Reduced padding from p-8/p-12 to p-6/p-10
+      className="bg-white p-6 md:p-10 rounded-3xl shadow-2xl border border-stone-100 max-w-lg w-full text-center relative overflow-hidden"
     >
       <motion.div
         initial={{ scale: 0 }}
         animate={{ scale: 1 }}
         transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}
-        className="w-24 h-24 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-8"
+        // CHANGED: Reduced w-24 h-24 to w-20 h-20 and mb-8 to mb-6
+        className="w-20 h-20 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-6"
       >
-        <CheckCircle className="w-12 h-12 text-green-600" />
+        {/* CHANGED: Reduced icon size */}
+        <CheckCircle className="w-10 h-10 text-green-600" />
       </motion.div>
 
-      <h1 className="font-serif text-4xl text-[#442D1C] mb-4">
+      {/* CHANGED: Reduced text size and margin */}
+      <h1 className="font-serif text-3xl md:text-4xl text-[#442D1C] mb-3">
         Thank you for your order!
       </h1>
 
-      <p className="text-stone-600 mb-8 text-lg leading-relaxed">
+      {/* CHANGED: Reduced margin bottom */}
+      <p className="text-stone-600 mb-6 text-base md:text-lg leading-relaxed">
         Your clay treasures have been secured. We are preparing them for their
         journey to your home.
       </p>
 
       {orderId ? (
-        <div className="bg-[#FDFBF7] p-6 rounded-2xl border border-[#EDD8B4]/30 mb-8">
-          <p className="text-xs text-stone-500 uppercase tracking-widest font-bold mb-2">
+        // CHANGED: Reduced padding (p-6 -> p-4) and margin (mb-8 -> mb-6)
+        <div className="bg-[#FDFBF7] p-4 rounded-2xl border border-[#EDD8B4]/30 mb-6">
+          <p className="text-xs text-stone-500 uppercase tracking-widest font-bold mb-1">
             Order Reference
           </p>
           <div className="flex items-center justify-center gap-2 text-[#8E5022]">
-            <Package className="w-5 h-5" />
-            <span className="font-mono text-xl font-medium tracking-wide">
+            <Package className="w-4 h-4" />
+            <span className="font-mono text-lg font-medium tracking-wide">
               {orderId}
             </span>
           </div>
         </div>
       ) : (
-        <div className="bg-[#FDFBF7] p-4 rounded-xl border border-stone-100 mb-8 text-stone-500 text-sm">
+        <div className="bg-[#FDFBF7] p-4 rounded-xl border border-stone-100 mb-6 text-stone-500 text-sm">
           Check your email for the order confirmation details.
         </div>
       )}
 
-      <div className="space-y-4">
-
-        {/* 👇 ADD THIS BUTTON SECTION 👇 */}
+      {/* CHANGED: Reduced vertical space between buttons */}
+      <div className="space-y-3">
         {orderId && (
           <Link href={`/profile/orders/${orderId}`} className="block">
-            <button className="w-full bg-[#442D1C] text-white py-4 rounded-xl font-medium hover:bg-[#2c1d12] transition-all flex items-center justify-center gap-2 shadow-lg hover:shadow-xl">
+            {/* CHANGED: Reduced button height (py-4 -> py-3) */}
+            <button className="w-full bg-[#442D1C] text-white py-3 rounded-xl font-medium hover:bg-[#2c1d12] transition-all flex items-center justify-center gap-2 shadow-lg hover:shadow-xl">
               <Package className="w-5 h-5" />
               Track Order
             </button>
           </Link>
         )}
-        {/* 👆 END ADDITION 👆 */}
 
-        
         <Link href="/products" className="block">
-          <button className="w-full bg-[#8E5022] text-white py-4 rounded-xl font-medium hover:bg-[#652810] transition-all flex items-center justify-center gap-2 shadow-lg hover:shadow-xl group">
+          {/* CHANGED: Reduced button height (py-4 -> py-3) */}
+          <button className="w-full bg-[#8E5022] text-white py-3 rounded-xl font-medium hover:bg-[#652810] transition-all flex items-center justify-center gap-2 shadow-lg hover:shadow-xl group">
             Continue Shopping
             <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
           </button>
         </Link>
 
         <Link href="/" className="block">
-          <button className="w-full bg-white border-2 border-stone-100 text-stone-600 py-4 rounded-xl font-medium hover:border-[#8E5022] hover:text-[#8E5022] transition-all flex items-center justify-center gap-2">
+          {/* CHANGED: Reduced button height (py-4 -> py-3) */}
+          <button className="w-full bg-white border-2 border-stone-100 text-stone-600 py-3 rounded-xl font-medium hover:border-[#8E5022] hover:text-[#8E5022] transition-all flex items-center justify-center gap-2">
             <Home className="w-5 h-5" />
             Return Home
           </button>
@@ -126,7 +128,8 @@ function SuccessContent() {
 
 export default function SuccessPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#FDFBF7] to-[#EDD8B4]/20 flex items-center justify-center p-4">
+    // CHANGED: Added pt-20 to ensure content starts below the navbar visually
+    <div className="min-h-screen bg-gradient-to-b from-[#FDFBF7] to-[#EDD8B4]/20 flex items-center justify-center p-4 pt-24 md:pt-20">
       <Suspense
         fallback={
           <div className="flex flex-col items-center gap-4">
