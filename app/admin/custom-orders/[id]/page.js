@@ -30,6 +30,7 @@ import {
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/components/AuthProvider';
+import { Calendar as CalendarIcon } from "lucide-react";
 import toast from 'react-hot-toast';
 
 export default function AdminCustomOrderDetailPage() {
@@ -46,6 +47,7 @@ export default function AdminCustomOrderDetailPage() {
   const [estimatedPrice, setEstimatedPrice] = useState('');
   const [actualPrice, setActualPrice] = useState(''); // <--- NEW STATE
   const [status, setStatus] = useState('PENDING');
+  const [estimatedCompletion, setEstimatedCompletion] = useState("");
 
   const statusOptions = [
     'PENDING',
@@ -78,6 +80,7 @@ export default function AdminCustomOrderDetailPage() {
       setAdminNotes(data.adminNotes || '');
       setEstimatedPrice(data.estimatedPrice || '');
       setActualPrice(data.actualPrice || ''); // <--- LOAD FINAL PRICE
+      setEstimatedCompletion(data.estimatedCompletion || "");
       setStatus(data.status || 'PENDING');
     } catch (error) {
       console.error('Error loading order:', error);
@@ -102,6 +105,7 @@ export default function AdminCustomOrderDetailPage() {
       const updateData = {
         status,
         adminNotes,
+        estimatedCompletion,
         // Only send if they have values
         ...(estimatedPrice && { estimatedPrice: parseFloat(estimatedPrice) }),
         ...(actualPrice && { actualPrice: parseFloat(actualPrice) }), // <--- UPDATE FINAL PRICE
@@ -463,6 +467,21 @@ export default function AdminCustomOrderDetailPage() {
                       </select>
                     </div>
                   </div>
+                  {/* ESTIMATED COMPLETION INPUT */}
+                  <div>
+                    <label className="block text-xs font-bold text-[#8E5022] uppercase mb-2">Est. Completion</label>
+                    <div className="relative">
+                      <CalendarIcon size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#8E5022]" />
+                      <input
+                        type="text"
+                        value={estimatedCompletion}
+                        onChange={(e) => setEstimatedCompletion(e.target.value)}
+                        className="w-full pl-9 p-3 bg-[#FDFBF7] border border-[#EDD8B4] rounded-xl focus:outline-none focus:border-[#C85428] text-[#442D1C] font-medium"
+                        placeholder="e.g. 2 Weeks"
+                      />
+                    </div>
+                  </div>
+              
 
                   {/* PRICE INPUTS */}
                   <div className="space-y-4">

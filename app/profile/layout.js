@@ -1,15 +1,16 @@
 import Link from 'next/link';
-import { LayoutDashboard, Package, MapPin, Star, LogOut, Ticket } from 'lucide-react';
+import { LayoutDashboard, Package, MapPin, Star, LogOut, Ticket, Sparkles } from 'lucide-react';
 
 export default function ProfileLayout({ children }) {
   const navItems = [
     { href: '/profile', label: 'Overview', icon: LayoutDashboard },
     { href: '/profile/workshops', label: 'My Workshops', icon: Ticket },
+    // 2. Add the new link here
+    { href: '/profile/custom-orders', label: 'Custom Requests', icon: Sparkles }, 
     { href: '/profile/orders', label: 'My Orders', icon: Package },
     { href: '/profile/address', label: 'Addresses', icon: MapPin },
     { href: '/profile/reviews', label: 'My Reviews', icon: Star },
   ];
-
   return (
     <div className="min-h-screen bg-[#FDFBF7] pt-24 pb-12">
       {/* CHANGE: Increased max-w to 1920px (nearly full width) 
