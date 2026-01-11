@@ -80,7 +80,9 @@ export async function PUT(request, { params }) {
         adminNotes: body.adminNotes,
         estimatedPrice: body.estimatedPrice,
         actualPrice: body.actualPrice,
-        estimatedCompletion: body.estimatedCompletion, // <--- NEW FIELD SAVED HERE
+        estimatedCompletion: body.estimatedCompletion,
+        paymentStatus: body.paymentStatus, 
+        paymentId: body.paymentId, // <--- NEW FIELD SAVED HERE
         updatedAt: new Date(),
       },
     });

@@ -1,596 +1,443 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
+import { useParams, useRouter } from 'next/navigation';
+import Script from 'next/script';
+import Link from 'next/link';
 import {
   ArrowLeft,
-  DollarSign,
-  MessageSquare,
-  Save,
-  Send,
-  Download,
-  Printer,
-  User,
-  Mail,
-  Phone,
-  Calendar,
-  Loader2,
-  AlertCircle,
-  Shield,
+  Clock,
   Package,
-  Clipboard,
+  DollarSign,
+  Download,
+  CheckCircle,
+  Loader2,
+  Lock,
+  CreditCard,
   MapPin,
-  Edit2,
+  HelpCircle,
 } from 'lucide-react';
-import Link from 'next/link';
-import { useParams, useRouter } from 'next/navigation';
-import { useAuth } from '@/components/AuthProvider';
-import toast from 'react-hot-toast';
+import { useToast } from '@/components/ToastProvider';
 
-export default function AdminCustomOrderDetailPage() {
-  const params = useParams();
+// Helper to show status progress
+function StatusTracker({ status }) {
+  const steps = [
+    { id: 1, label: 'Pending', icon: Clock },
+    { id: 2, label: 'Quoted', icon: DollarSign },
+    { id: 3, label: 'Approved', icon: CheckCircle }, // Paid
+    { id: 4, label: 'In Progress', icon: Package },
+    { id: 5, label: 'Completed', icon: MapPin },
+  ];
+
+  let currentStep = 1;
+  if (['QUOTED'].includes(status)) currentStep = 2;
+  if (['APPROVED', 'PAID'].includes(status)) currentStep = 3;
+  if (['IN_PROGRESS'].includes(status)) currentStep = 4;
+  if (['COMPLETED', 'SHIPPED', 'DELIVERED'].includes(status)) currentStep = 5;
+
+  return (
+    <div className="w-full py-6">
+      <div className="relative">
+        {/* Progress Bar Background */}
+        <div className="absolute top-1/2 left-0 w-full h-1 bg-stone-100 -translate-y-1/2 rounded-full" />
+        {/* Active Progress */}
+        <div
+          className="absolute top-1/2 left-0 h-1 bg-[#8E5022] -translate-y-1/2 rounded-full transition-all duration-1000"
+          style={{
+            width: `${((currentStep - 1) / (steps.length - 1)) * 100}%`,
+          }}
+        />
+
+        {/* Steps */}
+        <div className="relative flex justify-between w-full">
+          {steps.map((step) => {
+            const isCompleted = currentStep >= step.id;
+            return (
+              <div
+                key={step.id}
+                className="flex flex-col items-center gap-2 bg-[#FDFBF7] px-2 z-10"
+              >
+                <div
+                  className={`w-8 h-8 rounded-full flex items-center justify-center border-2 transition-all ${
+                    isCompleted
+                      ? 'bg-[#8E5022] border-[#8E5022] text-white'
+                      : 'bg-white border-stone-200 text-stone-300'
+                  }`}
+                >
+                  <step.icon className="w-4 h-4" />
+                </div>
+                <span
+                  className={`text-[10px] font-bold uppercase tracking-wider ${
+                    isCompleted ? 'text-[#8E5022]' : 'text-stone-400'
+                  }`}
+                >
+                  {step.label}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function CustomOrderDetailPage() {
+  const { id } = useParams();
   const router = useRouter();
-  const { user, loading: authLoading } = useAuth();
+  const { addToast } = useToast();
 
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [isUpdating, setIsUpdating] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
+  const [paying, setPaying] = useState(false);
 
-  // Form States
-  const [adminNotes, setAdminNotes] = useState('');
-  const [estimatedPrice, setEstimatedPrice] = useState('');
-  const [actualPrice, setActualPrice] = useState('');
-  const [estimatedCompletion, setEstimatedCompletion] = useState(''); // Timeline
-  const [status, setStatus] = useState('PENDING');
+  useEffect(() => {
+    if (!id) return;
 
-  const statusOptions = [
-    'PENDING',
-    'REVIEWED',
-    'QUOTED',
+    fetch(`/api/custom-orders/${id}`)
+      .then(async (res) => {
+        if (!res.ok) throw new Error('Failed to fetch');
+        return res.json();
+      })
+      .then((data) => {
+        setOrder(data);
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error(err);
+        setLoading(false);
+        // Keep order null to trigger specific error UI
+      });
+  }, [id]);
+
+  const handlePayment = async () => {
+    if (!order?.actualPrice) return;
+    setPaying(true);
+    try {
+      const res = await fetch('/api/custom-orders/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId: order.id }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+
+      const options = {
+        key: data.key,
+        amount: data.amount,
+        currency: data.currency,
+        name: 'Bashō Custom',
+        description: `Order #${order.id.slice(0, 8)}`,
+        order_id: data.orderId,
+        handler: async function (response) {
+          const verifyRes = await fetch('/api/custom-orders/verify', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_signature: response.razorpay_signature,
+              customOrderId: order.id,
+            }),
+          });
+
+          if (verifyRes.ok) {
+            addToast('Payment successful! Order approved.', 'success');
+            window.location.reload();
+          } else {
+            addToast('Payment verification failed', 'error');
+          }
+        },
+        theme: { color: '#442D1C' },
+      };
+
+      const rzp = new window.Razorpay(options);
+      rzp.open();
+    } catch (error) {
+      addToast(error.message || 'Payment failed', 'error');
+    } finally {
+      setPaying(false);
+    }
+  };
+
+  if (loading)
+    return (
+      <div className="p-20 text-center">
+        <Loader2 className="animate-spin mx-auto text-[#8E5022]" />
+      </div>
+    );
+
+  // FIX: Check for order.id to prevent "slice of undefined" error
+  if (!order || !order.id) {
+    return (
+      <div className="p-20 text-center border-2 border-dashed border-[#EDD8B4] rounded-2xl">
+        <AlertCircle className="w-12 h-12 text-[#EDD8B4] mx-auto mb-4" />
+        <h3 className="text-xl font-serif text-[#442D1C]">Order Not Found</h3>
+        <Link
+          href="/profile/custom-orders"
+          className="text-[#C85428] underline mt-4 inline-block"
+        >
+          Back to Requests
+        </Link>
+      </div>
+    );
+  }
+
+  // Determine if payment is completed
+  const isPaid = [
     'APPROVED',
+    'PAID',
     'IN_PROGRESS',
     'COMPLETED',
     'SHIPPED',
-    'CANCELLED',
-  ];
-
-  const loadOrder = useCallback(async () => {
-    try {
-      setLoading(true);
-      const response = await fetch(`/api/custom-orders/${params.id}`);
-
-      if (!response.ok) {
-        if (response.status === 404) {
-          router.push('/admin/custom-orders');
-          toast.error('Order not found');
-          return;
-        }
-        throw new Error('Failed to load order');
-      }
-
-      const data = await response.json();
-      setOrder(data);
-
-      // Initialize inputs with database values
-      setAdminNotes(data.adminNotes || '');
-      setEstimatedPrice(data.estimatedPrice || '');
-      setActualPrice(data.actualPrice || '');
-      setEstimatedCompletion(data.estimatedCompletion || '');
-      setStatus(data.status || 'PENDING');
-    } catch (error) {
-      console.error('Error loading order:', error);
-      toast.error('Failed to load order details');
-    } finally {
-      setLoading(false);
-    }
-  }, [params.id, router]);
-
-  useEffect(() => {
-    if (user && user.role === 'ADMIN') {
-      loadOrder();
-    }
-  }, [user, loadOrder]);
-
-  const handleUpdate = async () => {
-    if (!order) return;
-
-    try {
-      setIsUpdating(true);
-
-      const updateData = {
-        status,
-        adminNotes,
-        estimatedCompletion,
-        ...(estimatedPrice && { estimatedPrice: parseFloat(estimatedPrice) }),
-        ...(actualPrice && { actualPrice: parseFloat(actualPrice) }),
-      };
-
-      const response = await fetch(`/api/custom-orders/${params.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updateData),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Update failed');
-      }
-
-      toast.success('Order updated successfully');
-      setIsEditing(false);
-      loadOrder();
-    } catch (error) {
-      console.error('Error updating order:', error);
-      toast.error(error.message || 'Failed to update order');
-    } finally {
-      setIsUpdating(false);
-    }
-  };
-
-  const handleSendQuote = async () => {
-    if (!order || !estimatedPrice) {
-      toast.error('Please enter an estimated price');
-      return;
-    }
-
-    try {
-      setIsUpdating(true);
-
-      const updateData = {
-        status: 'QUOTED',
-        estimatedPrice: parseFloat(estimatedPrice),
-        actualPrice: actualPrice
-          ? parseFloat(actualPrice)
-          : parseFloat(estimatedPrice),
-        adminNotes: adminNotes || `Quote sent: ₹${estimatedPrice}`,
-        estimatedCompletion,
-      };
-
-      const response = await fetch(`/api/custom-orders/${params.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updateData),
-      });
-
-      if (!response.ok) throw new Error('Failed to send quote');
-
-      toast.success(`Quote of ₹${estimatedPrice} sent`);
-      setIsEditing(false);
-      loadOrder();
-    } catch (error) {
-      console.error('Error sending quote:', error);
-      toast.error('Failed to send quote');
-    } finally {
-      setIsUpdating(false);
-    }
-  };
-
-  const handlePrint = () => {
-    window.print();
-  };
-
-  // ... (Keep existing loading/auth check logic if needed, omitted for brevity but should be here) ...
-  if (authLoading || loading)
-    return (
-      <div className="h-screen flex items-center justify-center">
-        <Loader2 className="animate-spin text-[#8E5022]" />
-      </div>
-    );
-  if (!user || user.role !== 'ADMIN')
-    return <div className="p-8 text-center">Access Denied</div>;
-  if (!order) return <div className="p-8 text-center">Order not found</div>;
+  ].includes(order.status);
 
   return (
-    <div className="min-h-screen bg-[#FDFBF7] p-4 md:p-6 print:p-0 print:bg-white">
-      {/* ======================= */}
-      {/* 1. ADMIN DASHBOARD UI   */}
-      {/* ======================= */}
-      <div className="max-w-7xl mx-auto print:hidden">
-        {/* Header */}
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-8">
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => router.back()}
-              className="p-2 bg-white border border-[#EDD8B4] rounded-xl hover:bg-[#FDFBF7] text-[#8E5022] transition-colors shadow-sm"
-            >
-              <ArrowLeft size={20} />
-            </button>
-            <div>
-              <div className="flex items-center gap-3">
-                <h1 className="font-serif text-3xl font-bold text-[#442D1C]">
-                  Order #{order.id.slice(0, 8).toUpperCase()}
-                </h1>
-                <span className="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-[#EDD8B4] text-[#442D1C]">
-                  {order.status.replace('_', ' ')}
-                </span>
-              </div>
-              <p className="text-[#8E5022] text-sm mt-1 flex items-center gap-2">
-                <Calendar size={14} />
-                Placed on {new Date(order.createdAt).toLocaleDateString()}
-              </p>
-            </div>
-          </div>
+    <div className="space-y-8 animate-in fade-in zoom-in-95 duration-500">
+      <Script
+        src="https://checkout.razorpay.com/v1/checkout.js"
+        strategy="lazyOnload"
+      />
 
-          <div className="flex items-center gap-3">
-            {!isEditing && (
-              <button
-                onClick={() => setIsEditing(true)}
-                className="flex items-center gap-2 bg-[#442D1C] text-[#EDD8B4] px-5 py-2.5 rounded-xl font-bold text-sm hover:bg-[#2c1d12] transition-all shadow-lg"
-              >
-                <Edit2 size={16} /> Manage Order
-              </button>
-            )}
-            <button
-              onClick={handlePrint}
-              className="flex items-center gap-2 bg-white border border-[#EDD8B4] text-[#442D1C] px-5 py-2.5 rounded-xl font-bold text-sm hover:bg-[#FDFBF7] transition-colors"
-            >
-              <Printer size={16} /> Print Invoice
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <Link href="/profile/custom-orders">
+            <button className="w-10 h-10 bg-white rounded-full border border-stone-200 flex items-center justify-center hover:bg-stone-50 transition-colors">
+              <ArrowLeft className="w-5 h-5 text-stone-600" />
             </button>
+          </Link>
+          <div>
+            <div className="flex items-center gap-3">
+              <h1 className="text-2xl font-serif text-[#442D1C]">
+                Request #{order.id.slice(0, 8).toUpperCase()}
+              </h1>
+              <span className="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-[#EDD8B4] text-[#442D1C]">
+                {order.status.replace('_', ' ')}
+              </span>
+            </div>
+            <p className="text-stone-500 text-sm">
+              Submitted on {new Date(order.createdAt).toLocaleDateString()}
+            </p>
           </div>
         </div>
 
-        <div className="grid lg:grid-cols-3 gap-8">
-          {/* LEFT: Order Info */}
-          <div className="lg:col-span-2 space-y-8">
-            <div className="bg-white p-6 rounded-2xl border border-[#EDD8B4] shadow-sm">
-              <h3 className="font-serif text-xl font-bold text-[#442D1C] mb-6 flex items-center gap-2">
-                <Package className="text-[#C85428]" /> Request Details
-              </h3>
-              <div className="grid md:grid-cols-2 gap-8">
-                <div className="space-y-4">
-                  <div>
-                    <p className="text-xs font-bold text-[#8E5022] uppercase">
-                      Product
-                    </p>
-                    <p className="text-[#442D1C] font-medium text-lg">
-                      {order.productType}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs font-bold text-[#8E5022] uppercase">
-                      Material
-                    </p>
-                    <p className="text-[#442D1C] capitalize">
-                      {order.material}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs font-bold text-[#8E5022] uppercase">
-                      Qty
-                    </p>
-                    <p className="text-[#442D1C]">{order.quantity} Units</p>
-                  </div>
-                </div>
-                <div className="space-y-4">
-                  {order.dimensions && (
-                    <div>
-                      <p className="text-xs font-bold text-[#8E5022] uppercase mb-1">
-                        Dimensions
-                      </p>
-                      <div className="flex gap-3 text-sm text-[#442D1C] bg-[#FDFBF7] p-3 rounded-lg border border-[#EDD8B4]/50">
-                        <span>H: {order.dimensions.height || '-'}</span>
-                        <span>W: {order.dimensions.width || '-'}</span>
-                        <span>D: {order.dimensions.depth || '-'}</span>
-                      </div>
-                    </div>
-                  )}
-                  {order.colorPreferences && (
-                    <div>
-                      <p className="text-xs font-bold text-[#8E5022] uppercase">
-                        Colors
-                      </p>
-                      <p className="text-[#442D1C] text-sm">
-                        {order.colorPreferences}
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
+        <div className="flex gap-3">
+          <button className="flex items-center gap-2 px-4 py-2 bg-white border border-stone-200 rounded-xl text-sm font-medium text-stone-600 hover:bg-stone-50 transition-colors">
+            <HelpCircle className="w-4 h-4" /> Need Help?
+          </button>
+          {/* INVOICE BUTTON (Shows when paid) */}
+          {isPaid && (
+            <Link href={`/invoice/custom/${order.id}`} target="_blank">
+              <button className="flex items-center gap-2 px-4 py-2 bg-[#442D1C] text-white rounded-xl text-sm font-medium hover:bg-[#2c1d12] transition-colors shadow-sm">
+                <Download className="w-4 h-4" /> Invoice
+              </button>
+            </Link>
+          )}
+        </div>
+      </div>
 
-            {/* Admin Actions Panel */}
-            <div
-              className={`bg-white p-6 rounded-2xl border shadow-sm transition-all ${
-                isEditing
-                  ? 'border-[#C85428] ring-1 ring-[#C85428]/20'
-                  : 'border-[#EDD8B4]'
-              }`}
+      {/* Pay Now Section (Only if Quoted) */}
+      {order.status === 'QUOTED' && order.actualPrice && (
+        <div className="bg-[#442D1C] rounded-2xl p-8 text-[#EDD8B4] flex flex-col md:flex-row items-center justify-between gap-6 shadow-xl relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />
+          <div className="relative z-10">
+            <h3 className="font-serif text-2xl mb-2 flex items-center gap-2">
+              <DollarSign className="w-6 h-6" /> Quote Ready
+            </h3>
+            <p className="opacity-90 max-w-md text-sm leading-relaxed">
+              Our team has reviewed your request. This price includes materials,
+              craftsmanship, and kiln firing. Secure your order to begin
+              production.
+            </p>
+          </div>
+          <div className="text-center md:text-right relative z-10">
+            <p className="text-xs uppercase tracking-widest opacity-70 mb-1">
+              Total Amount
+            </p>
+            <p className="text-4xl font-serif mb-4">₹{order.actualPrice}</p>
+            <button
+              onClick={handlePayment}
+              disabled={paying}
+              className="bg-[#EDD8B4] text-[#442D1C] px-8 py-3 rounded-xl font-bold hover:bg-white transition-colors flex items-center gap-2 disabled:opacity-70 shadow-lg"
             >
-              <div className="flex justify-between items-center mb-6">
-                <h3 className="font-serif text-xl font-bold text-[#442D1C] flex items-center gap-2">
-                  <MessageSquare className="text-[#C85428]" /> Admin Actions
-                </h3>
-                {isEditing && (
-                  <button
-                    onClick={() => setIsEditing(false)}
-                    className="text-xs font-bold text-[#8E5022] uppercase hover:underline"
-                  >
-                    Cancel
-                  </button>
-                )}
-              </div>
-
-              {isEditing ? (
-                <div className="space-y-6">
-                  <div className="grid md:grid-cols-2 gap-6">
-                    <div>
-                      <label className="block text-xs font-bold text-[#8E5022] uppercase mb-2">
-                        Update Status
-                      </label>
-                      <select
-                        value={status}
-                        onChange={(e) => setStatus(e.target.value)}
-                        className="w-full p-3 bg-[#FDFBF7] border border-[#EDD8B4] rounded-xl outline-none"
-                      >
-                        {statusOptions.map((opt) => (
-                          <option key={opt} value={opt}>
-                            {opt.replace('_', ' ')}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-xs font-bold text-[#8E5022] uppercase mb-2">
-                        Est. Completion
-                      </label>
-                      <input
-                        type="text"
-                        value={estimatedCompletion}
-                        onChange={(e) => setEstimatedCompletion(e.target.value)}
-                        className="w-full p-3 bg-[#FDFBF7] border border-[#EDD8B4] rounded-xl outline-none"
-                        placeholder="e.g. 2 Weeks"
-                      />
-                    </div>
-                  </div>
-                  <div className="grid md:grid-cols-2 gap-6">
-                    <div>
-                      <label className="block text-xs font-bold text-[#8E5022] uppercase mb-2">
-                        Estimated Price (₹)
-                      </label>
-                      <input
-                        type="number"
-                        value={estimatedPrice}
-                        onChange={(e) => setEstimatedPrice(e.target.value)}
-                        className="w-full p-3 bg-[#FDFBF7] border border-[#EDD8B4] rounded-xl outline-none"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-bold text-[#8E5022] uppercase mb-2">
-                        Final Price (₹)
-                      </label>
-                      <input
-                        type="number"
-                        value={actualPrice}
-                        onChange={(e) => setActualPrice(e.target.value)}
-                        className="w-full p-3 bg-[#FDFBF7] border border-[#EDD8B4] rounded-xl outline-none"
-                        placeholder="For payment"
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-[#8E5022] uppercase mb-2">
-                      Notes
-                    </label>
-                    <textarea
-                      value={adminNotes}
-                      onChange={(e) => setAdminNotes(e.target.value)}
-                      rows={3}
-                      className="w-full p-3 bg-[#FDFBF7] border border-[#EDD8B4] rounded-xl outline-none"
-                    />
-                  </div>
-                  <button
-                    onClick={handleUpdate}
-                    disabled={isUpdating}
-                    className="w-full bg-[#442D1C] text-[#EDD8B4] py-3 rounded-xl font-bold hover:bg-[#2c1d12] transition-colors disabled:opacity-70"
-                  >
-                    {isUpdating ? 'Saving...' : 'Save Changes'}
-                  </button>
-                </div>
+              {paying ? (
+                <Loader2 className="animate-spin" />
               ) : (
-                <div className="space-y-4 text-sm">
-                  <div className="grid grid-cols-2 gap-4 bg-[#FDFBF7] p-4 rounded-xl border border-[#EDD8B4]/50">
-                    <div>
-                      <p className="text-xs font-bold text-[#8E5022] uppercase">
-                        Est. Price
-                      </p>
-                      <p className="text-lg font-bold text-[#442D1C]">
-                        {estimatedPrice ? `₹${estimatedPrice}` : '-'}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-xs font-bold text-[#8E5022] uppercase">
-                        Final Price
-                      </p>
-                      <p className="text-lg font-bold text-[#442D1C]">
-                        {actualPrice ? `₹${actualPrice}` : '-'}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-xs font-bold text-[#8E5022] uppercase">
-                        Completion
-                      </p>
-                      <p className="text-[#442D1C]">
-                        {estimatedCompletion || '-'}
-                      </p>
-                    </div>
+                <Lock size={16} />
+              )}
+              Accept & Pay
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Main Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* LEFT COLUMN */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* Status Tracker */}
+          <div className="bg-white p-6 rounded-2xl border border-stone-100 shadow-sm">
+            <h3 className="font-bold text-[#442D1C] text-sm mb-2">
+              Request Status
+            </h3>
+            <StatusTracker status={order.status} />
+          </div>
+
+          {/* Item Details */}
+          <div className="bg-white rounded-2xl border border-stone-100 shadow-sm overflow-hidden">
+            <div className="px-6 py-4 border-b border-stone-100 bg-stone-50/50">
+              <h3 className="font-bold text-[#442D1C] text-sm">
+                Request Specifications
+              </h3>
+            </div>
+            <div className="p-6 grid md:grid-cols-2 gap-6 text-sm">
+              <div>
+                <p className="text-xs font-bold text-[#8E5022] uppercase mb-1">
+                  Product Type
+                </p>
+                <p className="text-[#442D1C] font-medium text-lg">
+                  {order.productType}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs font-bold text-[#8E5022] uppercase mb-1">
+                  Quantity
+                </p>
+                <p className="text-[#442D1C]">{order.quantity} Units</p>
+              </div>
+              <div>
+                <p className="text-xs font-bold text-[#8E5022] uppercase mb-1">
+                  Material
+                </p>
+                <p className="text-[#442D1C] capitalize">{order.material}</p>
+              </div>
+              {order.glaze && (
+                <div>
+                  <p className="text-xs font-bold text-[#8E5022] uppercase mb-1">
+                    Glaze / Finish
+                  </p>
+                  <p className="text-[#442D1C] capitalize">{order.glaze}</p>
+                </div>
+              )}
+              {order.dimensions && (
+                <div className="md:col-span-2">
+                  <p className="text-xs font-bold text-[#8E5022] uppercase mb-2">
+                    Dimensions (cm)
+                  </p>
+                  <div className="flex gap-4 bg-[#FDFBF7] p-3 rounded-lg border border-[#EDD8B4]/30 w-fit">
+                    <span>
+                      <strong>H:</strong> {order.dimensions.height || '-'}
+                    </span>
+                    <span>
+                      <strong>W:</strong> {order.dimensions.width || '-'}
+                    </span>
+                    <span>
+                      <strong>D:</strong> {order.dimensions.depth || '-'}
+                    </span>
                   </div>
-                  {order.adminNotes && (
-                    <p className="text-stone-600 bg-stone-50 p-3 rounded-lg italic">
-                      "{order.adminNotes}"
-                    </p>
-                  )}
                 </div>
               )}
             </div>
           </div>
 
-          {/* RIGHT: Customer Sidebar */}
-          <div className="space-y-6">
-            <div className="bg-white p-6 rounded-2xl border border-[#EDD8B4] shadow-sm">
-              <h3 className="font-serif text-lg font-bold text-[#442D1C] mb-4 flex items-center gap-2">
-                <User size={18} /> Customer
+          {/* Notes Section */}
+          {order.adminNotes && (
+            <div className="bg-[#FDFBF7] p-6 rounded-2xl border border-[#EDD8B4] border-dashed">
+              <h3 className="font-bold text-[#442D1C] text-sm mb-2 flex items-center gap-2">
+                <MessageSquare className="w-4 h-4 text-[#C85428]" /> Notes from
+                Artisan
               </h3>
-              <div className="mb-4">
-                <p className="font-bold text-[#442D1C]">{order.contactName}</p>
-                <a
-                  href={`mailto:${order.contactEmail}`}
-                  className="text-sm text-[#C85428] hover:underline block"
-                >
-                  {order.contactEmail}
-                </a>
-                <a
-                  href={`tel:${order.contactPhone}`}
-                  className="text-sm text-stone-500 hover:text-[#442D1C] block mt-1"
-                >
-                  {order.contactPhone}
-                </a>
+              <p className="text-stone-600 text-sm italic">
+                "{order.adminNotes}"
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* RIGHT COLUMN */}
+        <div className="lg:col-span-1 space-y-6">
+          {/* Timeline Info */}
+          <div className="bg-white p-6 rounded-2xl border border-stone-100 shadow-sm space-y-6">
+            <div>
+              <div className="flex items-center gap-2 mb-3">
+                <Clock className="w-4 h-4 text-[#8E5022]" />
+                <h3 className="font-bold text-[#442D1C] text-sm">
+                  Estimated Timeline
+                </h3>
+              </div>
+              <div className="pl-6 space-y-1">
+                <p className="text-sm text-stone-500">Completion Estimate</p>
+                <p className="text-base font-medium text-[#442D1C]">
+                  {order.estimatedCompletion || 'To Be Decided'}
+                </p>
               </div>
             </div>
 
-            {/* Reference Images */}
-            {order.files && order.files.length > 0 && (
-              <div className="bg-white p-6 rounded-2xl border border-[#EDD8B4] shadow-sm">
-                <h3 className="font-serif text-lg font-bold text-[#442D1C] mb-4 flex items-center gap-2">
-                  <Clipboard size={18} /> References
-                </h3>
-                <div className="grid grid-cols-3 gap-2">
-                  {order.files.map((file, i) => (
-                    <a
-                      key={i}
-                      href={file}
-                      target="_blank"
-                      className="aspect-square bg-stone-100 rounded-lg overflow-hidden border border-stone-200 block hover:opacity-80"
-                    >
-                      <img src={file} className="w-full h-full object-cover" />
-                    </a>
-                  ))}
+            {/* PAYMENT DETAILS (MATCHING REFERENCE) */}
+            {isPaid && (
+              <>
+                <div className="h-px bg-stone-100" />
+                <div>
+                  <div className="flex items-center gap-2 mb-3">
+                    <CreditCard className="w-4 h-4 text-[#8E5022]" />
+                    <h3 className="font-bold text-[#442D1C] text-sm">
+                      Payment Details
+                    </h3>
+                  </div>
+                  <div className="pl-6 space-y-2">
+                    <p className="text-sm text-stone-600">
+                      Method:{' '}
+                      <span className="font-medium text-[#442D1C]">
+                        Online (Razorpay)
+                      </span>
+                    </p>
+                    {order.paymentId && (
+                      <p className="text-xs text-stone-400">
+                        Transaction ID:{' '}
+                        <span className="font-mono">
+                          {order.paymentId.slice(0, 12)}...
+                        </span>
+                      </p>
+                    )}
+                    <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-bold uppercase bg-green-50 text-green-700">
+                      PAID
+                    </span>
+
+                    <div className="pt-3 border-t border-stone-200 mt-2 flex justify-between items-center">
+                      <span className="text-sm text-stone-600">Total</span>
+                      <span className="text-lg font-serif font-bold text-[#442D1C]">
+                        ₹{order.actualPrice}
+                      </span>
+                    </div>
+                  </div>
                 </div>
-              </div>
+              </>
             )}
           </div>
         </div>
       </div>
-
-      {/* ======================= */}
-      {/* 2. PRINTABLE INVOICE    */}
-      {/* ======================= */}
-      <div className="hidden print:block max-w-[210mm] mx-auto bg-white p-8">
-        {/* Header */}
-        <div className="flex justify-between items-start border-b-2 border-[#442D1C] pb-8 mb-8">
-          <div>
-            <h1 className="text-5xl font-serif font-bold text-[#442D1C] mb-2">
-              Bashō.
-            </h1>
-            <p className="text-stone-600 text-sm">
-              Handcrafted Japanese Ceramics
-            </p>
-            <div className="flex items-center gap-2 text-sm text-stone-500 mt-2">
-              <MapPin size={14} /> <span>Studio Bashō, Surat, Gujarat</span>
-            </div>
-            <div className="flex items-center gap-2 text-sm text-stone-500">
-              <Mail size={14} /> <span>hello@bashoceramics.com</span>
-            </div>
-          </div>
-          <div className="text-right">
-            <h2 className="text-3xl font-bold text-[#8E5022] uppercase tracking-widest mb-1">
-              INVOICE
-            </h2>
-            <p className="font-mono text-lg text-[#442D1C]">
-              #{order.id.slice(0, 8).toUpperCase()}
-            </p>
-            <p className="text-stone-500 text-sm mt-1">
-              Date: {new Date().toLocaleDateString()}
-            </p>
-          </div>
-        </div>
-
-        {/* Bill To */}
-        <div className="mb-12">
-          <h3 className="text-xs font-bold text-[#8E5022] uppercase tracking-wider mb-2">
-            Bill To
-          </h3>
-          <p className="text-xl font-bold text-[#442D1C]">
-            {order.contactName}
-          </p>
-          <p className="text-stone-600">{order.contactEmail}</p>
-          <p className="text-stone-600">{order.contactPhone}</p>
-        </div>
-
-        {/* Line Items */}
-        <table className="w-full mb-12">
-          <thead className="bg-[#FDFBF7] text-[#8E5022] uppercase text-xs font-bold">
-            <tr>
-              <th className="py-3 px-4 text-left">Description</th>
-              <th className="py-3 px-4 text-left">Details</th>
-              <th className="py-3 px-4 text-right">Amount</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-stone-100">
-            <tr>
-              <td className="py-4 px-4 align-top">
-                <p className="font-bold text-[#442D1C] text-lg mb-1">
-                  Custom Commission
-                </p>
-                <p className="text-stone-500 text-sm">{order.productType}</p>
-              </td>
-              <td className="py-4 px-4 align-top text-sm text-stone-600">
-                <p>
-                  Material:{' '}
-                  <span className="font-medium text-[#442D1C] capitalize">
-                    {order.material}
-                  </span>
-                </p>
-                {order.glaze && <p>Finish: {order.glaze}</p>}
-                <p>Quantity: {order.quantity}</p>
-                <p className="mt-1 italic text-xs">
-                  Est. Completion: {order.estimatedCompletion || 'TBD'}
-                </p>
-              </td>
-              <td className="py-4 px-4 text-right align-top font-bold text-[#442D1C] text-lg">
-                ₹{order.actualPrice || order.estimatedPrice || 0}
-              </td>
-            </tr>
-          </tbody>
-        </table>
-
-        {/* Totals */}
-        <div className="flex justify-end mb-16">
-          <div className="w-64">
-            <div className="flex justify-between py-2 border-b border-stone-200">
-              <span className="text-stone-600">Subtotal</span>
-              <span className="font-medium">₹{order.actualPrice || 0}</span>
-            </div>
-            <div className="flex justify-between py-4 text-xl font-bold text-[#442D1C]">
-              <span>Total</span>
-              <span>₹{order.actualPrice || 0}</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Footer */}
-        <div className="text-center text-sm text-stone-400 border-t border-stone-100 pt-8">
-          <p className="mb-2">Thank you for supporting handcrafted artistry.</p>
-          <p>Terms: Custom orders are non-refundable once production begins.</p>
-        </div>
-      </div>
-
-      {/* Print Styling Fixes */}
-      <style jsx global>{`
-        @media print {
-          @page {
-            margin: 0;
-          }
-          body {
-            background: white;
-          }
-          nav,
-          footer,
-          .no-print {
-            display: none !important;
-          }
-        }
-      `}</style>
     </div>
+  );
+}
+
+// Helper Icon
+function MessageSquare({ className }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+    >
+      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+    </svg>
   );
 }

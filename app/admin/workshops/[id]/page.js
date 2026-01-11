@@ -47,7 +47,7 @@ export default function AdminWorkshopDetail() {
     const rows = session.WorkshopRegistration.map((reg) => [
       reg.customerName,
       reg.customerEmail,
-      reg.customerPhone || "",
+      reg.customerPhone || '',
       reg.paymentStatus,
       reg.amountPaid,
       new Date(reg.createdAt).toLocaleDateString(),
@@ -96,7 +96,11 @@ export default function AdminWorkshopDetail() {
             <p className="text-[#8E5022] text-sm mt-0.5 flex items-center gap-2">
               <span
                 className={`w-2 h-2 rounded-full ${
-                  workshop.status === 'ACTIVE' ? 'bg-green-500' : 'bg-gray-400'
+                  workshop.status === 'ACTIVE'
+                    ? 'bg-green-500'
+                    : workshop.status === 'COMPLETED'
+                    ? 'bg-stone-400'
+                    : 'bg-gray-400'
                 }`}
               ></span>
               {workshop.status} • {workshop.location}
@@ -131,7 +135,12 @@ export default function AdminWorkshopDetail() {
             Scheduled Sessions
           </h3>
           <span className="text-xs font-medium text-[#8E5022] bg-[#EDD8B4]/20 px-3 py-1 rounded-full">
-            {workshop.WorkshopSession?.length} Upcoming
+            {
+              workshop.WorkshopSession?.filter(
+                (s) => new Date(s.date) >= new Date(),
+              ).length
+            }{' '}
+            Upcoming
           </span>
         </div>
 
@@ -140,6 +149,7 @@ export default function AdminWorkshopDetail() {
             const isExpanded = expandedSession === session.id;
             const occupancy = (session.spotsBooked / session.spotsTotal) * 100;
             const isFull = session.spotsBooked >= session.spotsTotal;
+            const isPast = new Date(session.date) < new Date();
 
             return (
               <motion.div
@@ -151,7 +161,7 @@ export default function AdminWorkshopDetail() {
                   isExpanded
                     ? 'border-[#C85428] ring-1 ring-[#C85428]/20 shadow-lg'
                     : 'border-[#EDD8B4] shadow-sm hover:border-[#C85428]/50'
-                }`}
+                } ${isPast ? 'opacity-75 grayscale-[0.5]' : ''}`}
               >
                 {/* Session Header (Clickable) */}
                 <div
@@ -163,7 +173,13 @@ export default function AdminWorkshopDetail() {
                   <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     {/* Date & Time */}
                     <div className="flex items-center gap-4">
-                      <div className="w-14 h-14 bg-[#EDD8B4]/20 rounded-xl flex flex-col items-center justify-center text-[#442D1C] border border-[#EDD8B4]">
+                      <div
+                        className={`w-14 h-14 rounded-xl flex flex-col items-center justify-center border ${
+                          isPast
+                            ? 'bg-stone-100 border-stone-200 text-stone-500'
+                            : 'bg-[#EDD8B4]/20 border-[#EDD8B4] text-[#442D1C]'
+                        }`}
+                      >
                         <span className="text-xs font-bold uppercase">
                           {new Date(session.date).toLocaleString('default', {
                             month: 'short',
@@ -178,9 +194,14 @@ export default function AdminWorkshopDetail() {
                           {new Date(session.date).toLocaleDateString('en-US', {
                             weekday: 'long',
                           })}
-                          {isFull && (
+                          {isFull && !isPast && (
                             <span className="text-[10px] bg-red-100 text-red-600 px-2 py-0.5 rounded-full uppercase">
                               Full
+                            </span>
+                          )}
+                          {isPast && (
+                            <span className="text-[10px] bg-stone-100 text-stone-600 px-2 py-0.5 rounded-full uppercase border border-stone-200">
+                              Completed
                             </span>
                           )}
                         </h4>

@@ -29,6 +29,12 @@ const getStatusBadge = (status) => {
         icon: <Clock className="w-3 h-3" />,
         label: 'Payment Pending',
       };
+      case 'CONFIRMED':
+      return {
+        color: 'bg-teal-50 text-teal-700',
+        icon: <CheckCircle className="w-3 h-3" />,
+        label: 'Order Confirmed',
+      };
     case 'PROCESSING':
       return {
         color: 'bg-blue-50 text-blue-700',
@@ -76,7 +82,7 @@ export default async function MyOrdersPage() {
   });
 
   const activeOrders = orders.filter((o) =>
-    ['PENDING', 'PROCESSING', 'SHIPPED'].includes(o.status),
+    ['PENDING', 'CONFIRMED', 'PROCESSING', 'SHIPPED'].includes(o.status),
   );
   const pastOrders = orders.filter((o) =>
     ['DELIVERED', 'CANCELLED'].includes(o.status),

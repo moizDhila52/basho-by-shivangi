@@ -129,7 +129,7 @@ export default async function ProfilePage() {
 
   const totalOrders = user.Order.length;
   const activeOrders = user.Order.filter((o) =>
-    ['PENDING', 'PROCESSING', 'SHIPPED'].includes(o.status),
+    ['PENDING', 'CONFIRMED', 'PROCESSING', 'SHIPPED'].includes(o.status),
   );
   const activeCount = activeOrders.length;
   const latestActiveOrder = activeOrders[0];
