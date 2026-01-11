@@ -226,6 +226,7 @@ model User {
   otpExpiresAt         DateTime?
   passwordHash         String?
   phone                String?
+  lastLogin     DateTime? @default(now())
   isSubscribed         Boolean                @default(false)
   Address              Address[]
   Cart                 Cart?
@@ -330,7 +331,7 @@ model Event {
   isActive         Boolean       @default(true)
   createdAt        DateTime      @default(now())
   updatedAt        DateTime      @updatedAt
-  interestedCount  Int         @default(0)
+  interestedCount  Int           @default(0)
   galleryItems     GalleryItem[]
   Testimonial      Testimonial[]
 

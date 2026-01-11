@@ -34,6 +34,14 @@ export async function POST(req) {
       },
     });
 
+    // --- NEW: Update lastLogin for Analytics ---
+    // This allows the "Recently Active" tab in Customer Management to work
+    await prisma.user.update({
+        where: { id: user.id },
+        data: { lastLogin: new Date() }
+    });
+    // -------------------------------------------
+
     // 2. Create Server Session (Cookie)
     await createSession({
       userId: user.id,
