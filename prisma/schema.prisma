@@ -143,6 +143,10 @@ model CustomOrder {
   razorpayOrderId     String?
   estimatedCompletion String?
   User                User?             @relation(fields: [userId], references: [id])
+  razorpayOrderId String?
+  paymentId       String?
+  paymentStatus   String?   @default("PENDING") 
+  estimatedCompletion String?
 
   @@index([userId])
   @@index([status])
@@ -231,7 +235,6 @@ model User {
   passwordHash         String?
   phone                String?
   isSubscribed         Boolean                @default(false)
-  lastLogin            DateTime?              @default(now())
   Address              Address[]
   Cart                 Cart?
   CustomOrder          CustomOrder[]

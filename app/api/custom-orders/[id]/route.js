@@ -1,6 +1,6 @@
-import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
-import { getSession } from "@/lib/session";
+import { NextResponse } from 'next/server';
+import { prisma } from '@/lib/db';
+import { getSession } from '@/lib/session';
 
 // GET: Get single custom order
 export async function GET(request, { params }) {
@@ -9,8 +9,8 @@ export async function GET(request, { params }) {
 
     if (!session) {
       return NextResponse.json(
-        { error: "Authentication required" },
-        { status: 401 }
+        { error: 'Authentication required' },
+        { status: 401 },
       );
     }
 
@@ -32,41 +32,41 @@ export async function GET(request, { params }) {
 
     if (!customOrder) {
       return NextResponse.json(
-        { error: "Custom order not found" },
-        { status: 404 }
+        { error: 'Custom order not found' },
+        { status: 404 },
       );
     }
 
     // Check if user has permission to view this order
-    if (session.role !== "ADMIN" && customOrder.userId !== session.userId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+    if (session.role !== 'ADMIN' && customOrder.userId !== session.userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
 
     return NextResponse.json(customOrder);
   } catch (error) {
-    console.error("Error fetching custom order:", error);
+    console.error('Error fetching custom order:', error);
     return NextResponse.json(
-      { error: "Failed to fetch custom order" },
-      { status: 500 }
+      { error: 'Failed to fetch custom order' },
+      { status: 500 },
     );
   }
 }
 
-// PUT: Update custom order (for status updates, quotes, etc.)
+// PUT: Update custom order (Updated to include estimatedCompletion)
 export async function PUT(request, { params }) {
   try {
     const session = await getSession();
 
     if (!session) {
       return NextResponse.json(
-        { error: "Authentication required" },
-        { status: 401 }
+        { error: 'Authentication required' },
+        { status: 401 },
       );
     }
 
     // Only admins can update orders
-    if (session.role !== "ADMIN") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+    if (session.role !== 'ADMIN') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
 
     const { id } = await params;
@@ -75,7 +75,12 @@ export async function PUT(request, { params }) {
     const customOrder = await prisma.customOrder.update({
       where: { id },
       data: {
-        ...body,
+        // Explicitly map fields for safety and clarity
+        status: body.status,
+        adminNotes: body.adminNotes,
+        estimatedPrice: body.estimatedPrice,
+        actualPrice: body.actualPrice,
+        estimatedCompletion: body.estimatedCompletion, // <--- NEW FIELD SAVED HERE
         updatedAt: new Date(),
       },
     });
@@ -83,13 +88,13 @@ export async function PUT(request, { params }) {
     return NextResponse.json({
       success: true,
       customOrder,
-      message: "Custom order updated successfully",
+      message: 'Custom order updated successfully',
     });
   } catch (error) {
-    console.error("Error updating custom order:", error);
+    console.error('Error updating custom order:', error);
     return NextResponse.json(
-      { error: "Failed to update custom order" },
-      { status: 500 }
+      { error: 'Failed to update custom order' },
+      { status: 500 },
     );
   }
 }
