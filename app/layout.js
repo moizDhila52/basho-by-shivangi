@@ -10,6 +10,7 @@ import './globals.css';
 // These appear to be custom local fonts/icons you added
 import '../public/fonts/fonts.css';
 import '../public/icons/material-symbols.css';
+import { SocketProvider } from "@/context/SocketContext";
 import { Car } from 'lucide-react';
 
 /*
@@ -37,6 +38,7 @@ export default function RootLayout({ children }) {
       <body className="antialiased font-sans">
         <ToastProvider>
           <AuthProvider>
+            <SocketProvider>
             {/* Header is inside AuthProvider so it can check login state */}
             <CartProvider>
               <WishlistProvider>
@@ -50,6 +52,7 @@ export default function RootLayout({ children }) {
               <Footer />
               </WishlistProvider>
             </CartProvider>
+            </SocketProvider>
           </AuthProvider>
           <Toaster
             position="top-right"
