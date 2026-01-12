@@ -1,59 +1,60 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { sendOrderStatusEmail } from '@/lib/mailer'; // Import the email function
+import { sendOrderStatusEmail } from '@/lib/mailer';
+import { triggerNotification } from '@/lib/socketTrigger'; // <--- IMPORT THIS
 
 export async function PUT(req) {
   try {
     const body = await req.json();
-    // Destructure status as newStatus to avoid confusion
     const { id, status: newStatus, ...otherData } = body;
 
-    if (!id) {
-      return NextResponse.json(
-        { error: 'Order ID is required' },
-        { status: 400 },
-      );
-    }
+    if (!id)
+      return NextResponse.json({ error: 'ID required' }, { status: 400 });
 
-    // 1. Fetch the EXISTING order first to get the old status
-    const existingOrder = await prisma.order.findUnique({
-      where: { id },
-    });
+    const existingOrder = await prisma.order.findUnique({ where: { id } });
+    if (!existingOrder)
+      return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
-    if (!existingOrder) {
-      return NextResponse.json({ error: 'Order not found' }, { status: 404 });
-    }
+    const oldStatus = existingOrder.status;
 
-    const oldStatus = existingOrder.status; // <--- Define oldStatus here
-
-    // 2. Perform the Update
+    // 1. Update Database
     const updatedOrder = await prisma.order.update({
       where: { id },
-      data: {
-        status: newStatus,
-        ...otherData, // Update other fields if any
-      },
+      data: { status: newStatus, ...otherData },
     });
 
-    // 3. Send Email ONLY if the status has changed
+    // 2. Logic: If status changed, Notify!
     if (newStatus && newStatus !== oldStatus) {
+      // A. Create Persistent Notification in DB
+      await prisma.notification.create({
+        data: {
+          userId: updatedOrder.userId,
+          title: `Order Updated: ${newStatus}`,
+          message: `Your order #${
+            updatedOrder.orderNumber || id.slice(-8)
+          } is now ${newStatus}.`,
+          type: 'ORDER',
+          link: `/profile/orders/${updatedOrder.id}`,
+        },
+      });
+
+      // B. Trigger Real-time Socket
+      await triggerNotification(updatedOrder.userId, 'notification', {
+        title: `Order ${newStatus}`,
+        message: `Your order is ${newStatus}.`,
+        link: `/profile/orders/${updatedOrder.id}`,
+      });
+
+      // C. Send Email (Existing logic)
       try {
         await sendOrderStatusEmail(updatedOrder, newStatus);
-        console.log(
-          `✅ Status email sent for Order #${updatedOrder.orderNumber || id}`,
-        );
-      } catch (emailError) {
-        console.error('❌ Failed to send status email:', emailError);
-        // Don't fail the request if email fails, just log it
+      } catch (e) {
+        console.error(e);
       }
     }
 
     return NextResponse.json(updatedOrder);
   } catch (error) {
-    console.error('Update Error:', error);
-    return NextResponse.json(
-      { error: 'Failed to update order' },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: 'Failed' }, { status: 500 });
   }
 }

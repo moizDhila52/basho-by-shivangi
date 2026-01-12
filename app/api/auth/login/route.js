@@ -1,20 +1,20 @@
-import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
-import { createSession } from "@/lib/session";
+import { NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
+import { createSession } from '@/lib/session';
 
 export async function POST(req) {
   try {
     const body = await req.json();
-    const { email, uid, name, image ,phone} = body;
+    const { email, uid, name, image, phone } = body;
 
     if (!email || !uid) {
       return NextResponse.json(
-        { error: "Missing credentials" },
-        { status: 400 }
+        { error: 'Missing credentials' },
+        { status: 400 },
       );
     }
 
-    console.log("Attempting login for:", email);
+    console.log('Attempting login for:', email);
 
     // 1. Upsert User
     // Logic: If found, update image/firebaseUid. If new, create with CUSTOMER role.
@@ -29,18 +29,18 @@ export async function POST(req) {
       create: {
         email,
         firebaseUid: uid,
-        name: name || "User",
+        name: name || 'User',
         image: image || null,
-        phone: phone || null,      // <--- Save phone on creation
-        role: "CUSTOMER",
+        phone: phone || null, // <--- Save phone on creation
+        role: 'CUSTOMER',
       },
     });
 
     // --- NEW: Update lastLogin for Analytics ---
     // This allows the "Recently Active" tab in Customer Management to work
     await prisma.user.update({
-        where: { id: user.id },
-        data: { lastLogin: new Date() }
+      where: { id: user.id },
+      data: { lastLogin: new Date() },
     });
     // -------------------------------------------
 
@@ -55,10 +55,10 @@ export async function POST(req) {
 
     return NextResponse.json({ success: true, user });
   } catch (error) {
-    console.error("Login API Error:", error);
+    console.error('Login API Error:', error);
     return NextResponse.json(
-      { error: "Internal Server Error" },
-      { status: 500 }
+      { error: 'Internal Server Error' },
+      { status: 500 },
     );
   }
 }

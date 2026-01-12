@@ -3,6 +3,7 @@ import Razorpay from 'razorpay';
 import crypto from 'crypto';
 import { prisma } from '@/lib/prisma';
 import { sendPaymentSuccessEmail } from '@/lib/mailer';
+import { triggerNotification } from '@/lib/socketTrigger';
 
 // Initialize Razorpay instance
 const instance = new Razorpay({
@@ -73,7 +74,29 @@ export async function PUT(req) {
         paymentId: razorpay_payment_id,
       },
       include: { OrderItem: true }, // Fetch items for the email
-    });
+    }); // <--- CLOSED THE UPDATE FUNCTION HERE
+
+    // 👇 NOTIFICATION BLOCK (Moved OUTSIDE the update function) 👇
+    if (updatedOrder.userId) {
+      // A. DB Record
+      await prisma.notification.create({
+        data: {
+          userId: updatedOrder.userId,
+          title: 'Order Confirmed!',
+          message:
+            'We have received your payment. We will start preparing your clay treasures.',
+          type: 'ORDER',
+          link: `/profile/orders/${updatedOrder.id}`,
+        },
+      });
+
+      // B. Real-time Socket
+      await triggerNotification(updatedOrder.userId, 'notification', {
+        title: 'Order Confirmed!',
+        message: 'Payment successful.',
+      });
+    }
+    // 👆 END NOTIFICATION BLOCK 👆
 
     // 4. Send Payment Success Email
     try {

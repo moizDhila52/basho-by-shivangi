@@ -240,6 +240,7 @@ model User {
   Review               Review[]
   WishlistItem         WishlistItem[]
   WorkshopRegistration WorkshopRegistration[]
+ 
 }
 
 model WishlistItem {
@@ -503,3 +504,5 @@ enum CustomOrderStatus {
   SHIPPED
   CANCELLED
 }
+
+

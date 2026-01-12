@@ -1,9 +1,10 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
-import Link from "next/link";
-import Image from "next/image"; // Added for Logo
-import { usePathname } from "next/navigation";
+import { useEffect, useState } from 'react';
+import Link from 'next/link';
+import Image from 'next/image';
+import { usePathname } from 'next/navigation';
+import NotificationBell from "@/components/NotificationBell";
 import {
   ShoppingBag,
   Menu,
@@ -13,93 +14,90 @@ import {
   User,
   LogOut,
   ChevronDown,
-} from "lucide-react";
-import { Button } from "@/components/ui/Button";
-import { useAuth } from "@/components/AuthProvider";
-import { motion, AnimatePresence } from "framer-motion";
-import UserMenu from "@/components/UserMenu";
-import { useCart } from "@/context/CartContext";
-import { useWishlist } from "@/context/WishlistContext"; // Added Wishlist hook
+  Bell,
+} from 'lucide-react';
+import { Button } from '@/components/ui/Button';
+import { useAuth } from '@/components/AuthProvider';
+import { motion, AnimatePresence } from 'framer-motion';
+import UserMenu from '@/components/UserMenu';
+import { useCart } from '@/context/CartContext';
+import { useWishlist } from '@/context/WishlistContext';
 
 export default function Header() {
   const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
-  
+
   const { getTotalItems } = useCart();
-  const { getWishlistCount } = useWishlist(); // Use Wishlist State
+  const { getWishlistCount } = useWishlist();
   const { user, loading } = useAuth();
 
-  const isHomePage = pathname === "/";
+  const isHomePage = pathname === '/';
 
   useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 20);
     };
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
   const handleLogout = async () => {
     try {
-      await fetch("/api/auth/logout", { method: "POST" });
+      await fetch('/api/auth/logout', { method: 'POST' });
       setIsMobileMenuOpen(false);
-      window.location.href = "/";
+      window.location.href = '/';
     } catch (error) {
-      console.error("Logout failed", error);
+      console.error('Logout failed', error);
     }
   };
 
-  // New Navigation Structure
   const navLinks = [
     {
-      label: "Shop",
-      href: "/products",
+      label: 'Shop',
+      href: '/products',
       submenu: [
-        { href: "/products", label: "All Products" },
-        { href: "/products?category=tea-ware", label: "Tea Ceremony" },
-        { href: "/products?category=dinnerware", label: "Dining" },
-        { href: "/products?category=seasonal", label: "Special Edition" },
+        { href: '/products', label: 'All Products' },
+        { href: '/products?category=tea-ware', label: 'Tea Ceremony' },
+        { href: '/products?category=dinnerware', label: 'Dining' },
+        { href: '/products?category=seasonal', label: 'Special Edition' },
       ],
     },
-    { href: "/custom-order", label: "Custom Order" },
-    { href: "/workshops", label: "Workshops" },
-    { href: "/connect", label: "Connect" },
+    { href: '/custom-order', label: 'Custom Order' },
+    { href: '/workshops', label: 'Workshops' },
+    { href: '/connect', label: 'Connect' },
     {
-      label: "More",
-      href: "#", // Placeholder for dropdown parent
+      label: 'More',
+      href: '#',
       submenu: [
-        { href: "/events", label: "Events" },
-        { href: "/gallery", label: "Gallery" },
-        { href: "/testimonials", label: "Testimonials" },
+        { href: '/events', label: 'Events' },
+        { href: '/gallery', label: 'Gallery' },
+        { href: '/testimonials', label: 'Testimonials' },
       ],
     },
   ];
 
-  if (pathname && pathname.startsWith("/admin")) return null;
+  if (pathname && pathname.startsWith('/admin')) return null;
 
-  // Header Logic
-  // isHeaderWhite = True when scrolled OR not on homepage
   const isHeaderWhite = !isHomePage || isScrolled;
-  
-  const textColorClass = isHeaderWhite ? "text-[#442D1C]" : "text-white";
+
+  const textColorClass = isHeaderWhite ? 'text-[#442D1C]' : 'text-white';
   const hoverBgClass = isHeaderWhite
-    ? "hover:bg-[#EDD8B4]/20"
-    : "hover:bg-white/20";
+    ? 'hover:bg-[#EDD8B4]/20'
+    : 'hover:bg-white/20';
 
   return (
     <>
       <header
         className={`fixed top-0 z-50 w-full transition-all duration-500 ${
           isHeaderWhite
-            ? "bg-white/95 backdrop-blur-xl border-b border-[#EDD8B4]/30 shadow-sm py-2"
-            : "bg-transparent py-6"
+            ? 'bg-white/95 backdrop-blur-xl border-b border-[#EDD8B4]/30 shadow-sm py-2'
+            : 'bg-transparent py-6'
         }`}
       >
         <div className="container mx-auto flex h-14 items-center justify-between px-4 md:px-8">
-          
-          {/* 1. Mobile Menu Trigger */}
-          <div className="md:hidden z-50">
+          {/* 1. Mobile Menu Trigger - CHANGED md:hidden to lg:hidden */}
+          <div className="lg:hidden z-50">
             <Button
               variant="ghost"
               size="icon"
@@ -120,22 +118,22 @@ export default function Header() {
             className="relative z-50 transform transition-transform hover:scale-105"
           >
             <div className="relative h-10 w-32">
-                {/* Logic:
-                   If White Header (Light Theme context) -> Show img2 (Dark Logo)
-                   If Transparent Header (Dark Theme context) -> Show img1 (Light Logo)
-                */}
-                <Image 
-                    src={isHeaderWhite ? "/brand/logo-basho-byy-shivangi.png" : "/brand/logo-basho-byy-shivangi.png"}
-                    alt="Basho Logo"
-                    fill
-                    className="object-contain"
-                    priority
-                />
+              <Image
+                src={
+                  isHeaderWhite
+                    ? '/brand/logo-basho-byy-shivangi.png'
+                    : '/brand/logo-basho-byy-shivangi.png'
+                }
+                alt="Basho Logo"
+                fill
+                className="object-contain"
+                priority
+              />
             </div>
           </Link>
 
-          {/* 3. Desktop Navigation */}
-          <nav className="hidden md:flex items-center gap-1 absolute left-1/2 transform -translate-x-1/2">
+          {/* 3. Desktop Navigation - CHANGED hidden md:flex to hidden lg:flex */}
+          <nav className="hidden lg:flex items-center gap-1 absolute left-1/2 transform -translate-x-1/2">
             {navLinks.map((link) => (
               <div key={link.label} className="relative group px-1">
                 <Link href={link.href}>
@@ -145,19 +143,21 @@ export default function Header() {
                     <span
                       className={`text-sm font-medium ${
                         pathname === link.href
-                          ? "text-[#C85428]"
+                          ? 'text-[#C85428]'
                           : textColorClass
                       }`}
                     >
                       {link.label}
                     </span>
                     {link.submenu && (
-                        <ChevronDown size={14} className={`opacity-70 ${textColorClass}`} />
+                      <ChevronDown
+                        size={14}
+                        className={`opacity-70 ${textColorClass}`}
+                      />
                     )}
                   </div>
                 </Link>
 
-                {/* Dropdown */}
                 {link.submenu && (
                   <div className="absolute left-0 top-full pt-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 transform group-hover:translate-y-0 translate-y-2">
                     <div className="bg-white/95 backdrop-blur-xl rounded-2xl p-2 min-w-[200px] shadow-xl border border-[#EDD8B4]/30 overflow-hidden">
@@ -178,10 +178,22 @@ export default function Header() {
           </nav>
 
           {/* 4. Right Actions */}
-          <div className="flex items-center gap-2">
-            
-            {/* Wishlist with Badge */}
+          <div className="flex items-center gap-1 md:gap-2">
+
+     {/* 👇 MOVED NOTIFICATION BELL HERE (Visible on all screens) 👇 */}
+  {user && (
+     <div className="mr-1"> 
+        <NotificationBell 
+           isHeaderWhite={isHeaderWhite} 
+           textColorClass={textColorClass} 
+           hoverBgClass={hoverBgClass} 
+        />
+     </div>
+  )}
+  {/* 👆 END MOVE 👆 */}
             <Link href="/wishlist">
+              {/* Changed hidden sm:flex to hidden lg:flex to match nav behavior if you want icons hidden on mobile, 
+                  OR keep sm:flex if you want icons on tablet header */}
               <Button
                 variant="ghost"
                 size="icon"
@@ -196,7 +208,6 @@ export default function Header() {
               </Button>
             </Link>
 
-            {/* Cart with Badge */}
             <Link href="/cart">
               <Button
                 variant="ghost"
@@ -212,21 +223,22 @@ export default function Header() {
               </Button>
             </Link>
 
-            {/* Auth / User Menu */}
             {loading ? (
               <div className="w-9 h-9 rounded-full bg-gray-200/50 animate-pulse ml-2" />
             ) : user ? (
-              <div className="ml-2">
+              <div className="ml-2 hidden lg:block">
+                {' '}
+                {/* Only show avatar on Desktop/Large */}
                 <UserMenu user={user} />
               </div>
             ) : (
-              <Link href="/login" className="ml-2">
+              <Link href="/login" className="ml-2 hidden lg:block">
                 <Button
                   size="sm"
                   className={`rounded-full px-6 font-medium transition-transform hover:scale-105 ${
                     isHeaderWhite
-                      ? "bg-[#442D1C] text-[#EDD8B4] hover:bg-[#652810]"
-                      : "bg-white text-[#442D1C] hover:bg-[#FDFBF7]"
+                      ? 'bg-[#442D1C] text-[#EDD8B4] hover:bg-[#652810]'
+                      : 'bg-white text-[#442D1C] hover:bg-[#FDFBF7]'
                   }`}
                 >
                   Sign In
@@ -246,20 +258,26 @@ export default function Header() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setIsMobileMenuOpen(false)}
-              className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 md:hidden"
+              className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 lg:hidden" // md->lg
             />
             <motion.div
-              initial={{ x: "-100%" }}
+              initial={{ x: '-100%' }}
               animate={{ x: 0 }}
-              exit={{ x: "-100%" }}
-              transition={{ type: "spring", damping: 25, stiffness: 200 }}
-              className="fixed top-0 left-0 h-full w-[300px] bg-[#FDFBF7] shadow-2xl z-50 md:hidden overflow-y-auto border-r border-[#EDD8B4]"
+              exit={{ x: '-100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              className="fixed top-0 left-0 h-full w-[300px] bg-[#FDFBF7] shadow-2xl z-50 lg:hidden overflow-y-auto border-r border-[#EDD8B4]" // md->lg
             >
               <div className="p-6 flex flex-col h-full">
                 {/* Mobile Header */}
                 <div className="flex items-center justify-between mb-10">
                   <div className="relative h-8 w-24">
-                     <Image src="/img2.png" alt="Logo" fill className="object-contain" />
+                    {/* FIXED: Replaced /img2.png with the working logo path */}
+                    <Image
+                      src="/brand/logo-basho-byy-shivangi.png"
+                      alt="Logo"
+                      fill
+                      className="object-contain"
+                    />
                   </div>
                   <Button
                     variant="ghost"
@@ -274,38 +292,39 @@ export default function Header() {
                 <div className="flex-1 space-y-6">
                   {navLinks.map((link) => (
                     <div key={link.label}>
-                      {/* If it has a submenu, just show label, otherwise link */}
                       {link.submenu ? (
-                          <div className="mb-2">
-                              <span className="text-xl font-medium text-[#442D1C] block mb-2">{link.label}</span>
-                              <div className="pl-4 border-l-2 border-[#EDD8B4] space-y-3">
-                                  {link.submenu.map((sub) => (
-                                      <Link
-                                          key={sub.href}
-                                          href={sub.href}
-                                          onClick={() => setIsMobileMenuOpen(false)}
-                                          className="block text-sm text-[#8E5022] font-medium"
-                                      >
-                                          {sub.label}
-                                      </Link>
-                                  ))}
-                              </div>
-                          </div>
-                      ) : (
-                          <Link
-                            href={link.href}
-                            onClick={() => setIsMobileMenuOpen(false)}
-                            className="text-xl font-medium text-[#442D1C] block mb-2"
-                          >
+                        <div className="mb-2">
+                          <span className="text-xl font-medium text-[#442D1C] block mb-2">
                             {link.label}
-                          </Link>
+                          </span>
+                          <div className="pl-4 border-l-2 border-[#EDD8B4] space-y-3">
+                            {link.submenu.map((sub) => (
+                              <Link
+                                key={sub.href}
+                                href={sub.href}
+                                onClick={() => setIsMobileMenuOpen(false)}
+                                className="block text-sm text-[#8E5022] font-medium"
+                              >
+                                {sub.label}
+                              </Link>
+                            ))}
+                          </div>
+                        </div>
+                      ) : (
+                        <Link
+                          href={link.href}
+                          onClick={() => setIsMobileMenuOpen(false)}
+                          className="text-xl font-medium text-[#442D1C] block mb-2"
+                        >
+                          {link.label}
+                        </Link>
                       )}
                     </div>
                   ))}
                 </div>
 
-                {/* Mobile Auth Actions */}
-                <div className="pt-8 border-t border-[#EDD8B4]">
+                {/* Mobile Auth Actions - FIXED: Added pb-10 for bottom spacing */}
+                <div className="pt-8 pb-10 border-t border-[#EDD8B4]">
                   {user ? (
                     <div className="space-y-4">
                       <div className="flex items-center gap-3 bg-white p-3 rounded-xl border border-[#EDD8B4]">
@@ -323,7 +342,7 @@ export default function Header() {
                       </div>
 
                       <div className="grid grid-cols-2 gap-3">
-                        {user.role === "ADMIN" && (
+                        {user.role === 'ADMIN' && (
                           <Link
                             href="/admin"
                             onClick={() => setIsMobileMenuOpen(false)}
@@ -337,6 +356,9 @@ export default function Header() {
                             </Button>
                           </Link>
                         )}
+
+                        
+
                         <Link
                           href="/profile"
                           onClick={() => setIsMobileMenuOpen(false)}

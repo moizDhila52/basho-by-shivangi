@@ -51,19 +51,6 @@ export default function UserProfile() {
   if (!user) return <div className="p-8 text-center text-stone-600">Please log in to view your profile.</div>;
 
   return (
-<<<<<<< HEAD
-    <div className="space-y-6">
-      {/* Header Card */}
-      <div className="bg-white p-8 rounded-xl shadow-sm border border-[#EDD8B4]/30 flex flex-col md:flex-row items-center gap-6">
-        <div className="relative">
-          <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-[#FDFBF7] shadow-lg">
-            {/* Direct Image Rendering for Cloudinary */}
-            <img 
-              src={user.image || "/images/placeholder-user.jpg"} 
-              alt={user.name} 
-              className="w-full h-full object-cover"
-            />
-=======
     <div className="bg-white p-6 rounded-2xl border border-[#EDD8B4] shadow-sm mb-6 relative overflow-hidden">
       <div className="absolute top-0 right-0 w-24 h-24 bg-[#FDFBF7] rounded-full -mr-8 -mt-8" />
       <div className="flex justify-between items-start mb-6 relative z-10">
@@ -248,7 +235,6 @@ export default async function ProfilePage() {
                 ))}
               </div>
             )}
->>>>>>> 61f2a5859023be9d0bb4efdff18c1150232935d5
           </div>
         </div>
         
