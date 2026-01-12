@@ -240,7 +240,7 @@ model User {
   Review               Review[]
   WishlistItem         WishlistItem[]
   WorkshopRegistration WorkshopRegistration[]
-  Notification  Notification[]
+ 
 }
 
 model WishlistItem {
@@ -506,17 +506,3 @@ enum CustomOrderStatus {
 }
 
 
-model Notification {
-  id        String   @id @default(uuid())
-  userId    String
-  title     String
-  message   String
-  type      String   // e.g., "ORDER", "WORKSHOP", "SYSTEM"
-  link      String?  // Where clicking takes them (e.g., /profile/orders/123)
-  isRead    Boolean  @default(false)
-  createdAt DateTime @default(now())
-  User      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@index([isRead])
-}
