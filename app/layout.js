@@ -5,6 +5,7 @@ import { WishlistProvider } from "@/context/WishlistContext"; // <-- Import this
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer'; // <--- 1. Imported Footer
 import { Toaster } from 'react-hot-toast';
+import OfflineWrapper from "@/components/OfflineWrapper"; // Ensure this path is correct
 import { ToastProvider } from '@/components/ToastProvider';
 import './globals.css';
 // These appear to be custom local fonts/icons you added
@@ -44,8 +45,10 @@ export default function RootLayout({ children }) {
               <WishlistProvider>
               <Header />
 
-              <main className="min-h-screen">
+              <main className="flex-grow flex flex-col">
+                <OfflineWrapper>
                 <AuthProvider>{children}</AuthProvider>
+                </OfflineWrapper>
               </main>
 
               {/* <--- 2. Added Footer Here */}

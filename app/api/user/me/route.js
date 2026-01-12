@@ -14,7 +14,9 @@ export async function GET() {
       select: {
         name: true,
         email: true,
-        phone: true, // Fetching the phone number!
+        phone: true,
+        // 1. ADDED: Fetch the image so the frontend can update immediately
+        image: true, 
       },
     });
 

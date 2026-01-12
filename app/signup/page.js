@@ -42,8 +42,9 @@ export default function SignupPage() {
   const handleChange = (e) =>
     setFormData({ ...formData, [e.target.name]: e.target.value });
 
-  // --- Session Sync (Same as Login) ---
-  const createSession = async (user, nameOverride) => {
+  // --- Session Sync (FIXED SIGNATURE HERE) ---
+  // 👇 Ensure (user, nameOverride, phoneOverride) are all present
+  const createSession = async (user, nameOverride, phoneOverride) => {
     try {
       const res = await fetch("/api/auth/login", {
         method: "POST",
@@ -53,6 +54,7 @@ export default function SignupPage() {
           email: user.email,
           name: nameOverride || user.displayName || "User",
           image: user.photoURL || null,
+          phone: phoneOverride || null, // This caused your error
         }),
       });
 
@@ -60,7 +62,7 @@ export default function SignupPage() {
 
       addToast("Account created successfully!", "success");
 
-      // ✅ FIX: Force Hard Reload
+      // Force Hard Reload to update UI
       window.location.href = "/";
     } catch (error) {
       console.error(error);
@@ -88,8 +90,8 @@ export default function SignupPage() {
         await updateProfile(user, { displayName: formData.name });
       }
 
-      // 3. Create Backend Session
-      await createSession(user, formData.name);
+      // 3. Create Backend Session (Pass Phone here)
+      await createSession(user, formData.name, formData.phone); 
     } catch (error) {
       if (error.code === "auth/email-already-in-use") {
         addToast("Email already exists. Try logging in.", "error");
@@ -105,6 +107,7 @@ export default function SignupPage() {
     try {
       const provider = new GoogleAuthProvider();
       const result = await signInWithPopup(auth, provider);
+      // Google usually doesn't provide phone, so we pass null/undefined
       await createSession(result.user);
     } catch (error) {
       addToast(error.message, "error");
