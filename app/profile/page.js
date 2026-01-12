@@ -1,54 +1,55 @@
-"use client";
+import { prisma } from '@/lib/prisma';
+import { getSession } from '@/lib/session';
+import { redirect } from 'next/navigation';
+import Link from 'next/link';
+import ProfileForm from './ProfileForm';
+import {
+  Package,
+  Truck,
+  CheckCircle,
+  ShoppingBag,
+  Calendar,
+  ChevronRight,
+  MapPin,
+} from 'lucide-react';
 
-import React, { useEffect, useState } from 'react';
-import { User, Mail, Phone, Calendar, MapPin } from 'lucide-react';
-import { format } from 'date-fns';
+// --- Smaller Components ---
 
-// Simple loading state
-const LoadingSkeleton = () => (
-  <div className="animate-pulse space-y-4">
-    <div className="h-32 bg-stone-200 rounded-xl w-full"></div>
-    <div className="h-64 bg-stone-200 rounded-xl w-full"></div>
-  </div>
-);
-
-function InfoCard({ icon: Icon, label, value }) {
+// Updated StatCard Component with better visibility and earthy colors
+function StatCard({ icon: Icon, label, value, subtext }) {
   return (
-    <div className="bg-white p-6 rounded-xl shadow-sm border border-[#EDD8B4]/30 flex items-start gap-4">
-      <div className="w-10 h-10 rounded-full bg-[#FDFBF7] flex items-center justify-center text-[#8E5022]">
-        <Icon className="w-5 h-5" />
+    <div className="bg-white p-6 rounded-2xl border border-stone-100 shadow-sm flex items-start gap-4 transition-all hover:shadow-md">
+      {/* Light background with Basho brand color icon */}
+      <div className="p-3 rounded-xl bg-[#8E5022]/10 text-[#8E5022]">
+        <Icon className="w-6 h-6" />
       </div>
       <div>
-        <div className="text-sm text-stone-400 mb-1">{label}</div>
-        <div className="font-medium text-[#442D1C]">{value}</div>
+        <p className="text-stone-500 text-xs font-bold uppercase tracking-wider mb-1">
+          {label}
+        </p>
+        <h3 className="text-2xl font-serif text-[#442D1C]">{value}</h3>
+        {subtext && <p className="text-xs text-stone-400 mt-1">{subtext}</p>}
       </div>
     </div>
   );
 }
 
-export default function UserProfile() {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const res = await fetch('/api/user/me');
-        if (res.ok) {
-          const data = await res.json();
-          setUser(data);
-        }
-      } catch (error) {
-        console.error("Failed to fetch user", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchUser();
-  }, []);
-
-  if (loading) return <LoadingSkeleton />;
-  if (!user) return <div className="p-8 text-center text-stone-600">Please log in to view your profile.</div>;
+function ActiveOrderTracker({ order }) {
+  if (!order) return null;
+  const getProgressStep = (status) => {
+    if (['PENDING'].includes(status)) return 1;
+    if (['PROCESSING'].includes(status)) return 2;
+    if (['SHIPPED'].includes(status)) return 3;
+    if (['DELIVERED'].includes(status)) return 4;
+    return 0;
+  };
+  const currentStep = getProgressStep(order.status);
+  const steps = [
+    { id: 1, label: 'Confirmed', icon: CheckCircle },
+    { id: 2, label: 'Preparing', icon: Package },
+    { id: 3, label: 'Shipped', icon: Truck },
+    { id: 4, label: 'Delivered', icon: MapPin },
+  ];
 
   return (
     <div className="bg-white p-6 rounded-2xl border border-[#EDD8B4] shadow-sm mb-6 relative overflow-hidden">
@@ -136,7 +137,6 @@ export default async function ProfilePage() {
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-500">
-      
       {/* 1. Header Section - Full Width */}
       <div>
         <h1 className="text-2xl md:text-3xl font-serif text-[#442D1C] mb-2">
@@ -149,17 +149,17 @@ export default async function ProfilePage() {
 
       {/* 2. Stat Cards Grid - MOVED BELOW HEADER */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <StatCard 
-          icon={ShoppingBag} 
-          label="Total Orders" 
-          value={totalOrders} 
+        <StatCard
+          icon={ShoppingBag}
+          label="Total Orders"
+          value={totalOrders}
           subtext="Clay treasures collected"
         />
         <StatCard
           icon={Truck}
           label="Active Shipments"
           value={activeCount}
-          subtext={activeCount > 0 ? "On the way" : "No active orders"}
+          subtext={activeCount > 0 ? 'On the way' : 'No active orders'}
         />
         <StatCard
           icon={Calendar}
@@ -197,84 +197,67 @@ export default async function ProfilePage() {
             ) : (
               <div className="divide-y divide-stone-50">
                 {user.Order.slice(0, 4).map((order) => (
-                  <Link key={order.id} href={`/profile/orders/${order.id}`} className="block">
-                  <div
+                  <Link
                     key={order.id}
-                    className="p-4 flex items-center justify-between hover:bg-[#FDFBF7] transition-colors group"
+                    href={`/profile/orders/${order.id}`}
+                    className="block"
                   >
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 bg-stone-50 rounded-lg flex items-center justify-center text-stone-400 group-hover:bg-white group-hover:shadow-sm transition-all">
-                        <ShoppingBag className="w-4 h-4" />
+                    <div
+                      key={order.id}
+                      className="p-4 flex items-center justify-between hover:bg-[#FDFBF7] transition-colors group"
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 bg-stone-50 rounded-lg flex items-center justify-center text-stone-400 group-hover:bg-white group-hover:shadow-sm transition-all">
+                          <ShoppingBag className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <p className="font-medium text-[#442D1C] text-sm">
+                            {order.OrderItem.length} Item
+                            {order.OrderItem.length !== 1 && 's'}
+                          </p>
+                          <p className="text-[10px] text-stone-400">
+                            {new Date(order.createdAt).toLocaleDateString()}
+                          </p>
+                        </div>
                       </div>
-                      <div>
+                      <div className="text-right">
                         <p className="font-medium text-[#442D1C] text-sm">
-                          {order.OrderItem.length} Item
-                          {order.OrderItem.length !== 1 && 's'}
+                          ₹{order.total}
                         </p>
-                        <p className="text-[10px] text-stone-400">
-                          {new Date(order.createdAt).toLocaleDateString()}
+                        <p
+                          className={`text-[10px] font-bold uppercase ${
+                            order.status === 'DELIVERED'
+                              ? 'text-green-600'
+                              : 'text-blue-600'
+                          }`}
+                        >
+                          {order.status}
                         </p>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <p className="font-medium text-[#442D1C] text-sm">
-                        ₹{order.total}
-                      </p>
-                      <p
-                        className={`text-[10px] font-bold uppercase ${
-                          order.status === 'DELIVERED'
-                            ? 'text-green-600'
-                            : 'text-blue-600'
-                        }`}
-                      >
-                        {order.status}
-                      </p>
-                    </div>
-                  </div>
                   </Link>
                 ))}
               </div>
             )}
           </div>
         </div>
-        
-        <div className="text-center md:text-left flex-1">
-          <h1 className="text-2xl font-serif text-[#442D1C] mb-1">{user.name || "Pottery Enthusiast"}</h1>
-          <p className="text-[#8E5022]">{user.email}</p>
-        </div>
-        
-        <button className="px-6 py-2 border border-[#8E5022] text-[#8E5022] rounded-full hover:bg-[#8E5022] hover:text-white transition-all">
-          Edit Profile
-        </button>
-      </div>
 
-      {/* Details Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <InfoCard 
-          icon={Mail} 
-          label="Email Address" 
-          value={user.email} 
-        />
-        <InfoCard 
-          icon={Phone} 
-          label="Phone Number" 
-          value={user.phone || "Add phone number"} 
-        />
-        <InfoCard 
-          icon={Calendar} 
-          label="Member Since" 
-          value={user.createdAt ? format(new Date(user.createdAt), 'MMMM yyyy') : 'N/A'} 
-        />
-        {/* Address Summary */}
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-[#EDD8B4]/30 flex items-start gap-4">
-          <div className="w-10 h-10 rounded-full bg-[#FDFBF7] flex items-center justify-center text-[#8E5022]">
-            <MapPin className="w-5 h-5" />
-          </div>
-          <div>
-            <div className="text-sm text-stone-400 mb-1">Default Address</div>
-            <div className="font-medium text-[#442D1C]">
-              Manage your addresses in the Address tab
+        {/* RIGHT COLUMN (1/3 width) - Account Details */}
+        <div className="xl:col-span-1">
+          <div className="bg-white p-6 rounded-2xl border border-stone-100 shadow-sm sticky top-28">
+            <div className="flex items-center gap-3 mb-6 pb-4 border-b border-stone-100">
+              <div className="w-10 h-10 bg-[#EDD8B4] rounded-full flex items-center justify-center text-[#442D1C] font-serif font-bold">
+                {user.name ? user.name[0].toUpperCase() : 'U'}
+              </div>
+              <div>
+                <h3 className="font-bold text-[#442D1C] text-sm">
+                  Account Details
+                </h3>
+                <p className="text-xs text-stone-500">Update your profile</p>
+              </div>
             </div>
+            {/* Reusing your ProfileForm component */}
+            <ProfileForm user={user} />
           </div>
         </div>
       </div>

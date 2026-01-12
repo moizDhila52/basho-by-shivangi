@@ -180,6 +180,7 @@ model Product {
   Review          Review[]
   testimonials    Testimonial[]
   WishlistItem    WishlistItem[]
+  ProductWaitlist ProductWaitlist[]
 
   @@index([categoryId])
   @@index([isBestseller])
@@ -240,7 +241,7 @@ model User {
   Review               Review[]
   WishlistItem         WishlistItem[]
   WorkshopRegistration WorkshopRegistration[]
- 
+  ProductWaitlist ProductWaitlist[]
 }
 
 model WishlistItem {
@@ -505,4 +506,17 @@ enum CustomOrderStatus {
   CANCELLED
 }
 
+// Add this to your schema
+model ProductWaitlist {
+  id        String   @id @default(uuid())
+  productId String
+  userId    String?  // Optional: if logged in
+  email     String   // Required: where to send the email
+  createdAt DateTime @default(now())
+  
+  Product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  User      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([productId])
+  @@unique([productId, email]) // Prevent duplicate requests for same item
+}
