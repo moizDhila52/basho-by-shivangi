@@ -9,7 +9,7 @@ const SocketContext = createContext();
 
 export function SocketProvider({ children }) {
   const [socket, setSocket] = useState(null);
-  const [unreadCount, setUnreadCount] = useState(0); // Move count here
+  const [unreadCount, setUnreadCount] = useState(0);
   const { user, loading } = useAuth();
   const { addToast } = useToast();
 
@@ -31,14 +31,15 @@ export function SocketProvider({ children }) {
   };
 
   useEffect(() => {
-    if (loading || !user?.id) return;
+    // 👇 CHANGE 1: Allow guests to connect (Removed !user?.id check)
+    if (loading) return;
 
     // 1. Initialize Socket
     const newSocket = io(
       process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
       {
         path: '/socket.io',
-        transports: ['websocket'], // Force WebSocket for better performance
+        transports: ['websocket'],
         reconnectionAttempts: 5,
       },
     );
@@ -46,22 +47,28 @@ export function SocketProvider({ children }) {
     // 2. Connection Logic
     newSocket.on('connect', () => {
       console.log('✅ Socket Client Connected:', newSocket.id);
-      // Join the room immediately upon connection
-      newSocket.emit('join-room', user.id);
+
+      // 👇 CHANGE 2: Only join private room IF logged in
+      if (user?.id) {
+        newSocket.emit('join-room', user.id);
+      }
     });
 
-    // 3. Listen for Incoming Notifications
+    // 3. Listen for User Notifications (Private)
     newSocket.on('notification', (data) => {
       console.log('🔔 REAL-TIME EVENT RECEIVED:', data);
-
-      // A. Play Sound
       playNotificationSound();
-
-      // B. Show Toast
       addToast(data.title, 'success');
-
-      // C. Update Unread Count (Global State)
       setUnreadCount((prev) => prev + 1);
+    });
+
+    // 4. 👇 NEW: Listen for Stock Updates (Public Broadcast)
+    // We emit a global event so any component (Product/Wishlist) can listen
+    newSocket.on('stock-update', (data) => {
+      // Dispatch a custom window event so hooks can pick it up easily
+      window.dispatchEvent(
+        new CustomEvent('product-stock-update', { detail: data }),
+      );
     });
 
     newSocket.on('connect_error', (err) => {
@@ -73,7 +80,7 @@ export function SocketProvider({ children }) {
     return () => {
       newSocket.disconnect();
     };
-  }, [user, loading, addToast]);
+  }, [user, loading, addToast]); // Removed user.id dependency to keep socket stable
 
   return (
     <SocketContext.Provider value={{ socket, unreadCount, setUnreadCount }}>

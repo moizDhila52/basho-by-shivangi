@@ -428,7 +428,7 @@ model WorkshopRegistration {
 }
 
 model Notification {
-  id        String   @id
+  id        String   @id @default(uuid()) 
   userId    String
   title     String
   message   String

@@ -19,6 +19,8 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/components/AuthProvider';
 import { useCart } from '@/context/CartContext';
 import toast from 'react-hot-toast';
+import NotifyButton from '@/components/NotifyButton';
+import { useRealtimeProduct } from '@/hooks/useRealtimeProduct';
 
 const COLORS = {
   dark: '#442D1C',
@@ -95,6 +97,212 @@ const removeFromWishlistAPI = async (productId) => {
   }
 };
 
+// --- NEW COMPONENT: Wishlist Card ---
+// This isolates the hook usage so it works correctly inside the list
+const WishlistCard = ({
+  item,
+  cartItems,
+  removingItems,
+  onRemove,
+  onAddToCart,
+  onUpdateQuantity,
+  isUpdating,
+}) => {
+  // ✅ Hook called at the top level is now valid
+  const product = useRealtimeProduct(item.Product);
+
+  const quantityInCart =
+    cartItems.find((cartItem) => cartItem.id === product.id)?.quantity || 0;
+  const rating = product.averageRating || 0;
+  const reviewCount = product._count?.Review || 0;
+  const isRemoving = removingItems.has(product.id);
+
+  return (
+    <motion.div
+      layout
+      variants={fadeInUp}
+      exit={{ opacity: 0, scale: 0.9 }}
+      // Only lift on hover if IN stock
+      whileHover={product.inStock ? { y: -8 } : {}}
+      className={`group relative bg-white rounded-3xl overflow-hidden transition-all duration-300 ${
+        !product.inStock
+          ? 'opacity-75 border-2 border-orange-100 shadow-none' // Dimmed style for OOS
+          : 'shadow-lg hover:shadow-2xl'
+      }`}
+    >
+      {/* Remove Button */}
+      <button
+        onClick={() => onRemove(product.id)}
+        disabled={isRemoving}
+        className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center shadow-md hover:shadow-lg transition-all hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        {isRemoving ? (
+          <Loader2 className="w-5 h-5 text-[#C85428] animate-spin" />
+        ) : (
+          <X className="w-5 h-5 text-stone-500 hover:text-red-500 transition-colors" />
+        )}
+      </button>
+
+      {/* Badges */}
+      <div className="absolute top-4 left-4 z-10 flex flex-col gap-2">
+        {product.isNew && (
+          <span className="bg-[#C85428] text-white text-xs font-medium px-3 py-1 rounded-full">
+            New
+          </span>
+        )}
+        {product.isBestseller && (
+          <span className="bg-[#442D1C] text-white text-xs font-medium px-3 py-1 rounded-full">
+            Bestseller
+          </span>
+        )}
+        {!product.inStock && (
+          <span className="bg-stone-600 text-white text-xs font-medium px-3 py-1 rounded-full">
+            Out of Stock
+          </span>
+        )}
+      </div>
+
+      {/* Product Image */}
+      <Link href={`/products/${product.slug}`}>
+        <div className="relative h-80 overflow-hidden bg-gradient-to-b from-stone-100 to-stone-50 cursor-pointer">
+          {product.images?.[0] ? (
+            <img
+              src={product.images[0]}
+              alt={product.name}
+              className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center bg-stone-100">
+              <div className="w-20 h-20 rounded-full bg-stone-200 flex items-center justify-center">
+                <ShoppingBag className="w-10 h-10 text-stone-400" />
+              </div>
+            </div>
+          )}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent" />
+        </div>
+      </Link>
+
+      {/* Product Info */}
+      <div className="p-6">
+        <Link href={`/products/${product.slug}`}>
+          <div className="cursor-pointer">
+            <span className="text-sm text-[#8E5022] font-medium uppercase tracking-wider">
+              {product.Category?.name}
+            </span>
+            <h3 className="font-serif text-2xl text-[#442D1C] mt-1 mb-2 group-hover:text-[#C85428] transition-colors">
+              {product.name}
+            </h3>
+          </div>
+        </Link>
+
+        <p className="text-stone-600 text-sm mb-4 line-clamp-2">
+          {product.description}
+        </p>
+
+        {/* Rating */}
+        {reviewCount > 0 && (
+          <div className="flex items-center gap-2 mb-4">
+            <div className="flex items-center">
+              {[...Array(5)].map((_, i) => (
+                <Star
+                  key={i}
+                  className={`w-4 h-4 ${
+                    i < Math.floor(rating)
+                      ? 'fill-[#C85428] text-[#C85428]'
+                      : 'text-stone-300'
+                  }`}
+                />
+              ))}
+            </div>
+            <span className="text-sm text-stone-500">
+              {rating.toFixed(1)} ({reviewCount})
+            </span>
+          </div>
+        )}
+
+        {/* Price */}
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-baseline gap-2">
+            <span className="font-serif text-3xl text-[#442D1C]">
+              ₹{product.price.toFixed(2)}
+            </span>
+            {product.originalPrice && product.originalPrice > product.price && (
+              <span className="text-stone-400 line-through">
+                ₹{product.originalPrice.toFixed(2)}
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Action Buttons */}
+        <div className="flex gap-3">
+          {/* CASE 1: Item is in Cart (Show Quantity Controls) */}
+          {quantityInCart > 0 ? (
+            <div className="flex-1">
+              <div className="flex items-center justify-between bg-[#EDD8B4] rounded-xl p-1">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onUpdateQuantity(product.id, quantityInCart - 1);
+                  }}
+                  disabled={isUpdating}
+                  className="w-10 h-10 flex items-center justify-center rounded-lg hover:bg-[#E8D0A0] transition-colors disabled:opacity-50"
+                >
+                  <Minus className="w-4 h-4 text-[#442D1C]" />
+                </button>
+
+                <div className="flex items-center gap-2">
+                  <ShoppingBag className="w-4 h-4 text-[#442D1C]" />
+                  <span className="font-medium text-[#442D1C]">
+                    {quantityInCart}
+                  </span>
+                </div>
+
+                {/* Disable Plus button if Out of Stock */}
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onAddToCart(product);
+                  }}
+                  disabled={isUpdating || !product.inStock}
+                  className="w-10 h-10 flex items-center justify-center rounded-lg hover:bg-[#E8D0A0] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Plus className="w-4 h-4 text-[#442D1C]" />
+                </button>
+              </div>
+
+              {!product.inStock && (
+                <p className="text-[10px] text-red-600 text-center mt-1 font-medium">
+                  Max stock reached
+                </p>
+              )}
+            </div>
+          ) : /* CASE 2: Item is Out of Stock (Show Notify Button) */
+          !product.inStock ? (
+            <div className="flex-1">
+              <NotifyButton productId={product.id} stock={product.stock} />
+            </div>
+          ) : (
+            /* CASE 3: Item available to Add */
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                onAddToCart(product);
+              }}
+              disabled={isUpdating}
+              className="flex-1 py-3 rounded-xl font-medium transition-all flex items-center justify-center gap-2 bg-[#8E5022] text-white hover:bg-[#652810]"
+            >
+              <ShoppingBag className="w-5 h-5" />
+              Add to Cart
+            </button>
+          )}
+        </div>
+      </div>
+    </motion.div>
+  );
+};
+
 export default function WishlistPage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
@@ -158,14 +366,10 @@ export default function WishlistPage() {
   }, []);
 
   // Add to cart handler
-  // Add to cart handler
-  // Add to cart handler
   const handleAddToCart = useCallback(
     async (product) => {
-      // 1. Block clicks if currently loading
       if (isUpdating) return;
 
-      // 2. Immediate frontend stock check
       if (!product.inStock) {
         toast.error('Product is out of stock');
         return;
@@ -184,21 +388,16 @@ export default function WishlistPage() {
       };
 
       try {
-        // 3. Await the context action.
-        // If CartContext is fixed (Step 1), this line will freeze
-        // until the server responds.
         await addToCart(cartProduct);
-
-        // 4. Success! This only runs if the line above did NOT throw an error.
         toast.success('Added to cart');
       } catch (error) {
-        // 5. If server returns 400/500, we land here.
         console.error('Add to cart failed:', error);
         toast.error(error.message || 'Failed to add to cart');
       }
     },
     [addToCart, isUpdating],
   );
+
   // Update quantity handler
   const handleUpdateQuantity = useCallback(
     (productId, quantity) => {
@@ -290,207 +489,18 @@ export default function WishlistPage() {
             className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
           >
             <AnimatePresence>
-              {wishlistItems.map((item) => {
-                const product = item.Product;
-                const quantityInCart =
-                  cartItems.find((cartItem) => cartItem.id === product.id)
-                    ?.quantity || 0;
-                const rating = product.averageRating || 0;
-                const reviewCount = product._count?.Review || 0;
-                const isRemoving = removingItems.has(product.id);
-
-                return (
-                  <motion.div
-                    key={product.id}
-                    layout
-                    variants={fadeInUp}
-                    exit={{ opacity: 0, scale: 0.9 }}
-                    whileHover={{ y: -8 }}
-                    className="group relative bg-white rounded-3xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300"
-                  >
-                    {/* Remove Button */}
-                    <button
-                      onClick={() => handleRemoveFromWishlist(product.id)}
-                      disabled={isRemoving}
-                      className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center shadow-md hover:shadow-lg transition-all hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {isRemoving ? (
-                        <Loader2 className="w-5 h-5 text-[#C85428] animate-spin" />
-                      ) : (
-                        <X className="w-5 h-5 text-stone-500 hover:text-red-500 transition-colors" />
-                      )}
-                    </button>
-
-                    {/* Badges */}
-                    <div className="absolute top-4 left-4 z-10 flex flex-col gap-2">
-                      {product.isNew && (
-                        <span className="bg-[#C85428] text-white text-xs font-medium px-3 py-1 rounded-full">
-                          New
-                        </span>
-                      )}
-                      {product.isBestseller && (
-                        <span className="bg-[#442D1C] text-white text-xs font-medium px-3 py-1 rounded-full">
-                          Bestseller
-                        </span>
-                      )}
-                      {!product.inStock && (
-                        <span className="bg-stone-600 text-white text-xs font-medium px-3 py-1 rounded-full">
-                          Out of Stock
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Product Image */}
-                    <Link href={`/products/${product.slug}`}>
-                      <div className="relative h-80 overflow-hidden bg-gradient-to-b from-stone-100 to-stone-50 cursor-pointer">
-                        {product.images?.[0] ? (
-                          <img
-                            src={product.images[0]}
-                            alt={product.name}
-                            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center bg-stone-100">
-                            <div className="w-20 h-20 rounded-full bg-stone-200 flex items-center justify-center">
-                              <ShoppingBag className="w-10 h-10 text-stone-400" />
-                            </div>
-                          </div>
-                        )}
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent" />
-                      </div>
-                    </Link>
-
-                    {/* Product Info */}
-                    <div className="p-6">
-                      <Link href={`/products/${product.slug}`}>
-                        <div className="cursor-pointer">
-                          <span className="text-sm text-[#8E5022] font-medium uppercase tracking-wider">
-                            {product.Category?.name}
-                          </span>
-                          <h3 className="font-serif text-2xl text-[#442D1C] mt-1 mb-2 group-hover:text-[#C85428] transition-colors">
-                            {product.name}
-                          </h3>
-                        </div>
-                      </Link>
-
-                      <p className="text-stone-600 text-sm mb-4 line-clamp-2">
-                        {product.description}
-                      </p>
-
-                      {/* Rating */}
-                      {reviewCount > 0 && (
-                        <div className="flex items-center gap-2 mb-4">
-                          <div className="flex items-center">
-                            {[...Array(5)].map((_, i) => (
-                              <Star
-                                key={i}
-                                className={`w-4 h-4 ${
-                                  i < Math.floor(rating)
-                                    ? 'fill-[#C85428] text-[#C85428]'
-                                    : 'text-stone-300'
-                                }`}
-                              />
-                            ))}
-                          </div>
-                          <span className="text-sm text-stone-500">
-                            {rating.toFixed(1)} ({reviewCount})
-                          </span>
-                        </div>
-                      )}
-
-                      {/* Price */}
-                      <div className="flex items-center justify-between mb-6">
-                        <div className="flex items-baseline gap-2">
-                          <span className="font-serif text-3xl text-[#442D1C]">
-                            ₹{product.price.toFixed(2)}
-                          </span>
-                          {product.originalPrice &&
-                            product.originalPrice > product.price && (
-                              <span className="text-stone-400 line-through">
-                                ₹{product.originalPrice.toFixed(2)}
-                              </span>
-                            )}
-                        </div>
-                      </div>
-
-                      {/* Action Buttons */}
-                      <div className="flex gap-3">
-                        {quantityInCart > 0 ? (
-                          <div className="flex-1">
-                            <div className="flex items-center justify-between bg-[#EDD8B4] rounded-xl p-1">
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation(); // Prevent bubbling
-                                  handleUpdateQuantity(
-                                    product.id,
-                                    quantityInCart - 1,
-                                  );
-                                }}
-                                disabled={isUpdating}
-                                className="w-10 h-10 flex items-center justify-center rounded-lg hover:bg-[#E8D0A0] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                              >
-                                <Minus className="w-4 h-4 text-[#442D1C]" />
-                              </button>
-
-                              <div className="flex items-center gap-2">
-                                <ShoppingBag className="w-4 h-4 text-[#442D1C]" />
-                                <span className="font-medium text-[#442D1C]">
-                                  {quantityInCart}
-                                </span>
-                              </div>
-
-                              {/* FIX: If Out of Stock, do not show Plus button. Show X or disabled state */}
-                              {!product.inStock ? (
-                                <button
-                                  disabled
-                                  className="w-10 h-10 flex items-center justify-center rounded-lg opacity-50 cursor-not-allowed bg-stone-200"
-                                  title="Out of Stock"
-                                >
-                                  <X className="w-4 h-4 text-red-500" />
-                                </button>
-                              ) : (
-                                <button
-                                  onClick={(e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation(); // Stop event bubbling
-                                    handleAddToCart(product);
-                                  }}
-                                  disabled={isUpdating}
-                                  className="w-10 h-10 flex items-center justify-center rounded-lg hover:bg-[#E8D0A0] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                  <Plus className="w-4 h-4 text-[#442D1C]" />
-                                </button>
-                              )}
-                            </div>
-                            {/* Optional: Add a text warning below if needed */}
-                            {!product.inStock && (
-                              <p className="text-[10px] text-red-600 text-center mt-1 font-medium">
-                                Max available
-                              </p>
-                            )}
-                          </div>
-                        ) : (
-                          <button
-                            onClick={(e) => {
-                              e.preventDefault();
-                              handleAddToCart(product);
-                            }}
-                            disabled={!product.inStock || isUpdating}
-                            className={`flex-1 py-3 rounded-xl font-medium transition-all flex items-center justify-center gap-2 ${
-                              product.inStock
-                                ? 'bg-[#8E5022] text-white hover:bg-[#652810]'
-                                : 'bg-stone-200 text-stone-400 cursor-not-allowed'
-                            } ${isUpdating ? 'opacity-75' : ''}`}
-                          >
-                            <ShoppingBag className="w-5 h-5" />
-                            {product.inStock ? 'Add to Cart' : 'Out of Stock'}
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  </motion.div>
-                );
-              })}
+              {wishlistItems.map((item) => (
+                <WishlistCard
+                  key={item.Product.id}
+                  item={item}
+                  cartItems={cartItems}
+                  removingItems={removingItems}
+                  onRemove={handleRemoveFromWishlist}
+                  onAddToCart={handleAddToCart}
+                  onUpdateQuantity={handleUpdateQuantity}
+                  isUpdating={isUpdating}
+                />
+              ))}
             </AnimatePresence>
           </motion.div>
         )}

@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import React, {
   useState,
@@ -7,8 +7,8 @@ import React, {
   useRef,
   useEffect,
   Suspense,
-} from "react";
-import { motion, AnimatePresence } from "framer-motion";
+} from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   Filter,
   Search,
@@ -25,22 +25,24 @@ import {
   DollarSign,
   Loader2,
   AlertCircle,
-} from "lucide-react";
-import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
-import CartSlider from "@/components/CartSlider";
-import { useCart } from "@/context/CartContext";
-import { useAuth } from "@/components/AuthProvider";
-import toast from "react-hot-toast";
+} from 'lucide-react';
+import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
+import CartSlider from '@/components/CartSlider';
+import { useCart } from '@/context/CartContext';
+import { useAuth } from '@/components/AuthProvider';
+import toast from 'react-hot-toast';
+import NotifyButton from '@/components/NotifyButton';
+import { useRealtimeProduct } from '@/hooks/useRealtimeProduct';
 
 // --- Brand Colors from Palette ---
 const COLORS = {
-  dark: "#442D1C",
-  brown: "#652810",
-  clay: "#8E5022",
-  terracotta: "#C85428",
-  cream: "#EDD8B4",
-  background: "#FDFBF7",
+  dark: '#442D1C',
+  brown: '#652810',
+  clay: '#8E5022',
+  terracotta: '#C85428',
+  cream: '#EDD8B4',
+  background: '#FDFBF7',
 };
 
 // --- Animation Variants ---
@@ -70,8 +72,8 @@ const staggerContainer = {
 // Fetch products function
 async function fetchProducts(params = {}) {
   const {
-    category = "all",
-    sort = "featured",
+    category = 'all',
+    sort = 'featured',
     minPrice,
     maxPrice,
     search,
@@ -90,25 +92,25 @@ async function fetchProducts(params = {}) {
     ...(minPrice && { minPrice }),
     ...(maxPrice && { maxPrice }),
     ...(material && {
-      material: Array.isArray(material) ? material.join(",") : material,
+      material: Array.isArray(material) ? material.join(',') : material,
     }),
     ...(features && {
-      features: Array.isArray(features) ? features.join(",") : features,
+      features: Array.isArray(features) ? features.join(',') : features,
     }),
   });
 
   const response = await fetch(`/api/products?${queryParams}`);
   if (!response.ok) {
-    throw new Error("Failed to fetch products");
+    throw new Error('Failed to fetch products');
   }
   return response.json();
 }
 
 // Fetch categories function
 async function fetchCategories() {
-  const response = await fetch("/api/categories");
+  const response = await fetch('/api/categories');
   if (!response.ok) {
-    throw new Error("Failed to fetch categories");
+    throw new Error('Failed to fetch categories');
   }
   return response.json();
 }
@@ -117,15 +119,15 @@ async function fetchCategories() {
 // Update fetchWishlist
 const fetchWishlist = async () => {
   try {
-    const response = await fetch("/api/wishlist", {
-      credentials: "include", // This sends cookies automatically
+    const response = await fetch('/api/wishlist', {
+      credentials: 'include', // This sends cookies automatically
     });
 
     if (!response.ok) return [];
     const data = await response.json();
     return data.wishlist || [];
   } catch (error) {
-    console.error("Error fetching wishlist:", error);
+    console.error('Error fetching wishlist:', error);
     return [];
   }
 };
@@ -133,12 +135,12 @@ const fetchWishlist = async () => {
 // Update addToWishlistAPI
 const addToWishlistAPI = async (productId) => {
   try {
-    const response = await fetch("/api/wishlist/add", {
-      method: "POST",
+    const response = await fetch('/api/wishlist/add', {
+      method: 'POST',
       headers: {
-        "Content-Type": "application/json",
+        'Content-Type': 'application/json',
       },
-      credentials: "include", // This sends cookies automatically
+      credentials: 'include', // This sends cookies automatically
       body: JSON.stringify({ productId }),
     });
 
@@ -147,14 +149,14 @@ const addToWishlistAPI = async (productId) => {
     if (!response.ok) {
       return {
         success: false,
-        error: data.error || "Failed to add to wishlist",
+        error: data.error || 'Failed to add to wishlist',
       };
     }
 
     return data;
   } catch (error) {
-    console.error("Error in addToWishlistAPI:", error);
-    return { success: false, error: error.message || "Network error" };
+    console.error('Error in addToWishlistAPI:', error);
+    return { success: false, error: error.message || 'Network error' };
   }
 };
 
@@ -164,9 +166,9 @@ const removeFromWishlistAPI = async (productId) => {
     const response = await fetch(
       `/api/wishlist/remove?productId=${productId}`,
       {
-        method: "DELETE",
-        credentials: "include", // This sends cookies automatically
-      }
+        method: 'DELETE',
+        credentials: 'include', // This sends cookies automatically
+      },
     );
 
     const data = await response.json();
@@ -174,53 +176,59 @@ const removeFromWishlistAPI = async (productId) => {
     if (!response.ok) {
       return {
         success: false,
-        error: data.error || "Failed to remove from wishlist",
+        error: data.error || 'Failed to remove from wishlist',
       };
     }
 
     return data;
   } catch (error) {
-    console.error("Error in removeFromWishlistAPI:", error);
-    return { success: false, error: error.message || "Network error" };
+    console.error('Error in removeFromWishlistAPI:', error);
+    return { success: false, error: error.message || 'Network error' };
   }
+};
+
+// Wrapper to inject real-time stock data
+const RealtimeProductCard = ({ product, ...props }) => {
+  const liveProduct = useRealtimeProduct(product);
+  return <ProductCard product={liveProduct} {...props} />;
 };
 
 const SORT_OPTIONS = [
   {
-    value: "featured",
-    label: "Featured",
+    value: 'featured',
+    label: 'Featured',
     icon: <Sparkles className="w-4 h-4" />,
   },
   {
-    value: "newest",
-    label: "New Arrivals",
+    value: 'newest',
+    label: 'New Arrivals',
     icon: <Clock className="w-4 h-4" />,
   },
   {
-    value: "price-low",
-    label: "Price: Low to High",
+    value: 'price-low',
+    label: 'Price: Low to High',
     icon: <DollarSign className="w-4 h-4" />,
   },
   {
-    value: "price-high",
-    label: "Price: High to Low",
+    value: 'price-high',
+    label: 'Price: High to Low',
     icon: <DollarSign className="w-4 h-4" />,
   },
   {
-    value: "bestseller",
-    label: "Bestsellers",
+    value: 'bestseller',
+    label: 'Bestsellers',
     icon: <TrendingUp className="w-4 h-4" />,
   },
 ];
 
 const FILTERS = {
-  price: ["Under ₹100", "₹100 - ₹250", "₹250 - ₹500", "Over ₹500"],
-  material: ["Stoneware", "Porcelain", "Raku", "Unglazed Clay"],
+  price: ['Under ₹100', '₹100 - ₹250', '₹250 - ₹500', 'Over ₹500'],
+  material: ['Stoneware', 'Porcelain', 'Raku', 'Unglazed Clay'],
   features: [
-    "Dishwasher Safe",
-    "Microwave Safe",
-    "Oven Safe",
-    "Hand Wash Only",
+    'Dishwasher Safe',
+    'Microwave Safe',
+    'Oven Safe',
+    'Hand Wash Only',
   ],
 };
 
@@ -248,8 +256,12 @@ const ProductCard = memo(
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        whileHover={{ y: -8 }}
-        className="group relative bg-white rounded-3xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300"
+        whileHover={product.inStock ? { y: -8 } : {}} // Disable hover lift if OOS
+        className={`group relative bg-white rounded-3xl overflow-hidden transition-all duration-300 ${
+          !product.inStock
+            ? 'opacity-75 border-2 border-orange-100 shadow-none' // Cart-like OOS style
+            : 'shadow-lg hover:shadow-2xl'
+        }`}
       >
         {/* Badges */}
         <div className="absolute top-4 left-4 z-10 flex flex-col gap-2">
@@ -275,18 +287,18 @@ const ProductCard = memo(
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
-            console.log("Wishlist button clicked!");
-            console.log("isWishlistLoading:", isWishlistLoading);
+            console.log('Wishlist button clicked!');
+            console.log('isWishlistLoading:', isWishlistLoading);
             console.log(
-              "Condition check - !isWishlistLoading:",
-              !isWishlistLoading
+              'Condition check - !isWishlistLoading:',
+              !isWishlistLoading,
             );
-            console.log("authLoading:", authLoading);
+            console.log('authLoading:', authLoading);
             if (!isWishlistLoading) {
-              console.log("✅ Calling onWishlistToggle");
+              console.log('✅ Calling onWishlistToggle');
               onWishlistToggle(product.id, product);
             } else {
-              console.log("❌ NOT calling onWishlistToggle - loading is true");
+              console.log('❌ NOT calling onWishlistToggle - loading is true');
             }
           }}
           disabled={isWishlistLoading || authLoading}
@@ -298,8 +310,8 @@ const ProductCard = memo(
             <Heart
               className={`w-5 h-5 transition-colors ${
                 isInWishlist
-                  ? "fill-[#C85428] text-[#C85428]"
-                  : "text-stone-400 hover:text-[#C85428]"
+                  ? 'fill-[#C85428] text-[#C85428]'
+                  : 'text-stone-400 hover:text-[#C85428]'
               }`}
             />
           )}
@@ -351,8 +363,8 @@ const ProductCard = memo(
                     key={i}
                     className={`w-4 h-4 ${
                       i < Math.floor(rating)
-                        ? "fill-[#C85428] text-[#C85428]"
-                        : "text-stone-300"
+                        ? 'fill-[#C85428] text-[#C85428]'
+                        : 'text-stone-300'
                     }`}
                   />
                 ))}
@@ -431,15 +443,19 @@ const ProductCard = memo(
                   </button>
                 </div>
               </div>
+            ) : !product.inStock ? (
+              // 👇 NEW: Notify Button
+              <div className="flex-1">
+                <NotifyButton productId={product.id} stock={product.stock} />
+              </div>
             ) : (
+              // 👇 EXISTING: Add to Cart
               <button
                 onClick={() => onAddToCart(product)}
-                disabled={!product.inStock || isUpdating}
-                className={`flex-1 py-3 rounded-xl font-medium transition-all flex items-center justify-center gap-2 ${
-                  product.inStock
-                    ? "bg-[#8E5022] text-white hover:bg-[#652810]"
-                    : "bg-stone-200 text-stone-400 cursor-not-allowed"
-                } ${isUpdating ? "opacity-75" : ""}`}
+                disabled={isUpdating}
+                className={`flex-1 py-3 rounded-xl font-medium transition-all flex items-center justify-center gap-2 bg-[#8E5022] text-white hover:bg-[#652810] ${
+                  isUpdating ? 'opacity-75' : ''
+                }`}
               >
                 <>
                   <ShoppingBag className="w-5 h-5" />
@@ -469,7 +485,7 @@ const ProductCard = memo(
       prevProps.isWishlistLoading === nextProps.isWishlistLoading &&
       prevProps.isUpdating === nextProps.isUpdating
     );
-  }
+  },
 );
 
 // Custom Dropdown Component
@@ -487,8 +503,8 @@ const CustomDropdown = ({ value, options, onChange }) => {
       }
     };
 
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
   return (
@@ -503,7 +519,7 @@ const CustomDropdown = ({ value, options, onChange }) => {
         </div>
         <ChevronDown
           className={`w-5 h-5 text-stone-400 transition-transform ${
-            isOpen ? "rotate-180" : ""
+            isOpen ? 'rotate-180' : ''
           }`}
         />
       </button>
@@ -526,15 +542,15 @@ const CustomDropdown = ({ value, options, onChange }) => {
                   }}
                   className={`flex items-center gap-3 w-full px-6 py-3 hover:bg-stone-50 transition-colors ${
                     value === option.value
-                      ? "bg-[#FDFBF7] text-[#8E5022]"
-                      : "text-stone-600"
+                      ? 'bg-[#FDFBF7] text-[#8E5022]'
+                      : 'text-stone-600'
                   }`}
                 >
                   <span
                     className={`${
                       value === option.value
-                        ? "text-[#8E5022]"
-                        : "text-stone-400"
+                        ? 'text-[#8E5022]'
+                        : 'text-stone-400'
                     }`}
                   >
                     {option.icon}
@@ -567,7 +583,7 @@ function ProductsPageContent() {
   const [error, setError] = useState(null);
 
   const [selectedCategory, setSelectedCategory] = useState(
-    searchParams.get("category") || "all"
+    searchParams.get('category') || 'all',
   );
   const [showFilters, setShowFilters] = useState(false);
   const [selectedFilters, setSelectedFilters] = useState({
@@ -575,9 +591,9 @@ function ProductsPageContent() {
     material: [],
     features: [],
   });
-  const [sortBy, setSortBy] = useState(searchParams.get("sort") || "featured");
+  const [sortBy, setSortBy] = useState(searchParams.get('sort') || 'featured');
   const [searchQuery, setSearchQuery] = useState(
-    searchParams.get("search") || ""
+    searchParams.get('search') || '',
   );
   const [wishlist, setWishlist] = useState(new Set());
   const { addToCart, updateQuantity, removeFromCart, cartItems, isUpdating } =
@@ -586,11 +602,11 @@ function ProductsPageContent() {
   // Prepare categories for display
   const displayCategories = [
     {
-      slug: "all",
-      name: "All Categories",
+      slug: 'all',
+      name: 'All Categories',
       productCount: categories.reduce(
         (sum, cat) => sum + (cat._count?.Product || 0),
-        0
+        0,
       ),
     },
     ...categories.map((cat) => ({
@@ -625,9 +641,9 @@ function ProductsPageContent() {
         // Load wishlist from localStorage
         loadWishlist();
       } catch (err) {
-        console.error("Error loading initial data:", err);
-        setError("Failed to load data. Please try again.");
-        toast.error("Failed to load data");
+        console.error('Error loading initial data:', err);
+        setError('Failed to load data. Please try again.');
+        toast.error('Failed to load data');
       } finally {
         setLoading(false);
       }
@@ -655,16 +671,16 @@ function ProductsPageContent() {
         // Add price filters
         if (selectedFilters.price.length > 0) {
           selectedFilters.price.forEach((priceRange) => {
-            if (priceRange === "Under ₹100") {
-              params.maxPrice = "100";
-            } else if (priceRange === "₹100 - ₹250") {
-              params.minPrice = "100";
-              params.maxPrice = "250";
-            } else if (priceRange === "₹250 - ₹500") {
-              params.minPrice = "250";
-              params.maxPrice = "500";
-            } else if (priceRange === "Over ₹500") {
-              params.minPrice = "500";
+            if (priceRange === 'Under ₹100') {
+              params.maxPrice = '100';
+            } else if (priceRange === '₹100 - ₹250') {
+              params.minPrice = '100';
+              params.maxPrice = '250';
+            } else if (priceRange === '₹250 - ₹500') {
+              params.minPrice = '250';
+              params.maxPrice = '500';
+            } else if (priceRange === 'Over ₹500') {
+              params.minPrice = '500';
             }
           });
         }
@@ -680,11 +696,17 @@ function ProductsPageContent() {
         }
 
         const data = await fetchProducts(params);
-        setProducts(data.products || []);
+
+        // 👇 Sort: In-stock items first, Out-of-stock items last
+        const sortedProducts = (data.products || []).sort((a, b) => {
+          return a.inStock === b.inStock ? 0 : a.inStock ? -1 : 1;
+        });
+
+        setProducts(sortedProducts);
       } catch (err) {
-        console.error("Error loading products:", err);
-        setError("Failed to load products. Please try again.");
-        toast.error("Failed to load products");
+        console.error('Error loading products:', err);
+        setError('Failed to load products. Please try again.');
+        toast.error('Failed to load products');
       } finally {
         setProductsLoading(false);
       }
@@ -702,9 +724,9 @@ function ProductsPageContent() {
   useEffect(() => {
     const params = new URLSearchParams();
 
-    if (selectedCategory !== "all") params.set("category", selectedCategory);
-    if (sortBy !== "featured") params.set("sort", sortBy);
-    if (searchQuery) params.set("search", searchQuery);
+    if (selectedCategory !== 'all') params.set('category', selectedCategory);
+    if (sortBy !== 'featured') params.set('sort', sortBy);
+    if (searchQuery) params.set('search', searchQuery);
 
     // Update URL without page reload
     const newUrl = `${window.location.pathname}?${params.toString()}`;
@@ -714,37 +736,37 @@ function ProductsPageContent() {
   // Toggle wishlist handler
   const toggleWishlistHandler = useCallback(
     async (productId, product) => {
-      console.log("🔵 toggleWishlistHandler called with productId:", productId);
-      console.log("🔵 authLoading:", authLoading);
-      console.log("🔵 user:", user);
+      console.log('🔵 toggleWishlistHandler called with productId:', productId);
+      console.log('🔵 authLoading:', authLoading);
+      console.log('🔵 user:', user);
       // Check if auth is still loading
       if (authLoading) {
-        toast.error("Please wait...");
+        toast.error('Please wait...');
         return;
       }
 
       // Check if user exists BEFORE calling any API
       if (!user) {
-        toast.error("Please login to add to wishlist");
+        toast.error('Please login to add to wishlist');
         const currentPath = window.location.pathname + window.location.search;
         router.push(`/login?returnUrl=${encodeURIComponent(currentPath)}`);
         return;
       }
 
-      console.log("✅ User authenticated, proceeding with wishlist toggle");
+      console.log('✅ User authenticated, proceeding with wishlist toggle');
 
       // Set loading state
       setWishlistLoading((prev) => new Set([...prev, productId]));
 
       try {
         const isInWishlist = wishlist.has(productId);
-        console.log("🔵 Is product in wishlist?", isInWishlist);
+        console.log('🔵 Is product in wishlist?', isInWishlist);
 
         if (isInWishlist) {
-          console.log("🔵 Removing from wishlist...");
+          console.log('🔵 Removing from wishlist...');
           // Remove from wishlist
           const result = await removeFromWishlistAPI(productId);
-          console.log("🔵 Remove result:", result);
+          console.log('🔵 Remove result:', result);
 
           if (result.success) {
             setWishlist((prev) => {
@@ -752,38 +774,38 @@ function ProductsPageContent() {
               newSet.delete(productId);
               return newSet;
             });
-            toast.success("Removed from wishlist");
+            toast.success('Removed from wishlist');
           } else {
             // Don't show "Authentication required" since we already checked
-            if (result.error && result.error !== "Authentication required") {
+            if (result.error && result.error !== 'Authentication required') {
               toast.error(result.error);
             } else if (!result.error) {
-              toast.error("Failed to remove from wishlist");
+              toast.error('Failed to remove from wishlist');
             }
           }
         } else {
-          console.log("🔵 Adding to wishlist...");
+          console.log('🔵 Adding to wishlist...');
           // Add to wishlist
           const result = await addToWishlistAPI(productId);
-          console.log("🔵 Add result:", result);
+          console.log('🔵 Add result:', result);
 
           if (result.success) {
             setWishlist((prev) => new Set([...prev, productId]));
-            toast.success("Added to wishlist");
+            toast.success('Added to wishlist');
           } else {
             // Don't show "Authentication required" since we already checked
-            if (result.error && result.error !== "Authentication required") {
+            if (result.error && result.error !== 'Authentication required') {
               toast.error(result.error);
             } else if (!result.error) {
-              toast.error("Failed to add to wishlist");
+              toast.error('Failed to add to wishlist');
             }
           }
         }
       } catch (err) {
-        console.error("Error in toggleWishlistHandler:", err);
+        console.error('Error in toggleWishlistHandler:', err);
         // Don't show authentication errors since we handle login redirect above
-        if (err.message !== "Authentication required") {
-          toast.error(err.message || "Failed to update wishlist");
+        if (err.message !== 'Authentication required') {
+          toast.error(err.message || 'Failed to update wishlist');
         }
       } finally {
         setWishlistLoading((prev) => {
@@ -793,7 +815,7 @@ function ProductsPageContent() {
         });
       }
     },
-    [user, authLoading, router, wishlist]
+    [user, authLoading, router, wishlist],
   );
 
   // Add to cart handler
@@ -805,7 +827,7 @@ function ProductsPageContent() {
         slug: product.slug,
         price: product.price,
         originalPrice: product.originalPrice,
-        image: product.images?.[0] || "/placeholder-image.jpg",
+        image: product.images?.[0] || '/placeholder-image.jpg',
         inStock: product.inStock,
         category: product.Category?.name,
         quantity: 1,
@@ -813,7 +835,7 @@ function ProductsPageContent() {
 
       addToCart(cartProduct);
     },
-    [addToCart]
+    [addToCart],
   );
 
   // Update quantity handler
@@ -825,7 +847,7 @@ function ProductsPageContent() {
         updateQuantity(productId, quantity);
       }
     },
-    [updateQuantity, removeFromCart]
+    [updateQuantity, removeFromCart],
   );
 
   // Clear filters
@@ -835,15 +857,15 @@ function ProductsPageContent() {
       material: [],
       features: [],
     });
-    setSelectedCategory("all");
-    setSearchQuery("");
-    setSortBy("featured");
-    toast.success("Filters cleared");
+    setSelectedCategory('all');
+    setSearchQuery('');
+    setSortBy('featured');
+    toast.success('Filters cleared');
   }, []);
 
   // Clear search
   const clearSearch = () => {
-    setSearchQuery("");
+    setSearchQuery('');
   };
 
   const toggleFilter = (type, value) => {
@@ -895,10 +917,10 @@ function ProductsPageContent() {
               key={i}
               className="absolute rounded-full bg-[#8E5022]"
               style={{
-                width: Math.random() * 100 + 20 + "px",
-                height: Math.random() * 100 + 20 + "px",
-                left: Math.random() * 100 + "%",
-                top: Math.random() * 100 + "%",
+                width: Math.random() * 100 + 20 + 'px',
+                height: Math.random() * 100 + 20 + 'px',
+                left: Math.random() * 100 + '%',
+                top: Math.random() * 100 + '%',
                 opacity: Math.random() * 0.2 + 0.1,
               }}
             />
@@ -988,8 +1010,8 @@ function ProductsPageContent() {
                     onClick={() => setSelectedCategory(category.slug)}
                     className={`px-6 py-3 rounded-full font-medium whitespace-nowrap transition-all flex-shrink-0 ${
                       selectedCategory === category.slug
-                        ? "bg-[#442D1C] text-white shadow-md"
-                        : "bg-white text-stone-600 hover:bg-stone-100 shadow-sm"
+                        ? 'bg-[#442D1C] text-white shadow-md'
+                        : 'bg-white text-stone-600 hover:bg-stone-100 shadow-sm'
                     }`}
                   >
                     {category.name}
@@ -1031,7 +1053,7 @@ function ProductsPageContent() {
             {showFilters && (
               <motion.div
                 initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: "auto" }}
+                animate={{ opacity: 1, height: 'auto' }}
                 exit={{ opacity: 0, height: 0 }}
                 className="overflow-hidden mb-8"
               >
@@ -1069,14 +1091,14 @@ function ProductsPageContent() {
                             <input
                               type="checkbox"
                               checked={selectedFilters.price.includes(range)}
-                              onChange={() => toggleFilter("price", range)}
+                              onChange={() => toggleFilter('price', range)}
                               className="hidden"
                             />
                             <div
                               className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all ${
                                 selectedFilters.price.includes(range)
-                                  ? "bg-[#8E5022] border-[#8E5022]"
-                                  : "border-stone-300"
+                                  ? 'bg-[#8E5022] border-[#8E5022]'
+                                  : 'border-stone-300'
                               }`}
                             >
                               {selectedFilters.price.includes(range) && (
@@ -1103,18 +1125,18 @@ function ProductsPageContent() {
                             <input
                               type="checkbox"
                               checked={selectedFilters.material.includes(
-                                material
+                                material,
                               )}
                               onChange={() =>
-                                toggleFilter("material", material)
+                                toggleFilter('material', material)
                               }
                               className="hidden"
                             />
                             <div
                               className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all ${
                                 selectedFilters.material.includes(material)
-                                  ? "bg-[#8E5022] border-[#8E5022]"
-                                  : "border-stone-300"
+                                  ? 'bg-[#8E5022] border-[#8E5022]'
+                                  : 'border-stone-300'
                               }`}
                             >
                               {selectedFilters.material.includes(material) && (
@@ -1141,16 +1163,16 @@ function ProductsPageContent() {
                             <input
                               type="checkbox"
                               checked={selectedFilters.features.includes(
-                                feature
+                                feature,
                               )}
-                              onChange={() => toggleFilter("features", feature)}
+                              onChange={() => toggleFilter('features', feature)}
                               className="hidden"
                             />
                             <div
                               className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all ${
                                 selectedFilters.features.includes(feature)
-                                  ? "bg-[#8E5022] border-[#8E5022]"
-                                  : "border-stone-300"
+                                  ? 'bg-[#8E5022] border-[#8E5022]'
+                                  : 'border-stone-300'
                               }`}
                             >
                               {selectedFilters.features.includes(feature) && (
@@ -1177,12 +1199,12 @@ function ProductsPageContent() {
               </div>
             ) : (
               <p className="text-stone-600">
-                Showing{" "}
+                Showing{' '}
                 <span className="font-medium text-[#442D1C]">
                   {products.length}
-                </span>{" "}
+                </span>{' '}
                 products
-                {selectedCategory !== "all" &&
+                {selectedCategory !== 'all' &&
                   ` in ${
                     displayCategories.find((c) => c.slug === selectedCategory)
                       ?.name
@@ -1214,9 +1236,10 @@ function ProductsPageContent() {
           ) : products.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {products.map((product) => (
-                <ProductCard
+                <RealtimeProductCard // 👈 Use the wrapper instead of ProductCard directly
                   key={product.id}
                   product={product}
+                  // ... pass all other props as before ...
                   wishlist={wishlist}
                   cartItems={cartItems}
                   onWishlistToggle={toggleWishlistHandler}

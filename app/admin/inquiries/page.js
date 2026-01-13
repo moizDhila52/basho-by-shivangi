@@ -24,6 +24,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { format } from "date-fns";
 import { useToast } from "@/components/ToastProvider";
+import { useNotification } from '@/context/NotificationContext';
 
 const INQUIRY_STATUSES = [
   "PENDING",
@@ -44,6 +45,18 @@ export default function AdminInquiriesPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [adminNote, setAdminNote] = useState(""); // Local state for note editing
   const [savingNote, setSavingNote] = useState(false);
+  const { refreshTrigger, markAsRead } = useNotification(); // Get Hook
+
+  useEffect(() => {
+    markAsRead('inquiries');
+  }, []);
+
+  // 2. Real-time refresh
+  useEffect(() => {
+    if (refreshTrigger.inquiries > 0) {
+      fetchInquiries(); // Silent refresh
+    }
+  }, [refreshTrigger.inquiries]);
 
   // --- Fetch Data ---
   const fetchInquiries = async () => {
