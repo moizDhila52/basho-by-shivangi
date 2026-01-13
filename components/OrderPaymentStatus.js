@@ -1,14 +1,8 @@
 "use client";
 
-<<<<<<< HEAD
-import { useState } from 'react';
-import { useRazorpay } from 'react-razorpay';
-import { AlertCircle, RefreshCw } from 'lucide-react'; // Assuming you have lucide-react icons
-=======
 import { useState } from "react";
 import { useRazorpay } from "react-razorpay";
 import { AlertCircle, RefreshCw } from "lucide-react"; // Assuming you have lucide-react icons
->>>>>>> 10ee6a3b04a9ad159438e8e0f01eb67ab9e9df99
 
 export default function OrderPaymentStatus({ order }) {
   const { Razorpay } = useRazorpay();
