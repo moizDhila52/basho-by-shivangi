@@ -1,16 +1,16 @@
-"use client";
-import { useState, useRef, useEffect } from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
+'use client';
+import { useState, useRef, useEffect } from 'react';
+import Link from 'next/link';
+import Image from 'next/image'; // 👈 Import Image
+import { useRouter } from 'next/navigation';
 import {
   LayoutDashboard,
   LogOut,
   User as UserIcon,
   Package,
-} from "lucide-react";
+} from 'lucide-react';
 
 export default function UserMenu({ user }) {
-  // Changed prop from 'session' to 'user'
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef(null);
   const router = useRouter();
@@ -21,18 +21,17 @@ export default function UserMenu({ user }) {
         setIsOpen(false);
       }
     }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
   async function handleLogout() {
-    // FIXED PATH: Matches your standard auth structure
-    await fetch("/api/auth/logout", { method: "POST" });
+    await fetch('/api/auth/logout', { method: 'POST' });
     router.refresh();
-    window.location.href = "/";
+    window.location.href = '/';
   }
 
-  if (!user) return null; // Should be handled by parent, but safety check
+  if (!user) return null;
 
   return (
     <div className="relative" ref={menuRef}>
@@ -41,8 +40,21 @@ export default function UserMenu({ user }) {
         className="flex items-center gap-2 focus:outline-none"
       >
         {/* Avatar Circle */}
-        <div className="w-10 h-10 bg-[#EDD8B4] rounded-full flex items-center justify-center text-[#442D1C] font-serif font-bold text-lg border-2 border-transparent hover:border-[#C85428] transition-all">
-          {user.name ? user.name[0].toUpperCase() : user.email[0].toUpperCase()}
+        <div className="relative w-10 h-10 bg-[#EDD8B4] rounded-full flex items-center justify-center text-[#442D1C] font-serif font-bold text-lg border-2 border-transparent hover:border-[#C85428] transition-all overflow-hidden">
+          {/* 👇 NEW IMAGE LOGIC 👇 */}
+          {user.image ? (
+            <Image
+              src={user.image}
+              alt={user.name || 'User'}
+              fill
+              className="object-cover"
+            />
+          ) : // Fallback to initials if no image
+          user.name ? (
+            user.name[0].toUpperCase()
+          ) : (
+            user.email[0].toUpperCase()
+          )}
         </div>
       </button>
 
@@ -50,13 +62,12 @@ export default function UserMenu({ user }) {
         <div className="absolute right-0 mt-3 w-56 bg-white border border-[#EDD8B4] rounded-xl shadow-xl py-2 z-50">
           <div className="px-4 py-3 border-b border-[#EDD8B4]/20 mb-1 bg-[#FDFBF7]">
             <p className="text-sm font-bold text-[#442D1C] truncate">
-              {user.name || "User"}
+              {user.name || 'User'}
             </p>
             <p className="text-xs text-[#8E5022] truncate">{user.email}</p>
           </div>
 
-          {/* --- ADMIN LINK (Only visible to Admins) --- */}
-          {user.role === "ADMIN" && (
+          {user.role === 'ADMIN' && (
             <Link
               href="/admin"
               className="flex items-center gap-2 px-4 py-2 text-sm font-bold text-[#C85428] hover:bg-[#EDD8B4]/20"

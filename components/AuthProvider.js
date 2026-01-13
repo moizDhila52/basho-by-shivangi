@@ -1,37 +1,53 @@
-"use client";
-import { createContext, useContext, useEffect, useState } from "react";
-import { usePathname } from "next/navigation"; // To re-check auth on route change
+'use client';
+import { createContext, useContext, useEffect, useState } from 'react';
+import { usePathname } from 'next/navigation';
 
-const AuthContext = createContext({ user: null, loading: true });
+const AuthContext = createContext({
+  user: null,
+  loading: true,
+  refreshAuth: () => {},
+  updateUser: () => {},
+});
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const pathname = usePathname(); // Hook to detect navigation
+  const pathname = usePathname();
 
   const fetchSession = async () => {
     try {
-      // setLoading(true); // Optional: depends if you want global loading state on nav
-      const res = await fetch("/api/auth/session");
+      // 👇 The timestamp (?t=...) ensures the Browser doesn't serve old data
+      const res = await fetch(`/api/user/me?t=${Date.now()}`, {
+        cache: 'no-store',
+      });
+
       if (res.ok) {
         const data = await res.json();
-        setUser(data.user);
+        setUser(data);
       } else {
         setUser(null);
       }
     } catch (error) {
+      console.error('Auth Refresh Error:', error);
       setUser(null);
     } finally {
       setLoading(false);
     }
   };
 
+  // Helper to update state instantly without waiting for network
+  const updateUser = (newData) => {
+    setUser((prev) => ({ ...prev, ...newData }));
+  };
+
   useEffect(() => {
     fetchSession();
-  }, [pathname]); // Re-fetch session whenever the URL changes (updates Header avatar)
+  }, [pathname]);
 
   return (
-    <AuthContext.Provider value={{ user, loading, refreshAuth: fetchSession }}>
+    <AuthContext.Provider
+      value={{ user, loading, refreshAuth: fetchSession, updateUser }}
+    >
       {children}
     </AuthContext.Provider>
   );

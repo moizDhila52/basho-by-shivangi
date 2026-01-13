@@ -181,6 +181,10 @@ model Product {
   Review          Review[]
   testimonials    Testimonial[]
   WishlistItem    WishlistItem[]
+<<<<<<< HEAD
+=======
+  
+>>>>>>> 04092962bbf1a4a59894d22f24fccf0649f757ea
 
   @@index([categoryId])
   @@index([isBestseller])
@@ -529,4 +533,7 @@ enum CustomOrderStatus {
   SHIPPED
   CANCELLED
 }
+<<<<<<< HEAD
 
+=======
+>>>>>>> 04092962bbf1a4a59894d22f24fccf0649f757ea

@@ -6,7 +6,7 @@ import { triggerNotification } from '@/lib/socketTrigger'; // 👈 Import Socket
 export async function POST(req) {
   try {
     const body = await req.json();
-    const { email, name, phone, address, gstNumber } = body;
+    const { email, name, phone, address, gstNumber, image } = body;
 
     // 1. Check if user exists BEFORE upserting
     // We do this to know if we should send the "Welcome" email
@@ -23,12 +23,14 @@ export async function POST(req) {
         name,
         phone,
         gstNumber,
+        ...(image && { image }),
       },
       create: {
         email,
         name,
         phone,
         gstNumber,
+        image,
         // Create empty cart for new Google users
         Cart: {
           create: {},

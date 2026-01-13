@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
-import NotificationBell from "@/components/NotificationBell";
+import NotificationBell from '@/components/NotificationBell';
 import {
   ShoppingBag,
   Menu,
@@ -179,18 +179,17 @@ export default function Header() {
 
           {/* 4. Right Actions */}
           <div className="flex items-center gap-1 md:gap-2">
-
-     {/* 👇 MOVED NOTIFICATION BELL HERE (Visible on all screens) 👇 */}
-  {user && (
-     <div className="mr-1"> 
-        <NotificationBell 
-           isHeaderWhite={isHeaderWhite} 
-           textColorClass={textColorClass} 
-           hoverBgClass={hoverBgClass} 
-        />
-     </div>
-  )}
-  {/* 👆 END MOVE 👆 */}
+            {/* 👇 MOVED NOTIFICATION BELL HERE (Visible on all screens) 👇 */}
+            {user && (
+              <div className="mr-1">
+                <NotificationBell
+                  isHeaderWhite={isHeaderWhite}
+                  textColorClass={textColorClass}
+                  hoverBgClass={hoverBgClass}
+                />
+              </div>
+            )}
+            {/* 👆 END MOVE 👆 */}
             <Link href="/wishlist">
               {/* Changed hidden sm:flex to hidden lg:flex to match nav behavior if you want icons hidden on mobile, 
                   OR keep sm:flex if you want icons on tablet header */}
@@ -328,9 +327,20 @@ export default function Header() {
                   {user ? (
                     <div className="space-y-4">
                       <div className="flex items-center gap-3 bg-white p-3 rounded-xl border border-[#EDD8B4]">
-                        <div className="w-10 h-10 rounded-full bg-[#442D1C] flex items-center justify-center text-[#EDD8B4] font-bold">
-                          {user.email?.[0].toUpperCase()}
+                        {/* 👇 PASTE THIS BLOCK HERE 👇 */}
+                        <div className="relative w-10 h-10 rounded-full bg-[#442D1C] flex items-center justify-center text-[#EDD8B4] font-bold overflow-hidden border border-[#EDD8B4]">
+                          {user.image ? (
+                            <Image
+                              src={user.image}
+                              alt={user.name || 'User'}
+                              fill
+                              className="object-cover"
+                            />
+                          ) : (
+                            user.email?.[0].toUpperCase()
+                          )}
                         </div>
+                        {/* 👆 END PASTE 👆 */}
                         <div className="overflow-hidden">
                           <p className="font-medium text-[#442D1C] truncate">
                             {user.name}
@@ -356,8 +366,6 @@ export default function Header() {
                             </Button>
                           </Link>
                         )}
-
-                        
 
                         <Link
                           href="/profile"
