@@ -129,6 +129,7 @@ export default function CheckoutPage() {
   const [paymentStatus, setPaymentStatus] = useState('idle');
 
   const [subscribeNewsletter, setSubscribeNewsletter] = useState(true);
+  const [alreadySubscribed, setAlreadySubscribed] = useState(false);
   // --- 2. Dynamic Cost Calculation ---
   const subtotal = getTotalPrice();
 
@@ -156,13 +157,13 @@ export default function CheckoutPage() {
   const totalAmount = subtotal + gstAmount + shippingCost;
 
   // --- 1. Basic Checks & Auth Redirect ---
- useEffect(() => {
+  useEffect(() => {
     if (!user) return;
 
     // FIX: If cart is empty and we aren't currently paying, kick them out
     if (cartItems.length === 0 && !cartLoading && !isPaymentSuccess) {
       // Use replace so this page doesn't stay in browser history
-      router.replace('/cart'); 
+      router.replace('/cart');
     }
   }, [user, cartItems.length, router, cartLoading, isPaymentSuccess]);
 
@@ -180,6 +181,41 @@ export default function CheckoutPage() {
     };
     fetchSettings();
   }, []);
+
+  // --- 2. NEW FEATURE: Fetch User Profile ---
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      if (!user) return;
+
+      try {
+        const res = await fetch('/api/user/me');
+        if (res.ok) {
+          const profile = await res.json();
+
+          setFormData((prev) => ({
+            ...prev,
+            name: profile.name || user.displayName || '',
+            email: profile.email || user.email || '',
+            phone: profile.phone || '',
+          }));
+
+          // 👇 ADD THIS BLOCK 👇
+          // If user is already subscribed in DB, set flag and disable checkbox default
+          if (profile.isSubscribed) {
+            setAlreadySubscribed(true);
+            setSubscribeNewsletter(false); // Uncheck it internally so we don't accidentally send it
+          }
+          // 👆 END ADDITION 👆
+        } else {
+          // ... fallback logic ...
+        }
+      } catch (error) {
+        console.error('Error fetching profile:', error);
+      }
+    };
+
+    fetchUserProfile();
+  }, [user]);
 
   // --- 2. NEW FEATURE: Fetch User Profile (Pre-fill Contact Info) ---
   useEffect(() => {
@@ -465,14 +501,16 @@ export default function CheckoutPage() {
       });
 
       // 2. Newsletter Subscription
-      await fetch('/api/newsletter/subscribe', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: user.email,
-          isSubscribed: subscribeNewsletter,
-        }),
-      });
+      if (!alreadySubscribed && subscribeNewsletter) {
+        await fetch('/api/newsletter/subscribe', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: user.email,
+            isSubscribed: true,
+          }),
+        });
+      }
 
       // 3. Load Razorpay SDK
       const isLoaded = await loadRazorpayScript();
@@ -745,28 +783,33 @@ export default function CheckoutPage() {
                         </div>
                       </div>
 
-                      {/* FEATURE #1: Newsletter Checkbox */}
-                      <div className="pt-2">
-                        <label className="flex items-start gap-3 cursor-pointer group">
-                          <div className="relative flex items-center">
-                            <input
-                              type="checkbox"
-                              checked={subscribeNewsletter}
-                              onChange={(e) =>
-                                setSubscribeNewsletter(e.target.checked)
-                              }
-                              className="peer h-5 w-5 cursor-pointer appearance-none rounded-md border-2 border-stone-300 transition-all checked:border-[#8E5022] checked:bg-[#8E5022]"
-                            />
-                            <div className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-white opacity-0 transition-opacity peer-checked:opacity-100">
-                              <CheckCircle className="h-3.5 w-3.5" />
+                      {/* 👇👇👇 REPLACE THE EXISTING NEWSLETTER DIV WITH THIS 👇👇👇 */}
+
+                      {!alreadySubscribed && (
+                        <div className="pt-2">
+                          <label className="flex items-start gap-3 cursor-pointer group">
+                            <div className="relative flex items-center">
+                              <input
+                                type="checkbox"
+                                checked={subscribeNewsletter}
+                                onChange={(e) =>
+                                  setSubscribeNewsletter(e.target.checked)
+                                }
+                                className="peer h-5 w-5 cursor-pointer appearance-none rounded-md border-2 border-stone-300 transition-all checked:border-[#8E5022] checked:bg-[#8E5022]"
+                              />
+                              <div className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-white opacity-0 transition-opacity peer-checked:opacity-100">
+                                <CheckCircle className="h-3.5 w-3.5" />
+                              </div>
                             </div>
-                          </div>
-                          <span className="text-sm text-stone-600 group-hover:text-[#442D1C] transition-colors">
-                            Keep me updated on new collections and exclusive
-                            offers from Bashō.
-                          </span>
-                        </label>
-                      </div>
+                            <span className="text-sm text-stone-600 group-hover:text-[#442D1C] transition-colors">
+                              Keep me updated on new collections and exclusive
+                              offers from Bashō.
+                            </span>
+                          </label>
+                        </div>
+                      )}
+
+                      {/* 👆👆👆 END REPLACEMENT 👆👆👆 */}
                     </div>
 
                     <button

@@ -12,6 +12,7 @@ import './globals.css';
 import '../public/fonts/fonts.css';
 import '../public/icons/material-symbols.css';
 import { SocketProvider } from '@/context/SocketContext';
+import SessionSync from '@/components/SessionSync';
 import { Car } from 'lucide-react';
 
 /*
@@ -39,6 +40,7 @@ export default function RootLayout({ children }) {
       <body className="antialiased font-sans">
         <ToastProvider>
           <AuthProvider>
+            <SessionSync />
             <SocketProvider>
               {/* Header is inside AuthProvider so it can check login state */}
               <CartProvider>

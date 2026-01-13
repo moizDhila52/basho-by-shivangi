@@ -1,11 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import useRazorpay from 'react-razorpay';
+import { useRazorpay } from 'react-razorpay';
 import { AlertCircle, RefreshCw } from 'lucide-react'; // Assuming you have lucide-react icons
 
 export default function OrderPaymentStatus({ order }) {
-  const [Razorpay] = useRazorpay();
+  const { Razorpay } = useRazorpay();
   const [isRetrying, setIsRetrying] = useState(false);
 
   const handleRetryPayment = () => {

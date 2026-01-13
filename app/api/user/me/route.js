@@ -1,8 +1,13 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
+import { unstable_noStore as noStore } from 'next/cache';
+
+export const dynamic = 'force-dynamic';
 
 export async function GET() {
+  noStore(); // Disable caching
+
   try {
     const session = await getSession();
     if (!session || !session.userId) {
@@ -15,8 +20,9 @@ export async function GET() {
         name: true,
         email: true,
         phone: true,
-        // 1. ADDED: Fetch the image so the frontend can update immediately
-        image: true, 
+        image: true,
+        role: true, // 👈 ADD THIS LINE
+        isSubscribed: true,
       },
     });
 
