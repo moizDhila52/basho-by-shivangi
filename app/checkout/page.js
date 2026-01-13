@@ -156,12 +156,13 @@ export default function CheckoutPage() {
   const totalAmount = subtotal + gstAmount + shippingCost;
 
   // --- 1. Basic Checks & Auth Redirect ---
-  useEffect(() => {
-    if (!user) {
-      return;
-    }
+ useEffect(() => {
+    if (!user) return;
+
+    // FIX: If cart is empty and we aren't currently paying, kick them out
     if (cartItems.length === 0 && !cartLoading && !isPaymentSuccess) {
-      router.push('/products');
+      // Use replace so this page doesn't stay in browser history
+      router.replace('/cart'); 
     }
   }, [user, cartItems.length, router, cartLoading, isPaymentSuccess]);
 

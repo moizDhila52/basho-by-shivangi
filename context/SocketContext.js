@@ -9,47 +9,70 @@ const SocketContext = createContext();
 
 export function SocketProvider({ children }) {
   const [socket, setSocket] = useState(null);
+  const [unreadCount, setUnreadCount] = useState(0);
   const { user, loading } = useAuth();
   const { addToast } = useToast();
 
-  useEffect(() => {
-    if (loading || !user || !user.id) return;
+  // Helper to play sound
+  const playNotificationSound = () => {
+    try {
+      const audio = new Audio('/sounds/notification.mp3');
+      audio.volume = 0.5; // 50% volume
+      const playPromise = audio.play();
 
-    // 1. Force a clean connection
+      if (playPromise !== undefined) {
+        playPromise.catch((error) => {
+          console.warn('🔊 Audio blocked. User must interact with page first.');
+        });
+      }
+    } catch (err) {
+      console.error('Audio setup error:', err);
+    }
+  };
+
+  useEffect(() => {
+    // 👇 CHANGE 1: Allow guests to connect (Removed !user?.id check)
+    if (loading) return;
+
+    // 1. Initialize Socket
     const newSocket = io(
       process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
       {
         path: '/socket.io',
-        // These options help with stability
+        transports: ['websocket'],
         reconnectionAttempts: 5,
-        reconnectionDelay: 1000,
       },
     );
 
-    // 2. Robust Room Joining Logic
-    const joinRoom = () => {
-      console.log('🔌 Socket connected! Joining room:', user.id);
-      newSocket.emit('join-room', user.id);
-    };
+    // 2. Connection Logic
+    newSocket.on('connect', () => {
+      console.log('✅ Socket Client Connected:', newSocket.id);
 
-    if (newSocket.connected) {
-      joinRoom(); // If already connected, join immediately
-    }
+      // 👇 CHANGE 2: Only join private room IF logged in
+      if (user?.id) {
+        newSocket.emit('join-room', user.id);
+      }
+    });
 
-    newSocket.on('connect', joinRoom); // If connecting now, join when ready
-
-    // 3. Handle Notifications & Sound
+    // 3. Listen for User Notifications (Private)
     newSocket.on('notification', (data) => {
-      console.log('🔔 Notification received:', data);
-
-      // Play Sound
-      const audio = new Audio('/sounds/notification.mp3');
-      audio
-        .play()
-        .catch((err) => console.log('Audio blocked by browser:', err));
-
-      // Show Toast
+      console.log('🔔 REAL-TIME EVENT RECEIVED:', data);
+      playNotificationSound();
       addToast(data.title, 'success');
+      setUnreadCount((prev) => prev + 1);
+    });
+
+    // 4. 👇 NEW: Listen for Stock Updates (Public Broadcast)
+    // We emit a global event so any component (Product/Wishlist) can listen
+    newSocket.on('stock-update', (data) => {
+      // Dispatch a custom window event so hooks can pick it up easily
+      window.dispatchEvent(
+        new CustomEvent('product-stock-update', { detail: data }),
+      );
+    });
+
+    newSocket.on('connect_error', (err) => {
+      console.error('Socket Connection Error:', err.message);
     });
 
     setSocket(newSocket);
@@ -57,10 +80,10 @@ export function SocketProvider({ children }) {
     return () => {
       newSocket.disconnect();
     };
-  }, [user, loading, addToast]);
+  }, [user, loading, addToast]); // Removed user.id dependency to keep socket stable
 
   return (
-    <SocketContext.Provider value={{ socket }}>
+    <SocketContext.Provider value={{ socket, unreadCount, setUnreadCount }}>
       {children}
     </SocketContext.Provider>
   );

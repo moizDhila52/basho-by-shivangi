@@ -54,6 +54,8 @@ import {
 } from "date-fns";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
+import { useAdmin } from "@/context/AdminContext"; // 👈 Add this at top
+import { useNotification } from "@/context/NotificationContext";
 
 // Bashō Color Palette
 const COLORS = {
@@ -77,8 +79,10 @@ const CHART_COLORS = {
 };
 
 export default function AdminDashboard() {
+  const { stats } = useAdmin();
   const [loading, setLoading] = useState(true);
   const [timeRange, setTimeRange] = useState("30days");
+  const { refreshTrigger } = useNotification();
   const [dashboardData, setDashboardData] = useState({
     summary: {
       totalRevenue: 0,
@@ -100,6 +104,31 @@ export default function AdminDashboard() {
     categoryData: [],
     dailyStats: [],
   });
+
+  useEffect(() => {
+    if (refreshTrigger.orders > 0) {
+      fetchDashboardData(); 
+    }
+  }, [refreshTrigger.orders]);
+
+  useEffect(() => {
+    if (stats) {
+      setDashboardData((prev) => ({
+        ...prev,
+        summary: {
+          ...prev.summary,
+          // Overwrite with live numbers from context
+          pendingOrders: stats.pendingOrders, 
+          totalRevenue: stats.totalRevenue, 
+          // You can also sync totalOrders if your context tracks it
+        },
+        dailyStats: {
+            ...prev.dailyStats,
+            todayOrders: stats.todaysOrders // Live Today's Count
+        }
+      }));
+    }
+  }, [stats]);
 
   const fetchDashboardData = useCallback(async () => {
     setLoading(true);

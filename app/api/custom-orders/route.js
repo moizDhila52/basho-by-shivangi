@@ -1,7 +1,9 @@
-import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
-import { getSession } from "@/lib/session";
-import { v4 as uuidv4 } from "uuid";
+import { NextResponse } from 'next/server';
+import { prisma } from '@/lib/db';
+import { getSession } from '@/lib/session';
+import { v4 as uuidv4 } from 'uuid';
+import { sendCustomOrderReceivedEmail } from '@/lib/mailer'; // 👈 Import Mailer
+import { triggerNotification } from '@/lib/socketTrigger'; // 👈 Import Socket
 
 // GET: Fetch custom orders (with user check)
 export async function GET(request) {
@@ -10,18 +12,18 @@ export async function GET(request) {
 
     if (!session) {
       return NextResponse.json(
-        { error: "Authentication required" },
-        { status: 401 }
+        { error: 'Authentication required' },
+        { status: 401 },
       );
     }
 
     const { searchParams } = new URL(request.url);
-    const userId = searchParams.get("userId");
-    const status = searchParams.get("status");
+    const userId = searchParams.get('userId');
+    const status = searchParams.get('status');
 
     // If user is not admin, only show their own orders
     const where =
-      session.role === "ADMIN"
+      session.role === 'ADMIN'
         ? { ...(status && { status }) }
         : {
             userId: session.userId,
@@ -30,7 +32,7 @@ export async function GET(request) {
 
     const customOrders = await prisma.customOrder.findMany({
       where,
-      orderBy: { createdAt: "desc" },
+      orderBy: { createdAt: 'desc' },
       include: {
         User: {
           select: {
@@ -44,10 +46,10 @@ export async function GET(request) {
 
     return NextResponse.json(customOrders);
   } catch (error) {
-    console.error("Error fetching custom orders:", error);
+    console.error('Error fetching custom orders:', error);
     return NextResponse.json(
-      { error: "Failed to fetch custom orders" },
-      { status: 500 }
+      { error: 'Failed to fetch custom orders' },
+      { status: 500 },
     );
   }
 }
@@ -59,8 +61,8 @@ export async function POST(request) {
 
     if (!session) {
       return NextResponse.json(
-        { error: "Authentication required" },
-        { status: 401 }
+        { error: 'Authentication required' },
+        { status: 401 },
       );
     }
 
@@ -86,11 +88,12 @@ export async function POST(request) {
     // Validate required fields
     if (!productType || !material || !contactName || !contactEmail) {
       return NextResponse.json(
-        { error: "Missing required fields" },
-        { status: 400 }
+        { error: 'Missing required fields' },
+        { status: 400 },
       );
     }
 
+    // 1. Create the Order in Database
     const customOrder = await prisma.customOrder.create({
       data: {
         id: uuidv4(),
@@ -109,20 +112,50 @@ export async function POST(request) {
         contactPhone,
         notes,
         files,
-        status: "PENDING",
+        status: 'PENDING',
       },
     });
+
+    // 2. 🔔 TRIGGER CONFIRMATION EVENTS (Email + Notification)
+    try {
+      // A. Send Confirmation Email
+      await sendCustomOrderReceivedEmail(
+        contactEmail,
+        contactName,
+        productType,
+      );
+
+      // B. Create Database Notification (History)
+      await prisma.notification.create({
+        data: {
+          userId: session.userId,
+          title: 'Request Received',
+          message: `We have received your request for a ${productType}. We will get back to you shortly.`,
+          type: 'CUSTOM_ORDER',
+          link: `/profile/custom-orders/${customOrder.id}`,
+        },
+      });
+
+      // C. Trigger Socket Notification (Popup)
+      await triggerNotification(session.userId, 'notification', {
+        title: 'Request Received',
+        message: 'Your custom order request has been submitted successfully.',
+      });
+    } catch (eventError) {
+      console.error('Failed to trigger custom order events:', eventError);
+      // We continue even if email fails, so the user still gets their order ID
+    }
 
     return NextResponse.json({
       success: true,
       customOrder,
-      message: "Custom order submitted successfully",
+      message: 'Custom order submitted successfully',
     });
   } catch (error) {
-    console.error("Error creating custom order:", error);
+    console.error('Error creating custom order:', error);
     return NextResponse.json(
-      { error: "Failed to create custom order" },
-      { status: 500 }
+      { error: 'Failed to create custom order' },
+      { status: 500 },
     );
   }
 }

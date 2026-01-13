@@ -1,36 +1,24 @@
-'use client';
-
-import { useState, useEffect } from 'react';
+import { prisma } from '@/lib/prisma';
+import { getSession } from '@/lib/session';
+import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import { Sparkles, Calendar, Package, Loader2 } from 'lucide-react';
+import { Sparkles, Calendar, Package } from 'lucide-react';
 
-export default function MyCustomOrdersPage() {
-  const [orders, setOrders] = useState([]);
-  const [loading, setLoading] = useState(true);
+export default async function MyCustomOrdersPage() {
+  // 1. Secure Authentication Check
+  const session = await getSession();
+  if (!session) redirect('/login');
 
-  useEffect(() => {
-    fetch('/api/custom-orders')
-      .then((res) => {
-        if (!res.ok) throw new Error('Failed');
-        return res.json();
-      })
-      .then((data) => {
-        // Ensure data is an array before setting
-        if (Array.isArray(data)) {
-          setOrders(data);
-        } else {
-          console.error('API returned non-array:', data);
-          setOrders([]);
-        }
-        setLoading(false);
-      })
-      .catch((err) => {
-        console.error(err);
-        setOrders([]);
-        setLoading(false);
-      });
-  }, []);
+  // 2. Secure Database Query (The Fix)
+  // We fetch directly here instead of using 'fetch(/api/...)', ensuring we only get THIS user's data.
+  const orders = await prisma.customOrder.findMany({
+    where: {
+      userId: session.userId, // 🔒 This prevents seeing other users' orders
+    },
+    orderBy: { createdAt: 'desc' },
+  });
 
+  // --- Helper Function for Styles ---
   const getStatusColor = (status) => {
     switch (status) {
       case 'QUOTED':
@@ -46,13 +34,7 @@ export default function MyCustomOrdersPage() {
     }
   };
 
-  if (loading)
-    return (
-      <div className="p-12 text-center">
-        <Loader2 className="w-8 h-8 animate-spin mx-auto text-[#8E5022]" />
-      </div>
-    );
-
+  // --- Empty State ---
   if (orders.length === 0) {
     return (
       <div className="bg-white rounded-2xl border border-dashed border-[#EDD8B4] p-12 text-center h-full flex flex-col items-center justify-center min-h-[400px]">
@@ -73,6 +55,7 @@ export default function MyCustomOrdersPage() {
     );
   }
 
+  // --- Main List UI ---
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -90,6 +73,7 @@ export default function MyCustomOrdersPage() {
           <Link key={order.id} href={`/profile/custom-orders/${order.id}`}>
             <div className="bg-white p-6 rounded-2xl border border-[#EDD8B4] hover:shadow-md transition-all group">
               <div className="flex flex-col md:flex-row gap-6 items-start md:items-center justify-between">
+                {/* Icon & Title */}
                 <div className="flex items-center gap-4">
                   <div className="w-12 h-12 rounded-xl bg-[#FDFBF7] flex items-center justify-center border border-[#EDD8B4] shrink-0">
                     <Package className="w-6 h-6 text-[#8E5022]" />
@@ -113,7 +97,7 @@ export default function MyCustomOrdersPage() {
                   {order.status.replace('_', ' ')}
                 </div>
 
-                {/* Price or Date */}
+                {/* Logic: Show Price if Quoted, otherwise Show Date */}
                 <div className="text-right min-w-[100px]">
                   {order.status === 'QUOTED' && order.actualPrice ? (
                     <div>

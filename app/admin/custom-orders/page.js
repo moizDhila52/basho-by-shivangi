@@ -19,12 +19,25 @@ import {
 import Link from 'next/link';
 import { useAuth } from '@/components/AuthProvider';
 import toast from 'react-hot-toast';
+import { useNotification } from '@/context/NotificationContext';
 
 export default function AdminCustomOrdersPage() {
   const { user, loading: authLoading } = useAuth();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
+  const { refreshTrigger, markAsRead } = useNotification();
+
+  useEffect(() => {
+    markAsRead('customOrders');
+  }, []);
+
+  // 4. Real-Time Listener
+  useEffect(() => {
+    if (refreshTrigger.customOrders > 0) {
+      loadOrders(); // Re-fetch the table silently without page reload
+    }
+  }, [refreshTrigger.customOrders]);
 
   useEffect(() => {
     if (user && user.role === 'ADMIN') {

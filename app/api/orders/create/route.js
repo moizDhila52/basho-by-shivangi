@@ -30,6 +30,13 @@ export async function POST(req) {
         });
         if (!product) throw new Error(`Product ${item.id} not found`);
 
+        // 👇 NEW: PRE-PAYMENT STOCK CHECK
+        if (product.stock < item.quantity) {
+          throw new Error(
+            `Sorry, "${product.name}" is out of stock (Available: ${product.stock})`,
+          );
+        }
+
         const lineTotal = product.price * item.quantity;
         const lineWeight = (product.weight || 0.5) * item.quantity;
 
@@ -105,6 +112,8 @@ export async function POST(req) {
     });
   } catch (error) {
     console.error('Order Creation Error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    // Return 409 Conflict if stock issue, otherwise 500
+    const status = error.message.includes('out of stock') ? 409 : 500;
+    return NextResponse.json({ error: error.message }, { status });
   }
 }

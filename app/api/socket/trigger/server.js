@@ -1,11 +1,11 @@
 // server.js
-const { createServer } = require("http");
-const { parse } = require("url");
-const next = require("next");
-const { Server } = require("socket.io");
+const { createServer } = require('http');
+const { parse } = require('url');
+const next = require('next');
+const { Server } = require('socket.io');
 
-const dev = process.env.NODE_ENV !== "production";
-const hostname = "localhost";
+const dev = process.env.NODE_ENV !== 'production';
+const hostname = 'localhost';
 const port = process.env.PORT || 3000;
 
 const app = next({ dev, hostname, port });
@@ -17,24 +17,31 @@ app.prepare().then(() => {
 
     // 1. THE BRIDGE: Internal endpoint for API routes to trigger sockets
     // APIs calls this -> This calls Socket.io -> Client receives alert
-    if (req.method === "POST" && parsedUrl.pathname === "/api/socket/trigger") {
-      let body = "";
-      req.on("data", (chunk) => (body += chunk));
-      req.on("end", () => {
+    if (req.method === 'POST' && parsedUrl.pathname === '/api/socket/trigger') {
+      let body = '';
+      req.on('data', (chunk) => (body += chunk));
+      req.on('end', () => {
         try {
           const { userId, event, data } = JSON.parse(body);
-          
-          if (userId && io) {
-            // Emit to the specific user's room
-            io.to(userId).emit(event, data);
-            console.log(`📡 Socket emitted to ${userId}: ${event}`);
+
+          if (io) {
+            // 👇 UPDATED LOGIC HERE
+            if (userId === 'BROADCAST_ALL') {
+              // Send to everyone (Public Broadcast)
+              io.emit(event, data);
+              console.log(`📡 Socket broadcast to ALL: ${event}`);
+            } else if (userId) {
+              // Send to specific user room (Private Notification)
+              io.to(userId).emit(event, data);
+              console.log(`📡 Socket emitted to ${userId}: ${event}`);
+            }
           }
-          
+
           res.statusCode = 200;
           res.end(JSON.stringify({ success: true }));
         } catch (e) {
           res.statusCode = 500;
-          res.end(JSON.stringify({ error: "Socket trigger failed" }));
+          res.end(JSON.stringify({ error: 'Socket trigger failed' }));
         }
       });
       return;
@@ -47,21 +54,21 @@ app.prepare().then(() => {
   // 2. Initialize Socket.io
   const io = new Server(httpServer, {
     cors: {
-      origin: "*", // Adjust for production security later
-      methods: ["GET", "POST"],
+      origin: '*', // Adjust for production security later
+      methods: ['GET', 'POST'],
     },
   });
 
   // 3. Socket Logic
-  io.on("connection", (socket) => {
+  io.on('connection', (socket) => {
     // A. Join User Room
     // Client sends: socket.emit("join-room", "user_123")
-    socket.on("join-room", (userId) => {
+    socket.on('join-room', (userId) => {
       socket.join(userId);
       console.log(`👤 User ${userId} joined their notification room.`);
     });
 
-    socket.on("disconnect", () => {
+    socket.on('disconnect', () => {
       // Clean up if needed
     });
   });

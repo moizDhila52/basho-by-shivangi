@@ -13,11 +13,25 @@ import {
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useToast } from '@/components/ToastProvider';
+import { useNotification } from '@/context/NotificationContext';
 
 export default function AdminWorkshopsPage() {
   const { addToast } = useToast();
   const [workshops, setWorkshops] = useState([]);
   const [loading, setLoading] = useState(true);
+  const { refreshTrigger, markAsRead } = useNotification();
+
+  // 3. Mark Read on Mount
+  useEffect(() => {
+    markAsRead('workshops');
+  }, []);
+
+  // 4. Real-time Refresh
+  useEffect(() => {
+    if (refreshTrigger.workshops > 0) {
+        fetchWorkshops();
+    }
+  }, [refreshTrigger.workshops]);
 
   const fetchWorkshops = async () => {
     try {

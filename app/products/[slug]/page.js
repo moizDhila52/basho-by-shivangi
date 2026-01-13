@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import React, { useState, useEffect, useCallback } from "react";
-import { motion } from "framer-motion";
+import React, { useState, useEffect, useCallback } from 'react';
+import { motion } from 'framer-motion';
 import {
   ArrowLeft,
   Heart,
@@ -20,38 +20,39 @@ import {
   Minus,
   Loader2,
   AlertCircle,
-} from "lucide-react";
-import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
-import CartSlider from "@/components/CartSlider";
-import { useCart } from "@/context/CartContext";
-import { useAuth } from "@/components/AuthProvider";
-import toast from "react-hot-toast";
+} from 'lucide-react';
+import Link from 'next/link';
+import { useParams, useRouter } from 'next/navigation';
+import CartSlider from '@/components/CartSlider';
+import { useCart } from '@/context/CartContext';
+import { useAuth } from '@/components/AuthProvider';
+import toast from 'react-hot-toast';
+import NotifyButton from '@/components/NotifyButton'; // 👈 ADD THIS IMPORT
 
 // Wishlist API functions
 const fetchWishlist = async () => {
   try {
-    const response = await fetch("/api/wishlist", {
-      credentials: "include",
+    const response = await fetch('/api/wishlist', {
+      credentials: 'include',
     });
 
     if (!response.ok) return [];
     const data = await response.json();
     return data.wishlist || [];
   } catch (error) {
-    console.error("Error fetching wishlist:", error);
+    console.error('Error fetching wishlist:', error);
     return [];
   }
 };
 
 const addToWishlistAPI = async (productId) => {
   try {
-    const response = await fetch("/api/wishlist/add", {
-      method: "POST",
+    const response = await fetch('/api/wishlist/add', {
+      method: 'POST',
       headers: {
-        "Content-Type": "application/json",
+        'Content-Type': 'application/json',
       },
-      credentials: "include",
+      credentials: 'include',
       body: JSON.stringify({ productId }),
     });
 
@@ -60,14 +61,14 @@ const addToWishlistAPI = async (productId) => {
     if (!response.ok) {
       return {
         success: false,
-        error: data.error || "Failed to add to wishlist",
+        error: data.error || 'Failed to add to wishlist',
       };
     }
 
     return data;
   } catch (error) {
-    console.error("Error in addToWishlistAPI:", error);
-    return { success: false, error: error.message || "Network error" };
+    console.error('Error in addToWishlistAPI:', error);
+    return { success: false, error: error.message || 'Network error' };
   }
 };
 
@@ -76,9 +77,9 @@ const removeFromWishlistAPI = async (productId) => {
     const response = await fetch(
       `/api/wishlist/remove?productId=${productId}`,
       {
-        method: "DELETE",
-        credentials: "include",
-      }
+        method: 'DELETE',
+        credentials: 'include',
+      },
     );
 
     const data = await response.json();
@@ -86,14 +87,14 @@ const removeFromWishlistAPI = async (productId) => {
     if (!response.ok) {
       return {
         success: false,
-        error: data.error || "Failed to remove from wishlist",
+        error: data.error || 'Failed to remove from wishlist',
       };
     }
 
     return data;
   } catch (error) {
-    console.error("Error in removeFromWishlistAPI:", error);
-    return { success: false, error: error.message || "Network error" };
+    console.error('Error in removeFromWishlistAPI:', error);
+    return { success: false, error: error.message || 'Network error' };
   }
 };
 
@@ -101,14 +102,14 @@ const removeFromWishlistAPI = async (productId) => {
 function ReviewForm({ productSlug, onReviewSubmitted }) {
   const [rating, setRating] = useState(0);
   const [hoveredRating, setHoveredRating] = useState(0);
-  const [comment, setComment] = useState("");
+  const [comment, setComment] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (!rating) {
-      toast.error("Please select a rating");
+      toast.error('Please select a rating');
       return;
     }
 
@@ -116,11 +117,11 @@ function ReviewForm({ productSlug, onReviewSubmitted }) {
 
     try {
       const response = await fetch(`/api/products/${productSlug}/review`, {
-        method: "POST",
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
-        credentials: "include",
+        credentials: 'include',
         body: JSON.stringify({
           rating,
           comment,
@@ -130,19 +131,19 @@ function ReviewForm({ productSlug, onReviewSubmitted }) {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || "Failed to submit review");
+        throw new Error(data.error || 'Failed to submit review');
       }
 
-      toast.success("Review submitted successfully!");
+      toast.success('Review submitted successfully!');
       setRating(0);
-      setComment("");
+      setComment('');
 
       if (onReviewSubmitted) {
         onReviewSubmitted();
       }
     } catch (error) {
-      console.error("Error submitting review:", error);
-      toast.error(error.message || "Failed to submit review");
+      console.error('Error submitting review:', error);
+      toast.error(error.message || 'Failed to submit review');
     } finally {
       setSubmitting(false);
     }
@@ -170,19 +171,19 @@ function ReviewForm({ productSlug, onReviewSubmitted }) {
                 <Star
                   className={`w-8 h-8 ${
                     star <= (hoveredRating || rating)
-                      ? "fill-[#C85428] text-[#C85428]"
-                      : "text-stone-300"
+                      ? 'fill-[#C85428] text-[#C85428]'
+                      : 'text-stone-300'
                   }`}
                 />
               </button>
             ))}
             {rating > 0 && (
               <span className="ml-3 text-stone-600">
-                {rating === 1 && "Poor"}
-                {rating === 2 && "Fair"}
-                {rating === 3 && "Good"}
-                {rating === 4 && "Very Good"}
-                {rating === 5 && "Excellent"}
+                {rating === 1 && 'Poor'}
+                {rating === 2 && 'Fair'}
+                {rating === 3 && 'Good'}
+                {rating === 4 && 'Very Good'}
+                {rating === 5 && 'Excellent'}
               </span>
             )}
           </div>
@@ -216,8 +217,8 @@ function ReviewForm({ productSlug, onReviewSubmitted }) {
           disabled={submitting || !rating}
           className={`w-full py-4 rounded-xl font-medium text-lg transition-all flex items-center justify-center gap-3 ${
             submitting || !rating
-              ? "bg-stone-200 text-stone-400 cursor-not-allowed"
-              : "bg-[#8E5022] text-white hover:bg-[#652810]"
+              ? 'bg-stone-200 text-stone-400 cursor-not-allowed'
+              : 'bg-[#8E5022] text-white hover:bg-[#652810]'
           }`}
         >
           {submitting ? (
@@ -259,8 +260,8 @@ export default function ProductDetailPage() {
   const productId = params.slug;
   const quantityInCart = product ? getItemQuantity(product.id) : 0;
 
-  console.log("ProductDetailPage params:", params);
-  console.log("params.slug:", params?.slug);
+  console.log('ProductDetailPage params:', params);
+  console.log('params.slug:', params?.slug);
 
   // Load product data
   useEffect(() => {
@@ -273,18 +274,18 @@ export default function ProductDetailPage() {
 
         if (!response.ok) {
           if (response.status === 404) {
-            throw new Error("Product not found");
+            throw new Error('Product not found');
           }
-          throw new Error("Failed to load product");
+          throw new Error('Failed to load product');
         }
 
         const data = await response.json();
         setProduct(data.product);
         setRelatedProducts(data.relatedProducts || []);
       } catch (err) {
-        console.error("Error loading product:", err);
+        console.error('Error loading product:', err);
         setError(err.message);
-        toast.error(err.message || "Failed to load product");
+        toast.error(err.message || 'Failed to load product');
       } finally {
         setLoading(false);
       }
@@ -305,7 +306,7 @@ export default function ProductDetailPage() {
 
       try {
         const response = await fetch(`/api/products/${productId}/review`, {
-          credentials: "include",
+          credentials: 'include',
         });
 
         if (response.ok) {
@@ -314,7 +315,7 @@ export default function ProductDetailPage() {
           setCanReview(data.canReview);
         }
       } catch (error) {
-        console.error("Error checking review eligibility:", error);
+        console.error('Error checking review eligibility:', error);
         setCanReview(false);
       }
     }
@@ -343,13 +344,13 @@ export default function ProductDetailPage() {
 
     // Check if auth is still loading
     if (authLoading) {
-      toast.error("Please wait...");
+      toast.error('Please wait...');
       return;
     }
 
     // Check if user exists BEFORE calling any API
     if (!user) {
-      toast.error("Please login to add to wishlist");
+      toast.error('Please login to add to wishlist');
       router.push(`/login?returnUrl=/products/${productId}`);
       return;
     }
@@ -370,13 +371,13 @@ export default function ProductDetailPage() {
             newSet.delete(product.id);
             return newSet;
           });
-          toast.success("Removed from wishlist");
+          toast.success('Removed from wishlist');
         } else {
           // Don't show "Authentication required" since we already checked
-          if (result.error && result.error !== "Authentication required") {
+          if (result.error && result.error !== 'Authentication required') {
             toast.error(result.error);
           } else if (!result.error) {
-            toast.error("Failed to remove from wishlist");
+            toast.error('Failed to remove from wishlist');
           }
         }
       } else {
@@ -385,21 +386,21 @@ export default function ProductDetailPage() {
 
         if (result.success) {
           setWishlist((prev) => new Set([...prev, product.id]));
-          toast.success("Added to wishlist");
+          toast.success('Added to wishlist');
         } else {
           // Don't show "Authentication required" since we already checked
-          if (result.error && result.error !== "Authentication required") {
+          if (result.error && result.error !== 'Authentication required') {
             toast.error(result.error);
           } else if (!result.error) {
-            toast.error("Failed to add to wishlist");
+            toast.error('Failed to add to wishlist');
           }
         }
       }
     } catch (err) {
-      console.error("Error in toggleWishlist:", err);
+      console.error('Error in toggleWishlist:', err);
       // Don't show authentication errors since we handle login redirect above
-      if (err.message !== "Authentication required") {
-        toast.error(err.message || "Failed to update wishlist");
+      if (err.message !== 'Authentication required') {
+        toast.error(err.message || 'Failed to update wishlist');
       }
     } finally {
       setWishlistLoading(false);
@@ -416,7 +417,7 @@ export default function ProductDetailPage() {
           setCanReview(false);
           setReviewEligibility({ ...reviewEligibility, hasReviewed: true });
         })
-        .catch((err) => console.error("Error reloading product:", err));
+        .catch((err) => console.error('Error reloading product:', err));
     }
   };
 
@@ -429,7 +430,7 @@ export default function ProductDetailPage() {
   const prevImage = () => {
     if (!product?.images) return;
     setSelectedImage(
-      (prev) => (prev - 1 + product.images.length) % product.images.length
+      (prev) => (prev - 1 + product.images.length) % product.images.length,
     );
   };
 
@@ -447,7 +448,7 @@ export default function ProductDetailPage() {
         slug: product.slug,
         price: product.price,
         originalPrice: product.originalPrice,
-        image: product.images?.[0] || "/placeholder-image.jpg",
+        image: product.images?.[0] || '/placeholder-image.jpg',
         inStock: product.inStock,
         category: product.category?.name,
         quantity: quantity,
@@ -474,7 +475,7 @@ export default function ProductDetailPage() {
         <div className="text-center max-w-md mx-auto">
           <AlertCircle className="w-16 h-16 text-[#C85428] mx-auto mb-4" />
           <h2 className="font-serif text-3xl text-[#442D1C] mb-2">Oops!</h2>
-          <p className="text-stone-600 mb-6">{error || "Product not found"}</p>
+          <p className="text-stone-600 mb-6">{error || 'Product not found'}</p>
           <div className="flex gap-4 justify-center">
             <Link href="/products">
               <button className="bg-[#8E5022] text-white px-6 py-3 rounded-xl font-medium hover:bg-[#652810] transition-colors">
@@ -529,7 +530,7 @@ export default function ProductDetailPage() {
                     alt={`${product.name} - View ${selectedImage + 1}`}
                     className="w-full h-full object-cover"
                     onError={(e) => {
-                      e.target.src = "/placeholder-image.jpg";
+                      e.target.src = '/placeholder-image.jpg';
                     }}
                   />
                 </div>
@@ -587,8 +588,8 @@ export default function ProductDetailPage() {
                     onClick={() => setSelectedImage(index)}
                     className={`flex-shrink-0 w-24 h-24 rounded-2xl overflow-hidden transition-all ${
                       selectedImage === index
-                        ? "ring-4 ring-[#8E5022] ring-offset-2"
-                        : "opacity-60 hover:opacity-100"
+                        ? 'ring-4 ring-[#8E5022] ring-offset-2'
+                        : 'opacity-60 hover:opacity-100'
                     }`}
                   >
                     <img
@@ -596,7 +597,7 @@ export default function ProductDetailPage() {
                       alt={`${product.name} view ${index + 1}`}
                       className="w-full h-full object-cover"
                       onError={(e) => {
-                        e.target.src = "/placeholder-image.jpg";
+                        e.target.src = '/placeholder-image.jpg';
                       }}
                     />
                   </button>
@@ -610,7 +611,7 @@ export default function ProductDetailPage() {
             {/* Category & Breadcrumb */}
             <div className="mb-6">
               <span className="text-[#8E5022] font-medium uppercase tracking-wider">
-                {product.category?.name || "Uncategorized"}
+                {product.category?.name || 'Uncategorized'}
               </span>
               <div className="flex items-center gap-2 text-sm text-stone-500 mt-2">
                 <Link
@@ -650,14 +651,14 @@ export default function ProductDetailPage() {
                         key={i}
                         className={`w-5 h-5 ${
                           i < Math.floor(product.averageRating)
-                            ? "fill-[#C85428] text-[#C85428]"
-                            : "text-stone-300"
+                            ? 'fill-[#C85428] text-[#C85428]'
+                            : 'text-stone-300'
                         }`}
                       />
                     ))}
                   </div>
                   <span className="text-stone-600">
-                    {product.averageRating.toFixed(1)} ({product.reviewCount}{" "}
+                    {product.averageRating.toFixed(1)} ({product.reviewCount}{' '}
                     reviews)
                   </span>
                   <span className="text-stone-500">•</span>
@@ -665,14 +666,14 @@ export default function ProductDetailPage() {
               )}
               <span
                 className={`font-medium ${
-                  product.inStock ? "text-green-600" : "text-red-600"
+                  product.inStock ? 'text-green-600' : 'text-red-600'
                 }`}
               >
                 {product.inStock
                   ? product.stock > 10
-                    ? "In Stock"
+                    ? 'In Stock'
                     : `Only ${product.stock} left`
-                  : "Out of Stock"}
+                  : 'Out of Stock'}
               </span>
             </div>
 
@@ -738,7 +739,7 @@ export default function ProductDetailPage() {
               </div>
               <p className="text-stone-600 flex items-center gap-2">
                 <Truck className="w-5 h-5" />
-                {product.shipping || "Free shipping on orders over $200"}
+                {product.shipping || 'Free shipping on orders over $200'}
               </p>
             </div>
 
@@ -777,7 +778,7 @@ export default function ProductDetailPage() {
                     </button>
                   </div>
                   <div className="text-stone-500">
-                    {product.leadTime || "Ships in 3-5 business days"}
+                    {product.leadTime || 'Ships in 3-5 business days'}
                   </div>
                 </div>
               ) : (
@@ -801,7 +802,7 @@ export default function ProductDetailPage() {
                     </button>
                   </div>
                   <div className="text-stone-500">
-                    {product.leadTime || "Ships in 3-5 business days"}
+                    {product.leadTime || 'Ships in 3-5 business days'}
                   </div>
                 </div>
               )}
@@ -841,15 +842,17 @@ export default function ProductDetailPage() {
                     </button>
                   </Link>
                 </>
+              ) : !product.inStock ? (
+                // 👇 NEW: Show Notify Button if Out of Stock
+                <div className="flex-1">
+                  <NotifyButton productId={product.id} stock={product.stock} />
+                </div>
               ) : (
+                // 👇 EXISTING: Show Add to Cart if In Stock
                 <button
                   onClick={addToCartHandler}
-                  disabled={!product.inStock || isUpdating}
-                  className={`flex-1 py-5 rounded-2xl font-medium text-lg transition-all flex items-center justify-center gap-3 ${
-                    product.inStock && !isUpdating
-                      ? "bg-[#8E5022] text-white hover:bg-[#652810]"
-                      : "bg-stone-200 text-stone-400 cursor-not-allowed"
-                  }`}
+                  disabled={isUpdating}
+                  className="flex-1 py-5 rounded-2xl font-medium text-lg transition-all flex items-center justify-center gap-3 bg-[#8E5022] text-white hover:bg-[#652810]"
                 >
                   {isUpdating ? (
                     <>
@@ -869,12 +872,12 @@ export default function ProductDetailPage() {
                 disabled={wishlistLoading || isUpdating}
                 className={`flex-1 py-5 rounded-2xl font-medium text-lg transition-all flex items-center justify-center gap-3 ${
                   isInWishlist
-                    ? "bg-[#FDFBF7] border-2 border-[#C85428] text-[#C85428]"
-                    : "bg-[#FDFBF7] border-2 border-stone-300 text-stone-700 hover:border-[#C85428]"
+                    ? 'bg-[#FDFBF7] border-2 border-[#C85428] text-[#C85428]'
+                    : 'bg-[#FDFBF7] border-2 border-stone-300 text-stone-700 hover:border-[#C85428]'
                 } ${
                   wishlistLoading || isUpdating
-                    ? "opacity-50 cursor-not-allowed"
-                    : ""
+                    ? 'opacity-50 cursor-not-allowed'
+                    : ''
                 }`}
               >
                 {wishlistLoading ? (
@@ -882,11 +885,11 @@ export default function ProductDetailPage() {
                 ) : (
                   <Heart
                     className={`w-6 h-6 ${
-                      isInWishlist ? "fill-[#C85428]" : ""
+                      isInWishlist ? 'fill-[#C85428]' : ''
                     }`}
                   />
                 )}
-                {isInWishlist ? "In Wishlist" : "Add to Wishlist"}
+                {isInWishlist ? 'In Wishlist' : 'Add to Wishlist'}
               </button>
             </div>
 
@@ -917,7 +920,7 @@ export default function ProductDetailPage() {
                   Care Instructions
                 </h4>
                 <p className="text-stone-600">
-                  {product.care || "Hand wash recommended with mild detergent."}
+                  {product.care || 'Hand wash recommended with mild detergent.'}
                 </p>
               </div>
               <div className="bg-gradient-to-br from-white to-[#EDD8B4]/20 rounded-2xl p-6">
@@ -989,7 +992,7 @@ export default function ProductDetailPage() {
                             ? review.User.name[0].toUpperCase()
                             : review.User?.email
                             ? review.User.email[0].toUpperCase()
-                            : "A"}
+                            : 'A'}
                         </div>
                         <div className="flex items-center gap-2">
                           {[...Array(5)].map((_, i) => (
@@ -997,14 +1000,14 @@ export default function ProductDetailPage() {
                               key={i}
                               className={`w-4 h-4 ${
                                 i < Math.floor(review.rating)
-                                  ? "fill-[#C85428] text-[#C85428]"
-                                  : "text-stone-300"
+                                  ? 'fill-[#C85428] text-[#C85428]'
+                                  : 'text-stone-300'
                               }`}
                             />
                           ))}
                         </div>
                         <span className="font-medium">
-                          {review.User?.name || "Anonymous"}
+                          {review.User?.name || 'Anonymous'}
                         </span>
                         {review.isVerified && (
                           <span className="bg-green-100 text-green-700 text-xs font-medium px-2 py-1 rounded-full flex items-center gap-1">
@@ -1049,7 +1052,7 @@ export default function ProductDetailPage() {
                       });
                     } else {
                       navigator.clipboard.writeText(window.location.href);
-                      toast.success("Link copied to clipboard!");
+                      toast.success('Link copied to clipboard!');
                     }
                   }}
                   className="w-12 h-12 rounded-full bg-stone-100 flex items-center justify-center hover:bg-stone-200 transition-colors"
@@ -1083,7 +1086,7 @@ export default function ProductDetailPage() {
                         alt={relatedProduct.name}
                         className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                         onError={(e) => {
-                          e.target.src = "/placeholder-image.jpg";
+                          e.target.src = '/placeholder-image.jpg';
                         }}
                       />
                       {!relatedProduct.inStock && (

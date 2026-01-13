@@ -23,11 +23,13 @@ import {
   ExternalLink,
   X,
   ClipboardCheck,
+  Trash2,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { format } from 'date-fns';
 import { useToast } from '@/components/ToastProvider';
 import React from 'react';
+import { useNotification } from '@/context/NotificationContext'; // ADD THIS
 
 // UPDATED: Removed CANCELLED from flow
 const STATUS_FLOW = [
@@ -40,6 +42,7 @@ const STATUS_FLOW = [
 
 export default function AdminOrdersPage() {
   const [orders, setOrders] = useState([]);
+  const { refreshTrigger, markAsRead } = useNotification();
   const [loading, setLoading] = useState(true);
   const [selectedStatus, setSelectedStatus] = useState('ALL');
   const [searchQuery, setSearchQuery] = useState('');
@@ -68,7 +71,14 @@ export default function AdminOrdersPage() {
 
   useEffect(() => {
     fetchOrders();
+    markAsRead();
   }, []);
+
+  useEffect(() => {
+    if (refreshTrigger.orders > 0) {
+      fetchOrders(); // Silent re-fetch
+    }
+  }, [refreshTrigger.orders]);
 
   // Filter Logic
   const filteredOrders = useMemo(() => {
@@ -179,6 +189,56 @@ export default function AdminOrdersPage() {
     };
   }, [orders]);
 
+  const verifyPayment = async (order) => {
+    if (!order.razorpayOrderId) {
+      addToast('No Razorpay Order ID linked', 'error');
+      return;
+    }
+
+    const loadingToast = toast.loading('Verifying with Razorpay...');
+
+    try {
+      const res = await fetch('/api/admin/orders/verify', {
+        method: 'POST',
+        body: JSON.stringify({
+          orderId: order.id,
+          razorpayOrderId: order.razorpayOrderId,
+        }),
+      });
+
+      const data = await res.json();
+      toast.dismiss(loadingToast);
+
+      if (data.success) {
+        toast.success('Payment Verified! Order Confirmed.');
+        fetchOrders(); // Refresh table
+      } else {
+        toast.error('Payment not found on Razorpay.');
+      }
+    } catch (e) {
+      toast.dismiss(loadingToast);
+      toast.error('Verification failed');
+    }
+  };
+
+  const handleCleanup = async () => {
+    const toastId = toast.loading('Checking for expired pending orders...');
+    try {
+      const res = await fetch('/api/admin/orders/cleanup', { method: 'POST' });
+      const data = await res.json();
+      toast.dismiss(toastId);
+      if (data.success) {
+        toast.success(data.message);
+        fetchOrders(); // Refresh list to remove cancelled items
+      } else {
+        toast(data.message || 'No cleanup needed', { icon: '🧹' });
+      }
+    } catch (e) {
+      toast.dismiss(toastId);
+      toast.error('Cleanup failed');
+    }
+  };
+
   // CSV Export
   const handleExportOrders = () => {
     const csvData = filteredOrders.map((order) => ({
@@ -237,6 +297,14 @@ export default function AdminOrdersPage() {
           </p>
         </div>
         <div className="flex items-center gap-3">
+          {/* 👇 PASTE BUTTON HERE 👇 */}
+          <button
+            onClick={handleCleanup}
+            className="hidden md:flex items-center gap-2 px-4 py-2 border border-red-200 text-red-700 bg-red-50 rounded-lg hover:bg-red-100 transition-colors text-sm font-medium"
+          >
+            <Trash2 className="w-4 h-4" /> Release Stock
+          </button>
+          {/* 👆 END BUTTON 👆 */}
           <button
             onClick={handleExportOrders}
             className="flex items-center gap-2 px-4 py-2 border border-[#EDD8B4] text-[#8E5022] rounded-lg hover:bg-[#FDFBF7] transition-colors text-sm font-medium"
@@ -363,11 +431,20 @@ export default function AdminOrdersPage() {
                     </div>
                   </td>
                   <td className="p-4">
-                    <div className="font-medium">
-                      {order.customerName || 'Guest'}
-                    </div>
-                    <div className="text-xs text-[#8E5022]">
-                      {order.customerEmail}
+                    <div className="flex flex-col">
+                      <span className="font-mono font-bold">
+                        #{order.orderNumber || order.id.slice(-8).toUpperCase()}
+                      </span>
+                      {/* 👇 NEW: Alert Badge for Pending Orders 👇 */}
+                      {order.status === 'PENDING' && (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-100 w-fit mt-1 animate-pulse">
+                          <AlertCircle className="w-3 h-3" /> Check Payment
+                        </span>
+                      )}
+                      {/* 👆 END NEW 👆 */}
+                      <div className="text-xs text-[#8E5022] mt-1">
+                        {format(new Date(order.createdAt), 'MMM dd, HH:mm')}
+                      </div>
                     </div>
                   </td>
                   <td className="p-4">
@@ -411,6 +488,16 @@ export default function AdminOrdersPage() {
                   </td>
                   <td className="p-4">
                     <div className="flex items-center gap-2">
+                      {/* 👇 INSERT THIS BLOCK HERE 👇 */}
+                      {order.status === 'PENDING' && (
+                        <button
+                          onClick={() => verifyPayment(order)}
+                          className="text-xs bg-blue-50 text-blue-600 px-2 py-1 rounded border border-blue-200 hover:bg-blue-100 whitespace-nowrap"
+                        >
+                          Verify Payment
+                        </button>
+                      )}
+                      {/* 👆 END INSERT 👆 */}
                       {/* UPDATED: Removed Cancelled Option */}
                       <select
                         value={order.status}
@@ -485,6 +572,47 @@ export default function AdminOrdersPage() {
 
               {/* Modal Body */}
               <div className="flex-1 overflow-y-auto p-6 space-y-8">
+                {/* 👇 PAYMENT VERIFICATION BOX 👇 */}
+                {selectedOrder.status === 'PENDING' && (
+                  <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6">
+                    <div className="flex items-start gap-3">
+                      <div className="p-2 bg-amber-100 rounded-full text-amber-700 mt-1">
+                        <AlertCircle className="w-5 h-5" />
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="font-bold text-amber-900 text-sm">
+                          Payment Verification Needed
+                        </h4>
+                        <p className="text-xs text-amber-800 mt-1 mb-3 leading-relaxed">
+                          This order is <strong>Pending</strong>. Stock is
+                          currently reserved (1 qty).
+                          <br />• If customer claims they paid: Click{' '}
+                          <strong>Verify</strong> to check Razorpay status.
+                          <br />• If abandoned/failed: Click{' '}
+                          <strong>Cancel</strong> to release stock immediately.
+                        </p>
+                        <div className="flex gap-3">
+                          <button
+                            onClick={() => verifyPayment(selectedOrder)}
+                            className="flex items-center gap-2 px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-bold hover:bg-blue-700 shadow-sm transition-colors"
+                          >
+                            <RefreshCw className="w-3 h-3" /> Verify with
+                            Razorpay
+                          </button>
+                          <button
+                            onClick={() =>
+                              updateOrderStatus(selectedOrder.id, 'CANCELLED')
+                            } // Use existing update function
+                            className="px-3 py-1.5 bg-white border border-amber-300 text-amber-900 rounded-lg text-xs font-bold hover:bg-amber-100 transition-colors"
+                          >
+                            Cancel Order
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                {/* 👆 END VERIFICATION BOX 👆 */}
                 {/* Customer & Address */}
                 <div className="grid md:grid-cols-2 gap-8">
                   <div>

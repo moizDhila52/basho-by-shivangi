@@ -3,8 +3,11 @@ import Razorpay from 'razorpay';
 import crypto from 'crypto';
 import { prisma } from '@/lib/prisma';
 import { sendPaymentSuccessEmail } from '@/lib/mailer';
-import { triggerNotification } from '@/lib/socketTrigger';
-
+import {
+  triggerNotification,
+  broadcastStockUpdate,
+  notifyAdminNewOrder, // 👈 Add this
+} from '@/lib/socketTrigger';
 // Initialize Razorpay instance
 const instance = new Razorpay({
   key_id: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
@@ -56,6 +59,7 @@ export async function PUT(req) {
     // 2. Find the Pending Order in DB
     const existingOrder = await prisma.order.findFirst({
       where: { razorpayOrderId: razorpay_order_id },
+      include: { OrderItem: true }, // We need items to check stock
     });
 
     if (!existingOrder) {
@@ -65,70 +69,156 @@ export async function PUT(req) {
       );
     }
 
-    // 3. Update Order Status to CONFIRMED
-    const updatedOrder = await prisma.order.update({
-      where: { id: existingOrder.id },
-      data: {
-        status: 'CONFIRMED',
-        paymentStatus: 'PAID',
-        paymentId: razorpay_payment_id,
-      },
-      include: { OrderItem: true }, // Fetch items for the email
-    }); // <--- CLOSED THE UPDATE FUNCTION HERE
-
-    // 👇 NOTIFICATION BLOCK (Moved OUTSIDE the update function) 👇
-    if (updatedOrder.userId) {
-      // A. DB Record
-      await prisma.notification.create({
-        data: {
-          userId: updatedOrder.userId,
-          title: 'Order Confirmed!',
-          message:
-            'We have received your payment. We will start preparing your clay treasures.',
-          type: 'ORDER',
-          link: `/profile/orders/${updatedOrder.id}`,
-        },
-      });
-
-      // B. Real-time Socket
-      await triggerNotification(updatedOrder.userId, 'notification', {
-        title: 'Order Confirmed!',
-        message: 'Payment successful.',
+    // 👇👇👇 INSERT THIS BLOCK HERE 👇👇👇
+    // ------------------------------------------------------------
+    // 🛑 IDEMPOTENCY CHECK: If already paid, return success immediately
+    // ------------------------------------------------------------
+    if (existingOrder.status === 'CONFIRMED' || existingOrder.paymentStatus === 'PAID') {
+      return NextResponse.json({
+        success: true,
+        message: 'Payment already verified',
+        orderId: existingOrder.id,
       });
     }
-    // 👆 END NOTIFICATION BLOCK 👆
+    // 👆👆👆 END INSERT 👆👆👆
 
-    // 4. Send Payment Success Email
+    // ============================================================
+    // 🔒 ATOMIC TRANSACTION: Stock Check & Update
+    // ============================================================
     try {
-      const emailItems = updatedOrder.OrderItem.map((item) => ({
-        name: item.productName,
-        quantity: item.quantity,
-        price: item.price,
-      }));
+      const updatedOrder = await prisma.$transaction(async (tx) => {
+        // A. Loop through items to Check & Decrement Stock
+        for (const item of existingOrder.OrderItem) {
+          // Fetch latest stock from DB (Pass locking not supported in all Prisma versions, but atomic update is safe)
+          const product = await tx.product.findUnique({
+            where: { id: item.productId },
+          });
 
-      await sendPaymentSuccessEmail(updatedOrder, emailItems);
-      console.log('✅ Payment email sent successfully');
-    } catch (emailError) {
-      console.error('❌ Failed to send payment email:', emailError);
-    }
+          if (!product) {
+            throw new Error(`Product ${item.productName} not found`);
+          }
 
-    // 5. Clear the User's Cart
-    if (updatedOrder.userId) {
-      const cart = await prisma.cart.findUnique({
-        where: { userId: updatedOrder.userId },
+          // B. THE RACE CONDITION CHECK 🏁
+          if (product.stock < item.quantity) {
+            throw new Error(`OOS: ${product.name}`); // Out of Stock Exception
+          }
+
+          // C. Decrement Stock
+          const newStock = product.stock - item.quantity;
+          await tx.product.update({
+            where: { id: item.productId },
+            data: {
+              stock: newStock,
+              inStock: newStock > 0,
+            },
+          });
+
+          // D. Broadcast New Stock Level to All Users 📡
+          // We do this inside the loop but verify it outside (Note: cannot await socket inside transaction safely, usually fine to fire and forget)
+          // We will fire the socket AFTER the transaction succeeds to be safe.
+        }
+
+        // E. Update Order Status
+        return await tx.order.update({
+          where: { id: existingOrder.id },
+          data: {
+            status: 'CONFIRMED',
+            paymentStatus: 'PAID',
+            paymentId: razorpay_payment_id,
+          },
+          include: { OrderItem: true },
+        });
       });
-      if (cart) {
-        await prisma.cartItem.deleteMany({
-          where: { cartId: cart.id },
+
+      // --- Transaction Succeeded: Logic below runs only if stock was secured ---
+
+      // 3. 📡 Broadcast Stock Updates (Now that DB is updated)
+      for (const item of existingOrder.OrderItem) {
+        // Fetch the new stock to broadcast accurate number
+        const p = await prisma.product.findUnique({
+          where: { id: item.productId },
+        });
+        if (p) await broadcastStockUpdate(p.id, p.stock);
+      }
+
+      // 4. Notifications
+      if (updatedOrder.userId) {
+        await prisma.notification.create({
+          data: {
+            userId: updatedOrder.userId,
+            title: 'Order Confirmed!',
+            message:
+              'We have received your payment. We will start preparing your clay treasures.',
+            type: 'ORDER',
+            link: `/profile/orders/${updatedOrder.id}`,
+          },
+        });
+
+        await triggerNotification(updatedOrder.userId, 'notification', {
+          title: 'Order Confirmed!',
+          message: 'Payment successful.',
         });
       }
-    }
 
-    return NextResponse.json({
-      success: true,
-      message: 'Payment verified and order confirmed',
-      orderId: updatedOrder.id,
-    });
+      await notifyAdminNewOrder({
+        orderId: updatedOrder.id,
+        amount: updatedOrder.total,
+        customerName: updatedOrder.customerName || "Guest",
+        productCount: updatedOrder.OrderItem.length
+      });
+
+      // 5. Send Email
+      try {
+        const emailItems = updatedOrder.OrderItem.map((item) => ({
+          name: item.productName,
+          quantity: item.quantity,
+          price: item.price,
+        }));
+        await sendPaymentSuccessEmail(updatedOrder, emailItems);
+      } catch (emailError) {
+        console.error('❌ Failed to send payment email:', emailError);
+      }
+
+      // 6. Clear Cart
+      if (updatedOrder.userId) {
+        const cart = await prisma.cart.findUnique({
+          where: { userId: updatedOrder.userId },
+        });
+        if (cart) {
+          await prisma.cartItem.deleteMany({
+            where: { cartId: cart.id },
+          });
+        }
+      }
+
+      return NextResponse.json({
+        success: true,
+        message: 'Payment verified and order confirmed',
+        orderId: updatedOrder.id,
+      });
+    } catch (err) {
+      console.error('TRANSACTION FAILED:', err.message);
+
+      // If error is "OOS", it means Race Condition hit!
+      if (err.message.startsWith('OOS')) {
+        // Mark order as FAILED or REFUND_NEEDED
+        await prisma.order.update({
+          where: { id: existingOrder.id },
+          data: { status: 'CANCELLED', paymentStatus: 'REFUND_NEEDED' },
+        });
+
+        return NextResponse.json(
+          {
+            success: false,
+            message:
+              'Some items went out of stock just now. Payment will be refunded.',
+          },
+          { status: 409 }, // 409 Conflict
+        );
+      }
+
+      throw err; // Re-throw other errors
+    }
   } catch (error) {
     console.error('Payment Verification Error:', error);
     return NextResponse.json(
