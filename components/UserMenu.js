@@ -69,7 +69,7 @@ export default function UserMenu({ user }) {
 
           {user.role === 'ADMIN' && (
             <Link
-              href="/admin/dashboard"
+              href="/admin"
               className="flex items-center gap-2 px-4 py-2 text-sm font-bold text-[#C85428] hover:bg-[#EDD8B4]/20"
               onClick={() => setIsOpen(false)}
             >

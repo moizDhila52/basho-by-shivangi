@@ -150,33 +150,34 @@ model CustomOrder {
 }
 
 model Product {
-  id              String         @id @default(uuid())
+  id              String            @id @default(uuid())
   name            String
-  slug            String         @unique
+  slug            String            @unique
   description     String
   price           Float
-  stock           Int            @default(0)
+  stock           Int               @default(0)
   images          String[]
-  isFeatured      Boolean        @default(false)
+  isFeatured      Boolean           @default(false)
   categoryId      String
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
   care            String?
   color           String?
   dimensions      String?
   features        String[]
-  inStock         Boolean        @default(true)
-  isBestseller    Boolean        @default(false)
-  isNew           Boolean        @default(false)
+  inStock         Boolean           @default(true)
+  isBestseller    Boolean           @default(false)
+  isNew           Boolean           @default(false)
   leadTime        String?
   material        String?
   metaDescription String?
   metaTitle       String?
   originalPrice   Float?
-  weight          Float          @default(0.5)
+  weight          Float             @default(0.5)
   CartItem        CartItem[]
   OrderItem       OrderItem[]
-  Category        Category       @relation(fields: [categoryId], references: [id])
+  Category        Category          @relation(fields: [categoryId], references: [id])
+  ProductWaitlist ProductWaitlist[]
   Review          Review[]
   testimonials    Testimonial[]
   WishlistItem    WishlistItem[]
@@ -238,10 +239,14 @@ model User {
   CustomOrder          CustomOrder[]
   Notification         Notification[]
   Order                Order[]
+  ProductWaitlist      ProductWaitlist[]
   Review               Review[]
   WishlistItem         WishlistItem[]
   WorkshopRegistration WorkshopRegistration[]
+<<<<<<< HEAD
+=======
   ProductWaitlist ProductWaitlist[]
+>>>>>>> 9904b094244887d2f0aa9908127ae6e626ed1486
 }
 
 model WishlistItem {
@@ -442,6 +447,19 @@ model Notification {
   @@index([userId])
 }
 
+model ProductWaitlist {
+  id        String   @id
+  productId String
+  userId    String?
+  email     String
+  createdAt DateTime @default(now())
+  Product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  User      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, email])
+  @@index([productId])
+}
+
 enum EventType {
   EXHIBITION
   POPUP
@@ -505,6 +523,8 @@ enum CustomOrderStatus {
   SHIPPED
   CANCELLED
 }
+<<<<<<< HEAD
+=======
 
 // Add this to your schema
 model ProductWaitlist {
@@ -520,3 +540,4 @@ model ProductWaitlist {
   @@index([productId])
   @@unique([productId, email]) // Prevent duplicate requests for same item
 }
+>>>>>>> 9904b094244887d2f0aa9908127ae6e626ed1486
