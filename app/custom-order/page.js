@@ -197,24 +197,37 @@ export default function CustomOrderPage() {
     }));
   };
 
-  // Add this function to your page component
+  // --- UPDATED: Cloudinary Upload Function ---
   const uploadFile = async (file) => {
     try {
+      const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+      const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
+
+      if (!cloudName || !uploadPreset) {
+        throw new Error("Missing Cloudinary configuration");
+      }
+
       const formData = new FormData();
       formData.append("file", file);
+      formData.append("upload_preset", uploadPreset);
 
-      const response = await fetch("/api/upload", {
-        method: "POST",
-        body: formData,
-      });
+      // Direct upload to Cloudinary API
+      const response = await fetch(
+        `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
+        {
+          method: "POST",
+          body: formData,
+        }
+      );
 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || "Upload failed");
+        throw new Error(data.error?.message || "Upload failed");
       }
 
-      return data.url;
+      // Cloudinary returns 'secure_url'
+      return data.secure_url;
     } catch (error) {
       console.error("Upload error:", error);
       toast.error(error.message || "Failed to upload file");
@@ -232,7 +245,7 @@ export default function CustomOrderPage() {
         continue;
       }
 
-      // Upload file to server
+      // Show a loading toast or partial state if desired, but waiting is fine too
       const fileUrl = await uploadFile(file);
 
       if (fileUrl) {
@@ -688,7 +701,7 @@ export default function CustomOrderPage() {
                     />
                   </div>
 
-                  {/* Timeline & Budget */}
+                  {/* Timeline & Budget - UPDATED CURRENCY */}
                   <div className="grid md:grid-cols-2 gap-6">
                     <div>
                       <label className="block text-sm font-medium text-stone-700 mb-2">
@@ -714,11 +727,11 @@ export default function CustomOrderPage() {
                         className="w-full px-4 py-3 bg-stone-50 border-2 border-stone-200 rounded-xl focus:border-[#8E5022] focus:outline-none"
                       >
                         <option value="">Select budget range</option>
-                        <option value="under-100">Under $100</option>
-                        <option value="100-250">$100 - $250</option>
-                        <option value="250-500">$250 - $500</option>
-                        <option value="500-1000">$500 - $1,000</option>
-                        <option value="over-1000">Over $1,000</option>
+                        <option value="under-1000">Under ₹1,000</option>
+                        <option value="1000-5000">₹1,000 - ₹5,000</option>
+                        <option value="5000-10000">₹5,000 - ₹10,000</option>
+                        <option value="10000-20000">₹10,000 - ₹20,000</option>
+                        <option value="over-20000">Over ₹20,000</option>
                       </select>
                     </div>
                   </div>
