@@ -69,6 +69,19 @@ export async function PUT(req) {
       );
     }
 
+    // 👇👇👇 INSERT THIS BLOCK HERE 👇👇👇
+    // ------------------------------------------------------------
+    // 🛑 IDEMPOTENCY CHECK: If already paid, return success immediately
+    // ------------------------------------------------------------
+    if (existingOrder.status === 'CONFIRMED' || existingOrder.paymentStatus === 'PAID') {
+      return NextResponse.json({
+        success: true,
+        message: 'Payment already verified',
+        orderId: existingOrder.id,
+      });
+    }
+    // 👆👆👆 END INSERT 👆👆👆
+
     // ============================================================
     // 🔒 ATOMIC TRANSACTION: Stock Check & Update
     // ============================================================

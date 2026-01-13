@@ -1,7 +1,7 @@
 'use client';
 
 import { Suspense, useEffect, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import {
@@ -16,6 +16,35 @@ import confetti from 'canvas-confetti';
 function SuccessContent() {
   const searchParams = useSearchParams();
   const orderId = searchParams.get('orderId');
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!orderId) return;
+
+    const checkFreshness = async () => {
+      try {
+        // We fetch the order to check its creation time
+        // NOTE: This assumes you have a generic GET API for orders.
+        // If not, you might need to create app/api/orders/[id]/route.js
+        const res = await fetch(`/api/orders/${orderId}`);
+
+        if (res.ok) {
+          const order = await res.json();
+          const createdTime = new Date(order.createdAt).getTime();
+          const timeDiff = (Date.now() - createdTime) / 1000 / 60; // Difference in Minutes
+
+          // If order is older than 2 minutes, stop showing confetti and redirect
+          if (timeDiff > 2) {
+            router.replace(`/profile/orders/${orderId}`);
+          }
+        }
+      } catch (error) {
+        console.error('Freshness check failed', error);
+      }
+    };
+
+    checkFreshness();
+  }, [orderId, router]);
 
   useEffect(() => {
     const duration = 3 * 1000;
