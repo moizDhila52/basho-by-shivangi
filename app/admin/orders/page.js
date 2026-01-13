@@ -3,7 +3,6 @@ import Link from 'next/link';
 import { useEffect, useState, useMemo } from 'react';
 import {
   Search,
-  Filter,
   ChevronDown,
   CheckCircle,
   Truck,
@@ -20,18 +19,22 @@ import {
   Phone,
   Mail,
   MapPin,
-  ExternalLink,
   X,
   ClipboardCheck,
   Trash2,
+  BarChart2,
+  TrendingUp,
+  Heart,
+  ShoppingCart,
+  ChevronRight,
+  ArrowLeft
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { format } from 'date-fns';
 import { useToast } from '@/components/ToastProvider';
 import React from 'react';
-import { useNotification } from '@/context/NotificationContext'; // ADD THIS
+import { useNotification } from '@/context/NotificationContext';
 
-// UPDATED: Removed CANCELLED from flow
 const STATUS_FLOW = [
   'PENDING',
   'CONFIRMED',
@@ -46,14 +49,28 @@ export default function AdminOrdersPage() {
   const [loading, setLoading] = useState(true);
   const [selectedStatus, setSelectedStatus] = useState('ALL');
   const [searchQuery, setSearchQuery] = useState('');
+  
+  // Modal States
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  
+  // Analytics States
+  const [isAnalyticsOpen, setIsAnalyticsOpen] = useState(false);
+  const [fullListType, setFullListType] = useState(null); // 'PURCHASES' | 'WISHLIST' | 'CART'
+  
+  // Analytics Data State
+  const [analyticsData, setAnalyticsData] = useState({
+    purchases: { top5: [], all: [] },
+    wishlist: { top5: [], all: [] },
+    cart: { top5: [], all: [] }
+  });
+
   const [updatingOrder, setUpdatingOrder] = useState(null);
   const [dateRange, setDateRange] = useState('all');
 
   const { addToast } = useToast();
 
-  // Fetch Orders
+  // 1. Fetch Orders
   const fetchOrders = async () => {
     setLoading(true);
     try {
@@ -76,32 +93,58 @@ export default function AdminOrdersPage() {
 
   useEffect(() => {
     if (refreshTrigger.orders > 0) {
-      fetchOrders(); // Silent re-fetch
+      fetchOrders();
     }
   }, [refreshTrigger.orders]);
+
+  // 2. Fetch Analytics
+  useEffect(() => {
+    const fetchAnalytics = async () => {
+      try {
+        const res = await fetch('/api/admin/analytics');
+        if (res.ok) {
+          const data = await res.json();
+          setAnalyticsData({
+            purchases: {
+                top5: data.topProducts.slice(0, 5),
+                all: data.topProducts
+            },
+            wishlist: {
+                top5: data.mostWishlisted.slice(0, 5),
+                all: data.mostWishlisted
+            },
+            cart: {
+                top5: data.mostCarted.slice(0, 5),
+                all: data.mostCarted
+            }
+          });
+        }
+      } catch (error) {
+        console.error("Analytics load failed", error);
+        addToast("Failed to load analytics", "error");
+      }
+    };
+
+    if (isAnalyticsOpen) {
+      fetchAnalytics();
+    }
+  }, [isAnalyticsOpen]);
 
   // Filter Logic
   const filteredOrders = useMemo(() => {
     return orders.filter((order) => {
-      // Status Filter
-      const matchesStatus =
-        selectedStatus === 'ALL' || order.status === selectedStatus;
-
-      // Search Filter (FIXED: Now searches ID correctly)
+      const matchesStatus = selectedStatus === 'ALL' || order.status === selectedStatus;
       const searchLower = searchQuery.toLowerCase();
-
-      // Determine the ID displayed to the user to make search intuitive
       const displayId = order.orderNumber || order.id.slice(-8);
 
       const matchesSearch =
         searchQuery === '' ||
-        displayId.toLowerCase().includes(searchLower) || // Search by displayed ID
-        order.id.toLowerCase().includes(searchLower) || // Search by full UUID
+        displayId.toLowerCase().includes(searchLower) ||
+        order.id.toLowerCase().includes(searchLower) ||
         order.orderNumber?.toLowerCase().includes(searchLower) ||
         order.customerName?.toLowerCase().includes(searchLower) ||
         order.customerEmail?.toLowerCase().includes(searchLower);
 
-      // Date Filter
       let matchesDate = true;
       if (dateRange !== 'all') {
         const orderDate = new Date(order.createdAt);
@@ -115,11 +158,8 @@ export default function AdminOrdersPage() {
     });
   }, [orders, selectedStatus, searchQuery, dateRange]);
 
-  // Update Status Handler
   const updateOrderStatus = async (orderId, newStatus) => {
     const oldOrders = [...orders];
-
-    // Optimistic UI Update
     setOrders((prev) =>
       prev.map((order) =>
         order.id === orderId ? { ...order, status: newStatus } : order,
@@ -142,7 +182,6 @@ export default function AdminOrdersPage() {
         status: newStatus,
       };
 
-      // Sync with server data
       setOrders((prev) =>
         prev.map((order) => (order.id === orderId ? updatedOrder : order)),
       );
@@ -166,7 +205,6 @@ export default function AdminOrdersPage() {
     setIsModalOpen(true);
   };
 
-  // Stats Calculation
   const stats = useMemo(() => {
     const totalRevenue = orders.reduce(
       (sum, order) => sum + (order.total || 0),
@@ -194,9 +232,7 @@ export default function AdminOrdersPage() {
       addToast('No Razorpay Order ID linked', 'error');
       return;
     }
-
     const loadingToast = toast.loading('Verifying with Razorpay...');
-
     try {
       const res = await fetch('/api/admin/orders/verify', {
         method: 'POST',
@@ -205,13 +241,11 @@ export default function AdminOrdersPage() {
           razorpayOrderId: order.razorpayOrderId,
         }),
       });
-
       const data = await res.json();
       toast.dismiss(loadingToast);
-
       if (data.success) {
         toast.success('Payment Verified! Order Confirmed.');
-        fetchOrders(); // Refresh table
+        fetchOrders(); 
       } else {
         toast.error('Payment not found on Razorpay.');
       }
@@ -229,7 +263,7 @@ export default function AdminOrdersPage() {
       toast.dismiss(toastId);
       if (data.success) {
         toast.success(data.message);
-        fetchOrders(); // Refresh list to remove cancelled items
+        fetchOrders();
       } else {
         toast(data.message || 'No cleanup needed', { icon: '🧹' });
       }
@@ -239,7 +273,6 @@ export default function AdminOrdersPage() {
     }
   };
 
-  // CSV Export
   const handleExportOrders = () => {
     const csvData = filteredOrders.map((order) => ({
       'Order ID': order.orderNumber || order.id,
@@ -273,6 +306,18 @@ export default function AdminOrdersPage() {
     addToast('Export downloaded successfully', 'success');
   };
 
+  // --- HELPER FOR FULL LIST MODAL CONTENT ---
+  const getFullListData = () => {
+    switch (fullListType) {
+        case 'PURCHASES': return { title: 'All Product Sales', data: analyticsData.purchases.all, type: 'sales' };
+        case 'WISHLIST': return { title: 'Most Wishlisted Products', data: analyticsData.wishlist.all, type: 'wishlist' };
+        case 'CART': return { title: 'Products in Cart', data: analyticsData.cart.all, type: 'cart' };
+        default: return { title: '', data: [], type: '' };
+    }
+  };
+
+  const fullListContent = getFullListData();
+
   if (loading) {
     return (
       <div className="min-h-[60vh] flex items-center justify-center">
@@ -297,14 +342,20 @@ export default function AdminOrdersPage() {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          {/* 👇 PASTE BUTTON HERE 👇 */}
+          {/* --- ANALYTICS BUTTON --- */}
+          <button
+            onClick={() => setIsAnalyticsOpen(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-[#442D1C] text-[#EDD8B4] rounded-lg hover:bg-[#652810] transition-colors text-sm font-medium shadow-md"
+          >
+            <BarChart2 className="w-4 h-4" /> Analytics
+          </button>
+          
           <button
             onClick={handleCleanup}
             className="hidden md:flex items-center gap-2 px-4 py-2 border border-red-200 text-red-700 bg-red-50 rounded-lg hover:bg-red-100 transition-colors text-sm font-medium"
           >
             <Trash2 className="w-4 h-4" /> Release Stock
           </button>
-          {/* 👆 END BUTTON 👆 */}
           <button
             onClick={handleExportOrders}
             className="flex items-center gap-2 px-4 py-2 border border-[#EDD8B4] text-[#8E5022] rounded-lg hover:bg-[#FDFBF7] transition-colors text-sm font-medium"
@@ -378,7 +429,6 @@ export default function AdminOrdersPage() {
         </div>
 
         <div className="flex flex-wrap gap-2">
-          {/* UPDATED: Removed CANCELLED */}
           {[
             'ALL',
             'PENDING',
@@ -435,13 +485,11 @@ export default function AdminOrdersPage() {
                       <span className="font-mono font-bold">
                         #{order.orderNumber || order.id.slice(-8).toUpperCase()}
                       </span>
-                      {/* 👇 NEW: Alert Badge for Pending Orders 👇 */}
                       {order.status === 'PENDING' && (
                         <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-100 w-fit mt-1 animate-pulse">
                           <AlertCircle className="w-3 h-3" /> Check Payment
                         </span>
                       )}
-                      {/* 👆 END NEW 👆 */}
                       <div className="text-xs text-[#8E5022] mt-1">
                         {format(new Date(order.createdAt), 'MMM dd, HH:mm')}
                       </div>
@@ -470,8 +518,6 @@ export default function AdminOrdersPage() {
                   <td className="p-4">
                     <div className="flex flex-col gap-2">
                       <StatusBadge status={order.status} />
-
-                      {/* Status Progress Bar */}
                       <div className="flex gap-1 h-1 w-24">
                         {STATUS_FLOW.map((s, i) => (
                           <div
@@ -488,7 +534,6 @@ export default function AdminOrdersPage() {
                   </td>
                   <td className="p-4">
                     <div className="flex items-center gap-2">
-                      {/* 👇 INSERT THIS BLOCK HERE 👇 */}
                       {order.status === 'PENDING' && (
                         <button
                           onClick={() => verifyPayment(order)}
@@ -497,8 +542,6 @@ export default function AdminOrdersPage() {
                           Verify Payment
                         </button>
                       )}
-                      {/* 👆 END INSERT 👆 */}
-                      {/* UPDATED: Removed Cancelled Option */}
                       <select
                         value={order.status}
                         onChange={(e) =>
@@ -535,7 +578,211 @@ export default function AdminOrdersPage() {
         )}
       </div>
 
-      {/* Modal */}
+      {/* --- ANALYTICS MODAL --- */}
+      <AnimatePresence>
+        {isAnalyticsOpen && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#442D1C]/60 backdrop-blur-sm"
+            onClick={() => setIsAnalyticsOpen(false)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl h-[85vh] flex flex-col overflow-hidden relative"
+            >
+              <div className="p-6 bg-[#FDFBF7] border-b border-[#EDD8B4] flex justify-between items-center">
+                <div>
+                  <h2 className="font-serif text-2xl font-bold text-[#442D1C] flex items-center gap-2">
+                    <BarChart2 className="text-[#C85428]" /> Product Analytics
+                  </h2>
+                  <p className="text-sm text-[#8E5022]">Real-time insights based on current data.</p>
+                </div>
+                <button
+                  onClick={() => setIsAnalyticsOpen(false)}
+                  className="p-2 hover:bg-[#EDD8B4]/20 rounded-full text-[#8E5022]"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-8 grid grid-cols-1 lg:grid-cols-2 gap-8 bg-gray-50/50">
+                
+                {/* 1. TOP SELLING PRODUCTS */}
+                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col">
+                  <h3 className="font-serif text-lg font-bold text-[#442D1C] mb-6 flex items-center gap-2">
+                    <TrendingUp className="w-5 h-5 text-green-600" /> Most Purchased
+                  </h3>
+                  <div className="space-y-4 flex-1">
+                    {analyticsData.purchases.top5.map((item, i) => (
+                      <div key={i} className="flex items-center gap-4 p-3 hover:bg-[#FDFBF7] rounded-lg transition-colors border border-transparent hover:border-[#EDD8B4]">
+                        <div className="w-12 h-12 bg-gray-100 rounded-md overflow-hidden flex-shrink-0">
+                          {item.image && <img src={item.image} alt={item.name} className="w-full h-full object-cover" />}
+                        </div>
+                        <div className="flex-1">
+                          <p className="font-bold text-sm text-gray-800">{item.name}</p>
+                          <p className="text-xs text-gray-500 font-medium bg-green-50 text-green-700 px-2 py-0.5 rounded-full w-fit mt-1">
+                             {item.qty} {item.qty === 1 ? 'purchase' : 'purchases'}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-bold text-[#C85428]">₹{item.revenue ? item.revenue.toLocaleString() : '-'}</p>
+                        </div>
+                        <div className="text-2xl font-bold text-gray-200">#{i + 1}</div>
+                      </div>
+                    ))}
+                    {analyticsData.purchases.top5.length === 0 && <p className="text-center text-gray-400 py-4">No sales data yet.</p>}
+                  </div>
+                  
+                  {analyticsData.purchases.all.length > 5 && (
+                    <button 
+                      onClick={() => setFullListType('PURCHASES')}
+                      className="mt-4 w-full py-2 flex items-center justify-center gap-2 text-sm font-bold text-[#8E5022] hover:bg-[#FDFBF7] rounded-lg transition-colors border border-dashed border-[#EDD8B4]"
+                    >
+                      View All Purchases <ChevronRight className="w-4 h-4"/>
+                    </button>
+                  )}
+                </div>
+
+                {/* 2. MOST WISHLISTED */}
+                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col">
+                  <h3 className="font-serif text-lg font-bold text-[#442D1C] mb-6 flex items-center gap-2">
+                    <Heart className="w-5 h-5 text-red-500" /> Most Wishlisted
+                  </h3>
+                  <div className="space-y-4 flex-1">
+                    {analyticsData.wishlist.top5.map((item, i) => (
+                      <div key={i} className="flex items-center gap-4 p-3 hover:bg-[#FDFBF7] rounded-lg transition-colors border border-transparent hover:border-[#EDD8B4]">
+                        <div className="w-12 h-12 bg-gray-100 rounded-md overflow-hidden flex-shrink-0">
+                          {item.image && <img src={item.image} alt={item.name} className="w-full h-full object-cover" />}
+                        </div>
+                        <div className="flex-1">
+                          <p className="font-bold text-sm text-gray-800">{item.name}</p>
+                          <p className="text-xs text-red-500 font-medium bg-red-50 px-2 py-0.5 rounded-full w-fit mt-1">
+                             Wishlisted by {item.qty} users
+                          </p>
+                        </div>
+                        <div className="text-2xl font-bold text-gray-200">#{i + 1}</div>
+                      </div>
+                    ))}
+                     {analyticsData.wishlist.top5.length === 0 && <p className="text-center text-gray-400 py-4">No data available.</p>}
+                  </div>
+
+                  {analyticsData.wishlist.all.length > 5 && (
+                    <button 
+                      onClick={() => setFullListType('WISHLIST')}
+                      className="mt-4 w-full py-2 flex items-center justify-center gap-2 text-sm font-bold text-[#8E5022] hover:bg-[#FDFBF7] rounded-lg transition-colors border border-dashed border-[#EDD8B4]"
+                    >
+                      View All Wishlist <ChevronRight className="w-4 h-4"/>
+                    </button>
+                  )}
+                </div>
+
+                {/* 3. MOST CARTED */}
+                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col lg:col-span-2">
+                  <h3 className="font-serif text-lg font-bold text-[#442D1C] mb-6 flex items-center gap-2">
+                    <ShoppingCart className="w-5 h-5 text-blue-500" /> High Cart Additions
+                  </h3>
+                  <div className="space-y-4 flex-1">
+                    {analyticsData.cart.top5.map((item, i) => (
+                      <div key={i} className="flex items-center gap-4 p-3 hover:bg-[#FDFBF7] rounded-lg transition-colors border border-transparent hover:border-[#EDD8B4]">
+                        <div className="w-12 h-12 bg-gray-100 rounded-md overflow-hidden flex-shrink-0">
+                          {item.image && <img src={item.image} alt={item.name} className="w-full h-full object-cover" />}
+                        </div>
+                        <div className="flex-1">
+                          <p className="font-bold text-sm text-gray-800">{item.name}</p>
+                          <p className="text-xs text-blue-600 font-medium bg-blue-50 px-2 py-0.5 rounded-full w-fit mt-1">
+                             In {item.qty} active carts
+                          </p>
+                        </div>
+                        <div className="text-2xl font-bold text-gray-200">#{i + 1}</div>
+                      </div>
+                    ))}
+                     {analyticsData.cart.top5.length === 0 && <p className="text-center text-gray-400 py-4">No data available.</p>}
+                  </div>
+
+                  {analyticsData.cart.all.length > 5 && (
+                    <button 
+                      onClick={() => setFullListType('CART')}
+                      className="mt-4 w-full py-2 flex items-center justify-center gap-2 text-sm font-bold text-[#8E5022] hover:bg-[#FDFBF7] rounded-lg transition-colors border border-dashed border-[#EDD8B4]"
+                    >
+                      View All Cart Additions <ChevronRight className="w-4 h-4"/>
+                    </button>
+                  )}
+                </div>
+
+              </div>
+
+              {/* --- NESTED MODAL: DYNAMIC FULL LIST --- */}
+              <AnimatePresence>
+                {fullListType && (
+                  <motion.div
+                    initial={{ x: '100%' }}
+                    animate={{ x: 0 }}
+                    exit={{ x: '100%' }}
+                    transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+                    className="absolute inset-0 bg-white z-10 flex flex-col"
+                  >
+                    <div className="p-6 bg-[#FDFBF7] border-b border-[#EDD8B4] flex items-center gap-4">
+                      <button 
+                        onClick={() => setFullListType(null)}
+                        className="p-2 hover:bg-[#EDD8B4]/20 rounded-full text-[#442D1C]"
+                      >
+                        <ArrowLeft className="w-5 h-5" />
+                      </button>
+                      <h3 className="font-serif text-xl font-bold text-[#442D1C]">{fullListContent.title}</h3>
+                    </div>
+                    <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                       {fullListContent.data.map((item, i) => (
+                          <div key={i} className="flex items-center gap-6 p-4 bg-white border border-gray-100 rounded-xl hover:shadow-md transition-shadow">
+                            <div className="text-3xl font-bold text-[#EDD8B4] w-12 text-center">#{i + 1}</div>
+                            <div className="w-16 h-16 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0 border border-[#EDD8B4]">
+                              {item.image && <img src={item.image} alt={item.name} className="w-full h-full object-cover" />}
+                            </div>
+                            <div className="flex-1">
+                              <p className="font-bold text-lg text-[#442D1C]">{item.name}</p>
+                              
+                              {fullListContent.type === 'sales' && (
+                                <div className="flex gap-4 mt-1">
+                                    <span className="text-sm text-green-700 bg-green-50 px-2 py-0.5 rounded-md font-medium">
+                                    {item.qty} Purchases
+                                    </span>
+                                    <span className="text-sm text-[#8E5022]">
+                                    Total Revenue: ₹{item.revenue.toLocaleString()}
+                                    </span>
+                                </div>
+                              )}
+
+                              {fullListContent.type === 'wishlist' && (
+                                <div className="flex gap-4 mt-1">
+                                    <span className="text-sm text-red-600 bg-red-50 px-2 py-0.5 rounded-md font-medium">
+                                    {item.qty} Users Wishlisted
+                                    </span>
+                                </div>
+                              )}
+
+                              {fullListContent.type === 'cart' && (
+                                <div className="flex gap-4 mt-1">
+                                    <span className="text-sm text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md font-medium">
+                                    In {item.qty} Active Carts
+                                    </span>
+                                </div>
+                              )}
+
+                            </div>
+                          </div>
+                        ))}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Order Details Modal */}
       <AnimatePresence>
         {isModalOpen && selectedOrder && (
           <div
@@ -572,7 +819,7 @@ export default function AdminOrdersPage() {
 
               {/* Modal Body */}
               <div className="flex-1 overflow-y-auto p-6 space-y-8">
-                {/* 👇 PAYMENT VERIFICATION BOX 👇 */}
+                {/* Payment Verification */}
                 {selectedOrder.status === 'PENDING' && (
                   <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6">
                     <div className="flex items-start gap-3">
@@ -596,13 +843,12 @@ export default function AdminOrdersPage() {
                             onClick={() => verifyPayment(selectedOrder)}
                             className="flex items-center gap-2 px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-bold hover:bg-blue-700 shadow-sm transition-colors"
                           >
-                            <RefreshCw className="w-3 h-3" /> Verify with
-                            Razorpay
+                            <RefreshCw className="w-3 h-3" /> Verify with Razorpay
                           </button>
                           <button
                             onClick={() =>
                               updateOrderStatus(selectedOrder.id, 'CANCELLED')
-                            } // Use existing update function
+                            }
                             className="px-3 py-1.5 bg-white border border-amber-300 text-amber-900 rounded-lg text-xs font-bold hover:bg-amber-100 transition-colors"
                           >
                             Cancel Order
@@ -612,7 +858,7 @@ export default function AdminOrdersPage() {
                     </div>
                   </div>
                 )}
-                {/* 👆 END VERIFICATION BOX 👆 */}
+
                 {/* Customer & Address */}
                 <div className="grid md:grid-cols-2 gap-8">
                   <div>
@@ -641,7 +887,6 @@ export default function AdminOrdersPage() {
                       )}
                     </div>
 
-                    {/* Customer GST Details */}
                     {selectedOrder.customerGst && (
                       <div className="mt-4 p-3 bg-[#FDFBF7] border border-[#EDD8B4] rounded-lg">
                         <div className="text-xs font-bold text-[#8E5022] uppercase tracking-wider mb-2">
@@ -782,7 +1027,6 @@ export default function AdminOrdersPage() {
                 </div>
 
                 <div className="flex items-center gap-3 w-full sm:w-auto">
-                  {/* Shipping Label Button */}
                   <Link
                     href={`/admin/orders/label/${selectedOrder.id}`}
                     target="_blank"
@@ -792,7 +1036,6 @@ export default function AdminOrdersPage() {
                     Shipping Label
                   </Link>
 
-                  {/* Invoice Button */}
                   <Link
                     href={`/invoice/${selectedOrder.id}`}
                     target="_blank"
@@ -811,8 +1054,7 @@ export default function AdminOrdersPage() {
   );
 }
 
-// Helper Components
-
+// Helper Components (Unchanged)
 function StatCard({ label, value, icon, color }) {
   return (
     <div className="bg-white p-4 rounded-xl border border-[#EDD8B4] shadow-sm flex items-center justify-between">
@@ -828,7 +1070,6 @@ function StatCard({ label, value, icon, color }) {
 }
 
 function StatusBadge({ status }) {
-  // UPDATED: Removed CANCELLED style
   const styles = {
     PENDING: 'bg-yellow-100 text-yellow-800 border-yellow-200',
     CONFIRMED: 'bg-indigo-100 text-indigo-800 border-indigo-200',

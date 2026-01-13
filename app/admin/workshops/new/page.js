@@ -11,18 +11,19 @@ import {
   Upload,
   MapPin,
   User,
-  FileText,
   Layout,
   Loader2,
+  Check, // <--- Added
+  Mail,  // <--- Added
 } from "lucide-react";
-import { useToast } from "@/components/ToastProvider"; // <--- 1. ENSURE IMPORT IS HERE
+import { useToast } from "@/components/ToastProvider";
 
 const CLOUDINARY_PRESET = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
 const CLOUDINARY_CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
 
 export default function NewWorkshopPage() {
   const router = useRouter();
-  const { addToast } = useToast(); // <--- 2. ADD THIS LINE (This is what was missing)
+  const { addToast } = useToast();
 
   const [submitting, setSubmitting] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -42,6 +43,7 @@ export default function NewWorkshopPage() {
     image: "",
     instructorImage: "",
     sessions: [{ date: "", time: "10:00 AM", spots: "" }],
+    sendNewsletter: false, // <--- ADDED STATE
   });
 
   // --- Handlers ---
@@ -62,13 +64,12 @@ export default function NewWorkshopPage() {
       setFormData((prev) => ({ ...prev, [field]: json.secure_url }));
       addToast("Image uploaded", "success");
     } catch (err) {
-      addToast("Upload failed", "error"); // <--- This will now work
+      addToast("Upload failed", "error");
     } finally {
       setUploading(false);
     }
   };
 
-  // ... rest of your component code (handleSessionChange, addSessionRow, etc.) ...
   const handleSessionChange = (index, field, value) => {
     const newSessions = [...formData.sessions];
     newSessions[index][field] = value;
@@ -102,7 +103,15 @@ export default function NewWorkshopPage() {
         body: JSON.stringify(formData),
       });
       if (!res.ok) throw new Error("Failed");
-      addToast("Workshop scheduled successfully!", "success");
+      
+      const data = await res.json();
+      // Check if newsletter was sent and show specific toast
+      if (formData.sendNewsletter) {
+         addToast("Workshop created & Newsletter sent!", "success");
+      } else {
+         addToast("Workshop scheduled successfully!", "success");
+      }
+      
       router.push("/admin/workshops");
     } catch (error) {
       addToast("Failed to create workshop", "error");
@@ -419,6 +428,35 @@ export default function NewWorkshopPage() {
                 />
               </div>
             </div>
+          </div>
+
+          {/* --- NEWSLETTER NOTIFICATION (NEW) --- */}
+          <div className="bg-white p-6 rounded-xl border border-[#EDD8B4] shadow-sm">
+             <label className="flex items-center gap-3 cursor-pointer p-4 rounded-xl border border-[#C85428]/30 bg-[#C85428]/5 hover:bg-[#C85428]/10 transition-colors">
+                <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors flex-shrink-0 ${
+                    formData.sendNewsletter
+                    ? "bg-[#C85428] border-[#C85428]"
+                    : "border-[#C85428] bg-white"
+                }`}>
+                    {formData.sendNewsletter && (
+                        <Check className="w-3.5 h-3.5 text-white" />
+                    )}
+                </div>
+                <input
+                    type="checkbox"
+                    className="hidden"
+                    checked={formData.sendNewsletter}
+                    onChange={(e) => setFormData({...formData, sendNewsletter: e.target.checked})}
+                />
+                <div className="flex-1">
+                    <span className="flex items-center gap-2 font-bold text-[#442D1C] text-sm">
+                        <Mail className="w-4 h-4 text-[#C85428]"/> Notify Subscribers
+                    </span>
+                    <span className="block text-xs text-[#8E5022] mt-0.5">
+                        Automatically send a "New Workshop" announcement email to all subscribers when you publish.
+                    </span>
+                </div>
+             </label>
           </div>
 
           {/* Actions */}

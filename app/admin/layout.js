@@ -19,11 +19,13 @@ import {
   Calendar,
   Image as ImageIcon,
   PenTool,
-  X, // Added X for closing mobile menu
+  X,
+  Tags, // <--- ADDED for Categories
+  Mail, // <--- ADDED for Newsletter
 } from 'lucide-react';
 import { signOut } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
-import { AdminProvider, useAdmin } from '@/context/AdminContext'; // 👈 Import Context
+import { AdminProvider, useAdmin } from '@/context/AdminContext';
 import {
   NotificationProvider,
   useNotification,
@@ -60,11 +62,17 @@ const NAVIGATION_GROUPS = [
         icon: <Package size={20} />,
         path: '/admin/products',
       },
+      // --- NEW CATEGORIES SECTION ---
+      {
+        name: 'Categories',
+        icon: <Tags size={20} />,
+        path: '/admin/categories',
+      },
       {
         name: 'Orders',
         icon: <ShoppingBag size={20} />,
         path: '/admin/orders',
-        hasBadge: true, // 👈 Flag to show live count
+        hasBadge: true,
       },
       {
         name: 'Custom Orders',
@@ -72,28 +80,23 @@ const NAVIGATION_GROUPS = [
         path: '/admin/custom-orders',
         hasBadge: true,
       },
-
       {
-        name: "Workshops",
-        icon: <Users size={20} />, // You can change the icon if you want
-        path: "/admin/workshops",
+        name: 'Workshops',
+        icon: <Users size={20} />,
+        path: '/admin/workshops',
         hasBadge: true,
       },
-      
       {
         name: 'Corporate Inquiries',
         icon: <Briefcase size={20} />,
         path: '/admin/inquiries',
         hasBadge: true,
       },
-
-
       {
         name: 'Shipping & GST',
         icon: <Truck size={20} />,
         path: '/admin/shipping',
       },
-
     ],
   },
   {
@@ -103,6 +106,12 @@ const NAVIGATION_GROUPS = [
         name: 'Events & Exhibitions',
         icon: <Calendar size={20} />,
         path: '/admin/events',
+      },
+      // --- NEW NEWSLETTER SECTION ---
+      {
+        name: 'Newsletter',
+        icon: <Mail size={20} />,
+        path: '/admin/newsletter',
       },
       {
         name: 'Gallery',
@@ -121,12 +130,12 @@ const NAVIGATION_GROUPS = [
 // Inner component to access AdminContext and Auth
 function AdminLayoutContent({ children }) {
   const { user, loading } = useAuth();
-  const { stats } = useAdmin(); // 👈 Access Live Stats
+  const { stats } = useAdmin();
   const { counts, markOrdersAsRead } = useNotification();
   const router = useRouter();
   const pathname = usePathname();
   const [isSidebarOpen, setSidebarOpen] = useState(true);
-  const [isMobileOpen, setMobileOpen] = useState(false); // Mobile state
+  const [isMobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -134,7 +143,6 @@ function AdminLayoutContent({ children }) {
     }
   }, [user, loading, router, pathname]);
 
-  // Close mobile sidebar on route change
   useEffect(() => {
     setMobileOpen(false);
   }, [pathname]);
@@ -205,19 +213,16 @@ function AdminLayoutContent({ children }) {
                   {group.items.map((item) => {
                     const isActive = pathname === item.path;
 
-                    // NEW: Determine if this item has a badge count
                     let badgeCount = 0;
                     if (item.name === 'Orders') badgeCount = counts.orders;
                     if (item.name === 'Custom Orders') badgeCount = counts.customOrders;
                     if (item.name === 'Workshops') badgeCount = counts.workshops;
                     if (item.name === 'Corporate Inquiries') badgeCount = counts.inquiries;
-                    
 
                     return (
                       <li key={item.path}>
                         <Link
                           href={item.path}
-                          // NEW: Add click handler to clear badge
                           onClick={() => {
                             if (item.name === 'Orders') markOrdersAsRead();
                             if (item.name === 'Custom Orders') markAsRead('customOrders');
@@ -246,7 +251,6 @@ function AdminLayoutContent({ children }) {
                             )}
                           </div>
 
-                          {/* NEW: DYNAMIC BADGE from NotificationContext */}
                           {badgeCount > 0 && (
                             <span
                               className={`
@@ -329,7 +333,6 @@ function AdminLayoutContent({ children }) {
           <div className="flex items-center gap-4">
             <button className="relative p-2 hover:bg-[#FDFBF7] rounded-full transition-colors text-[#652810]">
               <Bell size={20} />
-              {/* Global Alert Dot */}
               {(stats.pendingOrders > 0 || stats.lowStockItems > 0) && (
                 <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full animate-pulse" />
               )}
@@ -350,8 +353,6 @@ export default function AdminLayout({ children }) {
   return (
     <AdminProvider>
       <NotificationProvider>
-        {' '}
-        {/* WRAPPED HERE */}
         <ToastProvider>
           <AdminLayoutContent>{children}</AdminLayoutContent>
         </ToastProvider>

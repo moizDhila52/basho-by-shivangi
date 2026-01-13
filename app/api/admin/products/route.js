@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
+import { prisma } from "@/lib/prisma"; // Standardized to @/lib/prisma
+import { sendCampaignEmail } from "@/lib/mailer"; // <--- IMPORT THIS
 
 // Helper to create slugs
 const createSlug = (name) => {
@@ -27,8 +28,8 @@ export async function GET(req) {
       where,
       orderBy: { createdAt: "desc" },
       include: {
-        Category: true, // Note: Prisma convention is usually TitleCase for relation if not defined otherwise, checking schema... yours is 'Category' based on relation field
-        _count: { select: { OrderItem: true } }, // Useful for analytics later
+        Category: true,
+        _count: { select: { OrderItem: true } },
       },
     });
 
@@ -66,6 +67,7 @@ export async function POST(req) {
       originalPrice,
       metaTitle,
       metaDescription,
+      sendNewsletter, // <--- EXTRACT FLAG
     } = body;
 
     if (!name || !price || !categoryId) {
@@ -75,6 +77,7 @@ export async function POST(req) {
       );
     }
 
+    // Create Product in DB
     const product = await prisma.product.create({
       data: {
         name,
@@ -82,7 +85,7 @@ export async function POST(req) {
         description,
         price: parseFloat(price),
         stock: parseInt(stock),
-        images: images || [], // Array of strings
+        images: images || [], 
         categoryId,
         material,
         features: features || [],
@@ -99,6 +102,47 @@ export async function POST(req) {
         metaDescription,
       },
     });
+
+    // --- NEW LOGIC: SEND NEWSLETTER IF CHECKED ---
+    if (sendNewsletter) {
+      try {
+        // 1. Fetch Subscribers (Users + Guest Subscribers)
+        const [users, guestSubscribers] = await Promise.all([
+          prisma.user.findMany({ where: { isSubscribed: true }, select: { email: true } }),
+          prisma.newsletterSubscriber.findMany({ where: { isActive: true }, select: { email: true } })
+        ]);
+
+        const allEmails = [...new Set([
+          ...users.map(u => u.email),
+          ...guestSubscribers.map(s => s.email)
+        ])];
+
+        if (allEmails.length > 0) {
+          // 2. Send Campaign
+          const result = await sendCampaignEmail(allEmails, {
+            type: 'PRODUCT',
+            item: product,
+            customSubject: `New Arrival: ${product.name}`,
+            customMessage: product.description.substring(0, 150) + "..."
+          });
+
+          // 3. Log History
+          await prisma.newsletterCampaign.create({
+            data: {
+              subject: result.subject,
+              type: 'PRODUCT',
+              referenceId: product.id,
+              recipientCount: result.count,
+              status: 'SENT'
+            }
+          });
+        }
+      } catch (mailError) {
+        console.error("Failed to send newsletter trigger:", mailError);
+        // We do not fail the request if mail fails, just log it
+      }
+    }
+    // ---------------------------------------------
 
     return NextResponse.json(product);
   } catch (error) {

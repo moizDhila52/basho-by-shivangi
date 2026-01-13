@@ -19,6 +19,7 @@ import {
   Grid,
   List,
   MoreHorizontal,
+  Mail, // Imported Mail icon
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -33,7 +34,7 @@ export default function AdminProductsPage() {
   const [loading, setLoading] = useState(true);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
-  const [viewMode, setViewMode] = useState("list"); // Default to list for admin
+  const [viewMode, setViewMode] = useState("list"); 
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedProducts, setSelectedProducts] = useState(new Set());
@@ -44,7 +45,7 @@ export default function AdminProductsPage() {
   // --- Form State ---
   const initialFormState = {
     name: "",
-    weight: "0.5", // Default 500g
+    weight: "0.5", 
     price: "",
     description: "",
     categoryId: "",
@@ -62,6 +63,7 @@ export default function AdminProductsPage() {
     leadTime: "",
     metaTitle: "",
     metaDescription: "",
+    sendNewsletter: false, // <--- ADDED THIS
   };
   const [formData, setFormData] = useState(initialFormState);
 
@@ -105,7 +107,6 @@ export default function AdminProductsPage() {
     const file = e.target.files[0];
     if (!file) return;
 
-    // Validate
     if (!file.type.startsWith("image/") || file.size > 5 * 1024 * 1024) {
       alert("Please upload an image under 5MB.");
       return;
@@ -236,13 +237,12 @@ export default function AdminProductsPage() {
     setFormData({
       ...initialFormState,
       ...product,
-      // Ensure arrays exist
       features: product.features || [],
       images: product.images?.length ? product.images : [""],
-      // Ensure strings for inputs
       price: product.price?.toString() || "",
       stock: product.stock?.toString() || "",
       originalPrice: product.originalPrice?.toString() || "",
+      sendNewsletter: false, // Default to false when opening edit
     });
     setIsFormOpen(true);
   };
@@ -264,8 +264,8 @@ export default function AdminProductsPage() {
 
   return (
     <div className="space-y-6">
-      {/* --- Page Header --- */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      {/* ... (Header and Filters Code - Unchanged) ... */}
+       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h1 className="font-serif text-3xl font-bold text-[#442D1C]">
             Products
@@ -282,7 +282,6 @@ export default function AdminProductsPage() {
         </button>
       </div>
 
-      {/* --- Filters Bar --- */}
       <div className="bg-white p-4 rounded-xl border border-[#EDD8B4] shadow-sm flex flex-col md:flex-row gap-4 justify-between items-center">
         <div className="flex flex-1 gap-4 w-full">
           <div className="relative flex-1">
@@ -346,9 +345,9 @@ export default function AdminProductsPage() {
           </div>
         </div>
       </div>
-
-      {/* --- Content Area --- */}
-      {filteredProducts.length === 0 ? (
+      
+      {/* ... (Table and Grid Views - Unchanged) ... */}
+       {filteredProducts.length === 0 ? (
         <div className="bg-white rounded-xl border border-[#EDD8B4] p-12 text-center">
           <Package className="w-12 h-12 text-[#EDD8B4] mx-auto mb-3" />
           <h3 className="text-[#442D1C] font-medium">No products found</h3>
@@ -886,7 +885,7 @@ export default function AdminProductsPage() {
                 </section>
 
                 {/* 5. Flags */}
-                <section className="flex gap-6 pt-2">
+                <section className="flex flex-wrap gap-6 pt-2">
                   {[
                     { key: "isFeatured", label: "Featured" },
                     { key: "isBestseller", label: "Bestseller" },
@@ -921,6 +920,36 @@ export default function AdminProductsPage() {
                     </label>
                   ))}
                 </section>
+
+                {/* 6. NEWSLETTER NOTIFICATION (NEW) */}
+                <section className="pt-4 border-t border-[#EDD8B4]">
+                     <label className="flex items-center gap-3 cursor-pointer p-4 rounded-xl border border-[#C85428]/30 bg-[#C85428]/5 hover:bg-[#C85428]/10 transition-colors">
+                        <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors flex-shrink-0 ${
+                            formData.sendNewsletter
+                            ? "bg-[#C85428] border-[#C85428]"
+                            : "border-[#C85428] bg-white"
+                        }`}>
+                            {formData.sendNewsletter && (
+                                <Check className="w-3.5 h-3.5 text-white" />
+                            )}
+                        </div>
+                        <input
+                            type="checkbox"
+                            className="hidden"
+                            checked={formData.sendNewsletter}
+                            onChange={(e) => setFormData({...formData, sendNewsletter: e.target.checked})}
+                        />
+                        <div className="flex-1">
+                            <span className="flex items-center gap-2 font-bold text-[#442D1C] text-sm">
+                                <Mail className="w-4 h-4 text-[#C85428]"/> Notify Subscribers
+                            </span>
+                            <span className="block text-xs text-[#8E5022] mt-0.5">
+                                Automatically send a "New Arrival" or "Back in Stock" email to all newsletter subscribers when you save this product.
+                            </span>
+                        </div>
+                     </label>
+                </section>
+
               </form>
 
               <div className="p-5 border-t border-[#EDD8B4] bg-[#FDFBF7] rounded-b-xl flex justify-end gap-3">

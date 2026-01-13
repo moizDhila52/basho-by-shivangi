@@ -1,19 +1,17 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 
 export async function GET(req) {
   try {
-    // Check if you have a 'WorkshopBooking' or 'Booking' table in your schema.
-    // I am assuming 'WorkshopBooking' based on standard naming. 
-    // If your table is named differently (e.g., 'Booking'), please rename it below.
-    
-    const registrations = await prisma.workshopBooking.findMany({
-      take: 10, // Only get the latest 10
+    const registrations = await prisma.workshopRegistration.findMany({
+      take: 10,
       orderBy: { createdAt: 'desc' },
       include: {
-        session: {
+        // Must match the field name in 'WorkshopRegistration' model
+        WorkshopSession: { 
           include: {
-            workshop: {
+            // Must match the field name in 'WorkshopSession' model
+            Workshop: {
               select: { title: true }
             }
           }
@@ -24,7 +22,6 @@ export async function GET(req) {
     return NextResponse.json(registrations);
   } catch (error) {
     console.error("Registration Fetch Error:", error);
-    // Return empty array so the app doesn't crash if table doesn't exist yet
-    return NextResponse.json([]); 
+    return NextResponse.json({ error: "Failed to fetch registrations" }, { status: 500 });
   }
 }

@@ -181,7 +181,6 @@ model Product {
   Review          Review[]
   testimonials    Testimonial[]
   WishlistItem    WishlistItem[]
-  ProductWaitlist ProductWaitlist[]
 
   @@index([categoryId])
   @@index([isBestseller])
@@ -243,10 +242,6 @@ model User {
   Review               Review[]
   WishlistItem         WishlistItem[]
   WorkshopRegistration WorkshopRegistration[]
-<<<<<<< HEAD
-=======
-  ProductWaitlist ProductWaitlist[]
->>>>>>> 9904b094244887d2f0aa9908127ae6e626ed1486
 }
 
 model WishlistItem {
@@ -412,6 +407,17 @@ model NewsletterSubscriber {
   updatedAt DateTime @updatedAt
 }
 
+// Add this new model
+model NewsletterCampaign {
+  id          String   @id @default(uuid())
+  subject     String
+  type        String   // "PRODUCT", "WORKSHOP", "EVENT"
+  referenceId String?  // The ID of the product/workshop/event being promoted
+  sentAt      DateTime @default(now())
+  recipientCount Int   @default(0)
+  status      String   @default("SENT") // SENT, FAILED
+}
+
 model WorkshopRegistration {
   id              String          @id @default(uuid())
   customerName    String
@@ -523,21 +529,4 @@ enum CustomOrderStatus {
   SHIPPED
   CANCELLED
 }
-<<<<<<< HEAD
-=======
 
-// Add this to your schema
-model ProductWaitlist {
-  id        String   @id @default(uuid())
-  productId String
-  userId    String?  // Optional: if logged in
-  email     String   // Required: where to send the email
-  createdAt DateTime @default(now())
-  
-  Product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
-  User      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([productId])
-  @@unique([productId, email]) // Prevent duplicate requests for same item
-}
->>>>>>> 9904b094244887d2f0aa9908127ae6e626ed1486
