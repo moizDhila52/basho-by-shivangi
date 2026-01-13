@@ -776,7 +776,21 @@ export default function CustomOrderPage() {
                           type="tel"
                           name="contactPhone"
                           value={formData.contactPhone}
-                          onChange={handleInputChange}
+                          onChange={(e) => {
+                            // Only allow numbers
+                            const value = e.target.value.replace(/\D/g, "");
+                            setFormData((prev) => ({
+                              ...prev,
+                              contactPhone: value,
+                            }));
+                          }}
+                          onKeyPress={(e) => {
+                            // Prevent non-numeric characters from being entered
+                            if (!/[0-9]/.test(e.key)) {
+                              e.preventDefault();
+                            }
+                          }}
+                          maxLength={15}
                           className="w-full px-4 py-3 bg-white border-2 border-stone-200 rounded-xl focus:border-[#8E5022] focus:outline-none"
                         />
                       </div>
