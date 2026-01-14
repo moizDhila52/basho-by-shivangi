@@ -6,14 +6,32 @@ import { sendCampaignEmail } from '@/lib/mailer';
 export async function GET() {
   try {
     const [products, workshops, events, history] = await Promise.all([
-      prisma.product.findMany({ select: { id: true, name: true, slug: true, images: true, price: true, description: true } }),
-      prisma.workshop.findMany({ where: { status: 'UPCOMING' }, select: { id: true, title: true, slug: true, image: true, instructorName: true, location: true } }),
-      prisma.event.findMany({ where: { status: 'UPCOMING' }, select: { id: true, title: true, slug: true, image: true, startDate: true, description: true } }),
-      prisma.newsletterCampaign.findMany({ orderBy: { sentAt: 'desc' } })
+      // Fetch products
+      prisma.product.findMany({ 
+        select: { id: true, name: true, slug: true, images: true, price: true, description: true },
+        orderBy: { createdAt: 'desc' }
+      }),
+      
+      // FIX IS HERE: Changed 'date' to 'createdAt'
+      prisma.workshop.findMany({ 
+        select: { id: true, title: true, slug: true, image: true, instructorName: true, location: true },
+        orderBy: { createdAt: 'desc' } // <--- This matches your schema now
+      }),
+      
+      // Fetch events
+      prisma.event.findMany({ 
+        select: { id: true, title: true, slug: true, image: true, startDate: true, description: true },
+        orderBy: { startDate: 'desc' }
+      }),
+      
+      prisma.newsletterCampaign.findMany({ 
+        orderBy: { sentAt: 'desc' } 
+      })
     ]);
 
     return NextResponse.json({ products, workshops, events, history });
   } catch (error) {
+    console.error("Database Error:", error);
     return NextResponse.json({ error: 'Failed to fetch data' }, { status: 500 });
   }
 }
@@ -25,7 +43,6 @@ export async function POST(req) {
     const { type, selectedItem, customSubject, customMessage } = body;
 
     // 1. Fetch Subscribers
-    // We need both registered users who opted in AND guest subscribers
     const [users, guestSubscribers] = await Promise.all([
       prisma.user.findMany({ where: { isSubscribed: true }, select: { email: true } }),
       prisma.newsletterSubscriber.findMany({ where: { isActive: true }, select: { email: true } })
@@ -52,7 +69,7 @@ export async function POST(req) {
     // 3. Save to History
     await prisma.newsletterCampaign.create({
       data: {
-        subject: result.subject,
+        subject: result.subject || customSubject || "Newsletter",
         type,
         referenceId: selectedItem.id,
         recipientCount: result.count,
