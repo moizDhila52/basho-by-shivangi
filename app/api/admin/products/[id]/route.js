@@ -1,27 +1,27 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma'; // Changed to @/lib/prisma to match your other files
+import { prisma } from '@/lib/prisma'; 
 import { triggerNotification } from '@/lib/socketTrigger';
-import { sendRestockEmail } from '@/lib/mailer';
+import { sendRestockEmail, sendCampaignEmail } from '@/lib/mailer'; // <--- IMPORT sendCampaignEmail
 
 // PUT: Update a product
 export async function PUT(req, { params }) {
   try {
-    // --- FIX: Await params because it is a Promise in Next.js 15+ ---
     const { id } = await params;
-
     const body = await req.json();
 
     // Strip out fields that cannot be updated directly
+    // --- IMPORTANT: Extract sendNewsletter here to remove it from updateData ---
     const {
       id: _id,
       createdAt,
       updatedAt,
       Category,
       _count,
+      sendNewsletter, // <--- EXTRACT FLAG
       ...updateData
     } = body;
 
-    // 1. Fetch EXISTING product first (Needed to check old stock level)
+    // 1. Fetch EXISTING product first
     const existingProduct = await prisma.product.findUnique({
       where: { id },
     });
@@ -38,58 +38,85 @@ export async function PUT(req, { params }) {
       where: { id },
       data: {
         ...updateData,
-        // Ensure numeric types
         price: parseFloat(updateData.price),
         stock: newStock,
         originalPrice: updateData.originalPrice
           ? parseFloat(updateData.originalPrice)
           : null,
-        // Calculate boolean logic
         inStock: newStock > 0,
       },
     });
 
-    // 3. CHECK FOR RESTOCK EVENT (Logic Added Here)
+    // 3. CHECK FOR RESTOCK EVENT (Existing Logic)
     if (oldStock === 0 && newStock > 0) {
-      // A. Find everyone waiting for THIS product
       const waitlist = await prisma.productWaitlist.findMany({
         where: { productId: id },
       });
 
-      // B. Loop through them and send alerts
       for (const entry of waitlist) {
-        // Send Real-Time Notification (if they have a userId)
         if (entry.userId) {
           await prisma.notification.create({
             data: {
               userId: entry.userId,
               title: 'Back in Stock!',
-              message: `The product "${product.name}" you wanted is available again. Grab it before it's gone!`,
+              message: `The product "${product.name}" you wanted is available again.`,
               type: 'PRODUCT',
               link: `/products/${product.slug}`,
             },
           });
-
           await triggerNotification(entry.userId, 'notification', {
             title: 'Back in Stock!',
             message: `Your item "${product.name}" is back!`,
           });
         }
-
-        // Send Email (To everyone, even guests)
         try {
-          // Uncomment below when you have implemented the mailer function
-          // await sendRestockEmail(entry.email, product);
+           await sendRestockEmail(entry.email, product);
         } catch (e) {
           console.error('Restock email failed', e);
         }
       }
-
-      // C. Clear the waitlist
       await prisma.productWaitlist.deleteMany({
         where: { productId: id },
       });
     }
+
+    // 4. --- NEW LOGIC: SEND NEWSLETTER IF CHECKED (General Blast) ---
+    if (sendNewsletter) {
+      try {
+        const [users, guestSubscribers] = await Promise.all([
+          prisma.user.findMany({ where: { isSubscribed: true }, select: { email: true } }),
+          prisma.newsletterSubscriber.findMany({ where: { isActive: true }, select: { email: true } })
+        ]);
+
+        const allEmails = [...new Set([
+          ...users.map(u => u.email),
+          ...guestSubscribers.map(s => s.email)
+        ])];
+
+        if (allEmails.length > 0) {
+          const result = await sendCampaignEmail(allEmails, {
+            type: 'PRODUCT',
+            item: product,
+            // Customize subject slightly for updates (e.g. Back in Stock or Updated)
+            customSubject: oldStock === 0 && newStock > 0 ? `Back in Stock: ${product.name}` : `Check out: ${product.name}`,
+            customMessage: product.description.substring(0, 150) + "..."
+          });
+
+          await prisma.newsletterCampaign.create({
+            data: {
+              subject: result.subject,
+              type: 'PRODUCT',
+              referenceId: product.id,
+              recipientCount: result.count,
+              status: 'SENT'
+            }
+          });
+        }
+      } catch (mailError) {
+        console.error("Failed to send newsletter update:", mailError);
+      }
+    }
+    // -------------------------------------------------------------
 
     return NextResponse.json(product);
   } catch (error) {
@@ -104,7 +131,6 @@ export async function PUT(req, { params }) {
 // DELETE: Remove a product
 export async function DELETE(req, { params }) {
   try {
-    // --- FIX: Await params here as well ---
     const { id } = await params;
 
     await prisma.product.delete({

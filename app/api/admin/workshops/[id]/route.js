@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
-import { sendWorkshopUpdateEmail } from '@/lib/mailer'; // 👈 Import Mailer
-import { triggerNotification } from '@/lib/socketTrigger'; // 👈 Import Socket
+import { sendWorkshopUpdateEmail, sendCampaignEmail } from '@/lib/mailer'; // 👈 Import sendCampaignEmail
+import { triggerNotification } from '@/lib/socketTrigger'; 
 
 // GET: Fetch single workshop
 export async function GET(req, { params }) {
@@ -42,21 +42,23 @@ export async function GET(req, { params }) {
   }
 }
 
-// PUT: Update Workshop (Handle Cancellations)
+// PUT: Update Workshop
 export async function PUT(req, { params }) {
   try {
     const { id } = await params;
     const body = await req.json();
 
+    // --- IMPORTANT: Extract sendNewsletter flag ---
+    const { sendNewsletter, ...updateData } = body;
+
     // 1. Update the Workshop
     const workshop = await prisma.workshop.update({
       where: { id },
-      data: { ...body },
+      data: { ...updateData },
     });
 
-    // 2. 🔔 CHECK FOR CANCELLATION
-    if (body.status === 'CANCELLED') {
-      // Find everyone registered for ANY session of this workshop
+    // 2. 🔔 CHECK FOR CANCELLATION (Specific Attendees)
+    if (updateData.status === 'CANCELLED') {
       const registrations = await prisma.workshopRegistration.findMany({
         where: {
           WorkshopSession: {
@@ -75,10 +77,8 @@ export async function PUT(req, { params }) {
       );
 
       for (const reg of registrations) {
-        // A. Send Cancellation Email
         await sendWorkshopUpdateEmail(reg, 'CANCELLED');
 
-        // B. Send In-App Notification (If they are a registered user)
         if (reg.userId) {
           await prisma.notification.create({
             data: {
@@ -97,6 +97,43 @@ export async function PUT(req, { params }) {
         }
       }
     }
+
+    // 3. --- NEW LOGIC: SEND NEWSLETTER TO ALL SUBSCRIBERS (If checked) ---
+    if (sendNewsletter) {
+      try {
+        const [users, guestSubscribers] = await Promise.all([
+          prisma.user.findMany({ where: { isSubscribed: true }, select: { email: true } }),
+          prisma.newsletterSubscriber.findMany({ where: { isActive: true }, select: { email: true } })
+        ]);
+
+        const allEmails = [...new Set([
+          ...users.map(u => u.email),
+          ...guestSubscribers.map(s => s.email)
+        ])];
+
+        if (allEmails.length > 0) {
+          const result = await sendCampaignEmail(allEmails, {
+            type: 'WORKSHOP',
+            item: workshop,
+            customSubject: `Update: ${workshop.title}`,
+            customMessage: `We have updates regarding our ${workshop.title} workshop. Check out the latest details.`
+          });
+
+          await prisma.newsletterCampaign.create({
+            data: {
+              subject: result.subject,
+              type: 'WORKSHOP',
+              referenceId: workshop.id,
+              recipientCount: result.count,
+              status: 'SENT'
+            }
+          });
+        }
+      } catch (mailError) {
+        console.error("Failed to send workshop update newsletter:", mailError);
+      }
+    }
+    // -------------------------------------------------------------------
 
     return NextResponse.json(workshop);
   } catch (error) {

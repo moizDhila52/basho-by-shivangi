@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import { sendCampaignEmail } from '@/lib/mailer'; // <--- IMPORT THIS
 
 // Helper for Slug
 const createSlug = (title) => {
@@ -19,8 +20,6 @@ export async function GET() {
       include: {
         WorkshopSession: {
           orderBy: { date: 'asc' },
-          // REMOVED: where: { date: { gte: new Date() } }
-          // Reason: Admin needs all sessions to calculate if it's completed
         },
       },
       orderBy: { createdAt: 'desc' },
@@ -52,39 +51,82 @@ export async function POST(req) {
   try {
     const body = await req.json();
 
+    // Destructure sendNewsletter to keep it out of Prisma creation data
+    const { sendNewsletter, ...workshopData } = body;
+
     // Create Workshop AND Sessions atomically
     const workshop = await prisma.workshop.create({
       data: {
-        title: body.title,
-        slug: createSlug(body.title),
-        description: body.description,
-        price: parseFloat(body.price),
-        image: body.image || '',
-        gallery: body.image ? [body.image] : [],
+        title: workshopData.title,
+        slug: createSlug(workshopData.title),
+        description: workshopData.description,
+        price: parseFloat(workshopData.price),
+        image: workshopData.image || '',
+        gallery: workshopData.image ? [workshopData.image] : [],
 
-        duration: body.duration,
-        maxStudents: parseInt(body.maxStudents),
-        location: body.location,
-        language: body.language,
-        level: body.level,
+        duration: workshopData.duration,
+        maxStudents: parseInt(workshopData.maxStudents),
+        location: workshopData.location,
+        language: workshopData.language,
+        level: workshopData.level,
 
-        instructorName: body.instructorName,
-        instructorRole: body.instructorRole,
-        instructorImage: body.instructorImage || '',
+        instructorName: workshopData.instructorName,
+        instructorRole: workshopData.instructorRole,
+        instructorImage: workshopData.instructorImage || '',
 
         status: 'ACTIVE',
 
         // Relation Magic: Create sessions
         WorkshopSession: {
-          create: body.sessions.map((s) => ({
+          create: workshopData.sessions.map((s) => ({
             date: new Date(s.date),
             time: s.time,
-            spotsTotal: parseInt(body.maxStudents),
+            spotsTotal: parseInt(workshopData.maxStudents),
             spotsBooked: 0,
           })),
         },
       },
     });
+
+    // --- NEW LOGIC: SEND NEWSLETTER IF CHECKED ---
+    if (sendNewsletter) {
+      try {
+        // 1. Fetch Subscribers
+        const [users, guestSubscribers] = await Promise.all([
+          prisma.user.findMany({ where: { isSubscribed: true }, select: { email: true } }),
+          prisma.newsletterSubscriber.findMany({ where: { isActive: true }, select: { email: true } })
+        ]);
+
+        const allEmails = [...new Set([
+          ...users.map(u => u.email),
+          ...guestSubscribers.map(s => s.email)
+        ])];
+
+        if (allEmails.length > 0) {
+          // 2. Send Campaign
+          const result = await sendCampaignEmail(allEmails, {
+            type: 'WORKSHOP',
+            item: workshop,
+            customSubject: `New Workshop: ${workshop.title}`,
+            customMessage: `We are excited to announce a new ${workshop.level} level workshop on ${workshop.title}. Slots are limited!`
+          });
+
+          // 3. Log History
+          await prisma.newsletterCampaign.create({
+            data: {
+              subject: result.subject,
+              type: 'WORKSHOP',
+              referenceId: workshop.id,
+              recipientCount: result.count,
+              status: 'SENT'
+            }
+          });
+        }
+      } catch (mailError) {
+        console.error("Failed to send workshop newsletter:", mailError);
+      }
+    }
+    // ---------------------------------------------
 
     return NextResponse.json(workshop);
   } catch (error) {

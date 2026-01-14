@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { sendCampaignEmail } from "@/lib/mailer"; // <--- IMPORT THIS
 
 export async function GET(request, { params }) {
   try {
-    const { id } = await params; // <--- AWAIT PARAMS HERE
+    const { id } = await params;
     const event = await prisma.event.findUnique({
       where: { id, isActive: true },
       include: {
@@ -23,27 +24,67 @@ export async function GET(request, { params }) {
 
 export async function PUT(request, { params }) {
   try {
-    const { id } = await params; // <--- AWAIT PARAMS HERE
+    const { id } = await params;
     const body = await request.json();
+
+    // Extract newsletter flag
+    const { sendNewsletter, ...updateData } = body;
 
     const event = await prisma.event.update({
       where: { id },
       data: {
-        title: body.title,
-        description: body.description,
-        shortDescription: body.shortDescription,
-        type: body.type,
-        location: body.location,
-        address: body.address,
-        startDate: body.startDate ? new Date(body.startDate) : undefined,
-        endDate: body.endDate ? new Date(body.endDate) : undefined,
-        image: body.image,
-        gallery: body.gallery,
-        status: body.status,
-        featured: body.featured,
-        isActive: body.isActive,
+        title: updateData.title,
+        description: updateData.description,
+        shortDescription: updateData.shortDescription,
+        type: updateData.type,
+        location: updateData.location,
+        address: updateData.address,
+        startDate: updateData.startDate ? new Date(updateData.startDate) : undefined,
+        endDate: updateData.endDate ? new Date(updateData.endDate) : undefined,
+        image: updateData.image,
+        gallery: updateData.gallery,
+        status: updateData.status,
+        featured: updateData.featured,
+        isActive: updateData.isActive,
       },
     });
+
+    // --- NEWSLETTER LOGIC ---
+    if (sendNewsletter) {
+        try {
+            const [users, guestSubscribers] = await Promise.all([
+                prisma.user.findMany({ where: { isSubscribed: true }, select: { email: true } }),
+                prisma.newsletterSubscriber.findMany({ where: { isActive: true }, select: { email: true } })
+            ]);
+
+            const allEmails = [...new Set([
+                ...users.map(u => u.email),
+                ...guestSubscribers.map(s => s.email)
+            ])];
+
+            if (allEmails.length > 0) {
+                const result = await sendCampaignEmail(allEmails, {
+                    type: 'EVENT',
+                    item: event,
+                    customSubject: `Event Update: ${event.title}`,
+                    customMessage: `We have some updates regarding ${event.title}. Check out the details.`
+                });
+
+                await prisma.newsletterCampaign.create({
+                    data: {
+                        subject: result.subject,
+                        type: 'EVENT',
+                        referenceId: event.id,
+                        recipientCount: result.count,
+                        status: 'SENT'
+                    }
+                });
+            }
+        } catch (mailError) {
+            console.error("Failed to send event update newsletter:", mailError);
+        }
+    }
+    // -------------------------
 
     return NextResponse.json({ success: true, data: event, message: "Event updated successfully" });
   } catch (error) {
@@ -54,7 +95,7 @@ export async function PUT(request, { params }) {
 
 export async function DELETE(request, { params }) {
   try {
-    const { id } = await params; // <--- AWAIT PARAMS HERE
+    const { id } = await params;
     await prisma.event.update({
       where: { id },
       data: { isActive: false },

@@ -181,6 +181,13 @@ model Product {
   Review          Review[]
   testimonials    Testimonial[]
   WishlistItem    WishlistItem[]
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+=======
+  
+>>>>>>> 04092962bbf1a4a59894d22f24fccf0649f757ea
+>>>>>>> a1bcefe18038bb6dcd4ef52bdbd62483cf5e6b54
 
   @@index([categoryId])
   @@index([isBestseller])
@@ -407,6 +414,17 @@ model NewsletterSubscriber {
   updatedAt DateTime @updatedAt
 }
 
+// Add this new model
+model NewsletterCampaign {
+  id          String   @id @default(uuid())
+  subject     String
+  type        String   // "PRODUCT", "WORKSHOP", "EVENT"
+  referenceId String?  // The ID of the product/workshop/event being promoted
+  sentAt      DateTime @default(now())
+  recipientCount Int   @default(0)
+  status      String   @default("SENT") // SENT, FAILED
+}
+
 model WorkshopRegistration {
   id              String          @id @default(uuid())
   customerName    String
@@ -528,3 +546,4 @@ enum CustomOrderStatus {
   SHIPPED
   CANCELLED
 }
+

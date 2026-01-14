@@ -5,7 +5,8 @@ import React, { useState, useEffect } from "react";
 import ImageUpload from "@/components/admin/ImageUpload";
 import {
   Plus, Edit, Trash2, Search, Calendar, MapPin, 
-  XCircle, CheckCircle, Clock, ChevronDown, Loader2, AlertCircle, Heart
+  XCircle, CheckCircle, Clock, ChevronDown, Loader2, AlertCircle, Heart,
+  Mail, Check // <--- Added Icons
 } from "lucide-react";
 import { Toaster, toast } from "react-hot-toast";
 
@@ -150,7 +151,6 @@ export default function AdminEventsPage() {
                 <tr>
                   <th className="py-5 px-6 text-left text-xs font-bold uppercase tracking-wider text-stone-400 font-serif">Event</th>
                   <th className="py-5 px-6 text-left text-xs font-bold uppercase tracking-wider text-stone-400 font-serif">Schedule</th>
-                  {/* ADDED HEADER */}
                   <th className="py-5 px-6 text-center text-xs font-bold uppercase tracking-wider text-stone-400 font-serif">Interest</th>
                   <th className="py-5 px-6 text-left text-xs font-bold uppercase tracking-wider text-stone-400 font-serif">Quick Status</th>
                   <th className="py-5 px-6 text-right text-xs font-bold uppercase tracking-wider text-stone-400 font-serif">Actions</th>
@@ -186,7 +186,6 @@ export default function AdminEventsPage() {
                         </div>
                       </td>
                       
-                      {/* ADDED INTEREST COUNT CELL */}
                       <td className="py-5 px-6 text-center">
                         <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-50 text-red-700 text-sm font-bold border border-red-100">
                             <Heart className="w-3.5 h-3.5 fill-current" />
@@ -244,11 +243,7 @@ export default function AdminEventsPage() {
   );
 }
 
-// ... (EventModal remains the same as your previous code) ...
-// Make sure EventModal import React and constants are handled if split in files.
 function EventModal({ event, onClose, onSuccess }) {
-    // ... Copy your exact modal code here ...
-    // Just ensuring the file structure is valid for the response
     const [formData, setFormData] = useState({
         title: event?.title || "",
         description: event?.description || "",
@@ -262,6 +257,7 @@ function EventModal({ event, onClose, onSuccess }) {
         gallery: event?.gallery || [],
         status: event?.status || "UPCOMING",
         featured: event?.featured || false,
+        sendNewsletter: false, // <--- ADDED STATE
     });
     const [loading, setLoading] = useState(false);
 
@@ -279,7 +275,12 @@ function EventModal({ event, onClose, onSuccess }) {
             });
             const data = await response.json();
             if (data.success) {
-                toast.success(event ? "Event updated!" : "Event created!", { id: toastId });
+                // Modified toast message based on newsletter
+                if (formData.sendNewsletter) {
+                    toast.success("Event saved & Newsletter sent!", { id: toastId });
+                } else {
+                    toast.success(event ? "Event updated!" : "Event created!", { id: toastId });
+                }
                 onSuccess();
             } else {
                 throw new Error(data.error);
@@ -361,6 +362,35 @@ function EventModal({ event, onClose, onSuccess }) {
                     <label className="block text-sm font-semibold text-stone-700 mb-2 font-serif">Full Details</label>
                     <textarea required rows={4} value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} className="w-full px-4 py-3 rounded-xl bg-stone-50 border border-stone-200" />
                 </div>
+            </div>
+
+            {/* --- NEWSLETTER SECTION --- */}
+            <div className="bg-stone-50 p-4 rounded-xl border border-stone-200">
+                <label className="flex items-center gap-3 cursor-pointer">
+                    <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors flex-shrink-0 ${
+                        formData.sendNewsletter
+                        ? "bg-[#8E5022] border-[#8E5022]"
+                        : "border-[#8E5022] bg-white"
+                    }`}>
+                        {formData.sendNewsletter && (
+                            <Check className="w-3.5 h-3.5 text-white" />
+                        )}
+                    </div>
+                    <input
+                        type="checkbox"
+                        className="hidden"
+                        checked={formData.sendNewsletter}
+                        onChange={(e) => setFormData({...formData, sendNewsletter: e.target.checked})}
+                    />
+                    <div className="flex-1">
+                        <span className="flex items-center gap-2 font-bold text-[#442D1C] text-sm">
+                            <Mail className="w-4 h-4 text-[#8E5022]"/> Notify Subscribers
+                        </span>
+                        <span className="block text-xs text-stone-500 mt-0.5">
+                            Automatically send an invitation email to all subscribers when you save this event.
+                        </span>
+                    </div>
+                </label>
             </div>
 
             <div className="flex gap-4 pt-4">
