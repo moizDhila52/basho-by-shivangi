@@ -87,6 +87,11 @@ export default function WorkshopDetailClient({ workshop }) {
                 alt={workshop.title}
                 fill
                 className="object-cover"
+                style={{
+                  objectPosition: "center center",
+                  // Force the image to scale up if needed
+                  transform: "scale(1.1)", // Slight zoom to eliminate white space
+                }}
                 priority
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent pointer-events-none" />
@@ -234,6 +239,11 @@ export default function WorkshopDetailClient({ workshop }) {
                         src={img}
                         alt={`Gallery ${i}`}
                         fill
+                        style={{
+                          objectPosition: "center center",
+                          // Force the image to scale up if needed
+                          transform: "scale(1.1)", // Slight zoom to eliminate white space
+                        }}
                         className="object-cover"
                       />
                     </motion.div>
