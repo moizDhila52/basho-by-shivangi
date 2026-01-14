@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import Link from 'next/link';
+import React from 'react'; // Added for cloneElement in StatCard
 import {
   Plus,
   Calendar,
@@ -10,6 +11,9 @@ import {
   MapPin,
   Edit2,
   Trash2,
+  Package, // Added for stats
+  IndianRupee, // Added for stats
+  Activity, // Added for stats
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useToast } from '@/components/ToastProvider';
@@ -29,7 +33,7 @@ export default function AdminWorkshopsPage() {
   // 4. Real-time Refresh
   useEffect(() => {
     if (refreshTrigger.workshops > 0) {
-        fetchWorkshops();
+      fetchWorkshops();
     }
   }, [refreshTrigger.workshops]);
 
@@ -47,6 +51,52 @@ export default function AdminWorkshopsPage() {
   useEffect(() => {
     fetchWorkshops();
   }, []);
+
+  // --- ANALYTICS CALCULATION ---
+  const stats = useMemo(() => {
+    let totalRevenue = 0;
+    let totalBookings = 0;
+    let activeWorkshops = 0;
+    let upcomingSessions = 0;
+    const now = new Date();
+
+    workshops.forEach((workshop) => {
+      // 1. Count Active Workshops
+      if (workshop.status === 'ACTIVE') {
+        activeWorkshops++;
+      }
+
+      // 2. Calculate Revenue & Bookings from Sessions
+      if (workshop.WorkshopSession) {
+        workshop.WorkshopSession.forEach((session) => {
+          const booked = session.spotsBooked || 0;
+          
+          // Total Students/Bookings
+          totalBookings += booked;
+
+          // Estimated Revenue (Price * Booked Spots)
+          // Note: This assumes standard pricing. For exact payment amounts, 
+          // we would need to fetch WorkshopRegistration table data.
+          totalRevenue += booked * (workshop.price || 0);
+
+          // Count Upcoming Sessions
+          if (new Date(session.date) >= now) {
+            upcomingSessions++;
+          }
+        });
+      }
+    });
+
+    return {
+      totalRevenue: totalRevenue.toLocaleString('en-IN', {
+        style: 'currency',
+        currency: 'INR',
+      }),
+      totalBookings,
+      activeWorkshops,
+      upcomingSessions,
+    };
+  }, [workshops]);
 
   const handleDelete = async (id) => {
     if (
@@ -79,7 +129,9 @@ export default function AdminWorkshopsPage() {
 
   if (loading)
     return (
-      <div className="p-10 text-center text-[#8E5022]">Loading schedule...</div>
+      <div className="p-10 text-center text-[#8E5022]">
+        Loading schedule...
+      </div>
     );
 
   return (
@@ -100,6 +152,34 @@ export default function AdminWorkshopsPage() {
         >
           <Plus size={20} /> Schedule Workshop
         </Link>
+      </div>
+
+      {/* --- STATS CARDS --- */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <StatCard
+          label="Total Workshop Revenue"
+          value={stats.totalRevenue}
+          icon={<IndianRupee className="text-[#C85428]" />}
+          color="bg-[#C85428]/10"
+        />
+        <StatCard
+          label="Total Students"
+          value={stats.totalBookings}
+          icon={<Users className="text-[#8E5022]" />}
+          color="bg-[#8E5022]/10"
+        />
+        <StatCard
+          label="Active Workshops"
+          value={stats.activeWorkshops}
+          icon={<Activity className="text-[#F59E0B]" />}
+          color="bg-[#F59E0B]/10"
+        />
+        <StatCard
+          label="Upcoming Sessions"
+          value={stats.upcomingSessions}
+          icon={<Calendar className="text-[#10B981]" />}
+          color="bg-[#10B981]/10"
+        />
       </div>
 
       {/* Grid */}
@@ -136,7 +216,7 @@ export default function AdminWorkshopsPage() {
                 <div className="absolute top-4 right-4 flex gap-2">
                   <span
                     className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider backdrop-blur-md shadow-sm ${getStatusColor(
-                      workshop.status,
+                      workshop.status
                     )}`}
                   >
                     {workshop.status}
@@ -173,14 +253,14 @@ export default function AdminWorkshopsPage() {
                     <span>Upcoming Sessions</span>
                     <span className="bg-[#EDD8B4] text-[#442D1C] px-1.5 py-0.5 rounded text-[10px]">
                       {workshop.WorkshopSession?.filter(
-                        (s) => new Date(s.date) >= new Date(),
+                        (s) => new Date(s.date) >= new Date()
                       ).length || 0}
                     </span>
                   </h4>
                   <div className="space-y-2 max-h-24 overflow-y-auto custom-scrollbar">
                     {workshop.WorkshopSession?.length > 0 ? (
                       workshop.WorkshopSession.filter(
-                        (s) => new Date(s.date) >= new Date(),
+                        (s) => new Date(s.date) >= new Date()
                       )
                         .slice(0, 3)
                         .map((session) => (
@@ -191,7 +271,7 @@ export default function AdminWorkshopsPage() {
                             <span className="font-medium text-[#442D1C]">
                               {new Date(session.date).toLocaleDateString(
                                 undefined,
-                                { day: 'numeric', month: 'short' },
+                                { day: 'numeric', month: 'short' }
                               )}
                             </span>
                             <span className="text-[#8E5022]/80 text-xs bg-white px-2 py-0.5 rounded border border-[#EDD8B4]/50">
@@ -230,3 +310,18 @@ export default function AdminWorkshopsPage() {
     </div>
   );
 }
+
+// Helper Component for Stats
+function StatCard({ label, value, icon, color }) {
+  return (
+    <div className="bg-white p-4 rounded-xl border border-[#EDD8B4] shadow-sm flex items-center justify-between">
+      <div>
+        <p className="text-xs text-[#8E5022] font-bold uppercase">{label}</p>
+        <p className="text-2xl font-bold text-[#442D1C] mt-1">{value}</p>
+      </div>
+      <div className={`p-3 rounded-lg ${color}`}>
+        {React.cloneElement(icon, { size: 24 })}
+      </div>
+    </div>
+  );
+} 
