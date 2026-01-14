@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo } from 'react';
 import {
   Search,
   Filter,
@@ -20,30 +20,34 @@ import {
   RefreshCw,
   Loader2,
   X,
-} from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
-import { format } from "date-fns";
-import { useToast } from "@/components/ToastProvider";
+} from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { format } from 'date-fns';
+import { useToast } from '@/components/ToastProvider';
 import { useNotification } from '@/context/NotificationContext';
 
 const INQUIRY_STATUSES = [
-  "PENDING",
-  "CONTACTED",
-  "QUOTED",
-  "CONVERTED",
-  "ARCHIVED",
+  'PENDING',
+  'CONTACTED',
+  'QUOTED',
+  'CONVERTED',
+  'ARCHIVED',
 ];
 
 export default function AdminInquiriesPage() {
   const [inquiries, setInquiries] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [selectedStatus, setSelectedStatus] = useState("ALL");
-  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedStatus, setSelectedStatus] = useState('ALL');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [viewType, setViewType] = useState('CUSTOMER'); // "CUSTOMER" or "CORPORATE"
+  const [replyMessage, setReplyMessage] = useState(''); // For the email composer
+  const [isReplying, setIsReplying] = useState(false);
+  const { addToast } = useToast(); // Ensure addToast is destructured
 
   // Modal State
   const [selectedInquiry, setSelectedInquiry] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [adminNote, setAdminNote] = useState(""); // Local state for note editing
+  const [adminNote, setAdminNote] = useState(''); // Local state for note editing
   const [savingNote, setSavingNote] = useState(false);
   const { refreshTrigger, markAsRead } = useNotification(); // Get Hook
 
@@ -62,12 +66,12 @@ export default function AdminInquiriesPage() {
   const fetchInquiries = async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/admin/inquiries");
-      if (!res.ok) throw new Error("Failed");
+      const res = await fetch('/api/admin/inquiries');
+      if (!res.ok) throw new Error('Failed');
       const data = await res.json();
       setInquiries(data);
     } catch (error) {
-      addToast("Failed to load inquiries", "error");
+      addToast('Failed to load inquiries', 'error');
     } finally {
       setLoading(false);
     }
@@ -80,16 +84,20 @@ export default function AdminInquiriesPage() {
   // --- Filtering ---
   const filteredInquiries = useMemo(() => {
     return inquiries.filter((item) => {
-      const matchesStatus =
-        selectedStatus === "ALL" || item.status === selectedStatus;
+      // Logic: If companyName is "Individual", it's a Customer Inquiry
+      const isCorporate = item.companyName !== 'Individual';
+      const typeMatches = viewType === 'CORPORATE' ? isCorporate : !isCorporate;
+
+      const statusMatches =
+        selectedStatus === 'ALL' || item.status === selectedStatus;
       const searchLower = searchQuery.toLowerCase();
       const matchesSearch =
-        item.companyName?.toLowerCase().includes(searchLower) ||
         item.contactName?.toLowerCase().includes(searchLower) ||
         item.email?.toLowerCase().includes(searchLower);
-      return matchesStatus && matchesSearch;
+
+      return typeMatches && statusMatches && matchesSearch;
     });
-  }, [inquiries, selectedStatus, searchQuery]);
+  }, [inquiries, viewType, selectedStatus, searchQuery]);
 
   // --- Actions ---
 
@@ -97,22 +105,22 @@ export default function AdminInquiriesPage() {
     // Optimistic Update
     const oldInquiries = [...inquiries];
     setInquiries((prev) =>
-      prev.map((i) => (i.id === id ? { ...i, status: newStatus } : i))
+      prev.map((i) => (i.id === id ? { ...i, status: newStatus } : i)),
     );
     if (selectedInquiry?.id === id)
       setSelectedInquiry((prev) => ({ ...prev, status: newStatus }));
 
     try {
       const res = await fetch(`/api/admin/inquiries/${id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: newStatus }),
       });
       if (!res.ok) throw new Error();
-      addToast(`Status updated to ${newStatus}`, "success");
+      addToast(`Status updated to ${newStatus}`, 'success');
     } catch (e) {
       setInquiries(oldInquiries);
-      addToast("Failed to update status", "error");
+      addToast('Failed to update status', 'error');
     }
   };
 
@@ -121,8 +129,8 @@ export default function AdminInquiriesPage() {
     setSavingNote(true);
     try {
       const res = await fetch(`/api/admin/inquiries/${selectedInquiry.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ notes: adminNote }),
       });
 
@@ -131,33 +139,33 @@ export default function AdminInquiriesPage() {
       // Update local state
       const updated = await res.json();
       setInquiries((prev) =>
-        prev.map((i) => (i.id === updated.id ? updated : i))
+        prev.map((i) => (i.id === updated.id ? updated : i)),
       );
       setSelectedInquiry(updated);
-      addToast("Note saved successfully", "success");
+      addToast('Note saved successfully', 'success');
     } catch (e) {
-      addToast("Failed to save note", "error");
+      addToast('Failed to save note', 'error');
     } finally {
       setSavingNote(false);
     }
   };
 
   const handleDelete = async (id) => {
-    if (!confirm("Are you sure? This will delete the inquiry permanently."))
+    if (!confirm('Are you sure? This will delete the inquiry permanently.'))
       return;
     try {
-      await fetch(`/api/admin/inquiries/${id}`, { method: "DELETE" });
+      await fetch(`/api/admin/inquiries/${id}`, { method: 'DELETE' });
       setInquiries((prev) => prev.filter((i) => i.id !== id));
       if (selectedInquiry?.id === id) setIsModalOpen(false);
-      addToast("Inquiry deleted", "success");
+      addToast('Inquiry deleted', 'success');
     } catch (e) {
-      addToast("Failed to delete", "error");
+      addToast('Failed to delete', 'error');
     }
   };
 
   const openModal = (inquiry) => {
     setSelectedInquiry(inquiry);
-    setAdminNote(inquiry.notes || "");
+    setAdminNote(inquiry.notes || '');
     setIsModalOpen(true);
   };
 
@@ -165,12 +173,38 @@ export default function AdminInquiriesPage() {
   const stats = useMemo(
     () => ({
       total: inquiries.length,
-      pending: inquiries.filter((i) => i.status === "PENDING").length,
-      quoted: inquiries.filter((i) => i.status === "QUOTED").length,
-      converted: inquiries.filter((i) => i.status === "CONVERTED").length,
+      pending: inquiries.filter((i) => i.status === 'PENDING').length,
+      quoted: inquiries.filter((i) => i.status === 'QUOTED').length,
+      converted: inquiries.filter((i) => i.status === 'CONVERTED').length,
     }),
-    [inquiries]
+    [inquiries],
   );
+
+  const handleSendReply = async () => {
+    if (!replyMessage.trim()) return;
+    setIsReplying(true);
+    try {
+      const res = await fetch(`/api/admin/inquiries/${selectedInquiry.id}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: replyMessage }),
+      });
+      if (!res.ok) throw new Error();
+
+      const updated = await res.json();
+      setInquiries((prev) =>
+        prev.map((i) => (i.id === updated.id ? updated : i)),
+      );
+      setSelectedInquiry(updated);
+      setAdminNote(updated.notes);
+      setReplyMessage('');
+      addToast('Reply sent via email!', 'success');
+    } catch (e) {
+      addToast('Failed to send reply', 'error');
+    } finally {
+      setIsReplying(false);
+    }
+  };
 
   if (loading)
     return (
@@ -185,12 +219,37 @@ export default function AdminInquiriesPage() {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h1 className="font-serif text-3xl font-bold text-[#442D1C]">
-            Corporate Inquiries
+            Inquiries
           </h1>
           <p className="text-[#8E5022] mt-1 text-sm">
-            Manage B2B requests, bulk orders, and partnerships.
+            Manage customer messages and business partnerships.
           </p>
         </div>
+
+        {/* VIEW TOGGLE */}
+        <div className="flex bg-[#EDD8B4]/20 p-1 rounded-xl border border-[#EDD8B4]">
+          <button
+            onClick={() => setViewType('CUSTOMER')}
+            className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${
+              viewType === 'CUSTOMER'
+                ? 'bg-[#442D1C] text-white shadow-md'
+                : 'text-[#8E5022]'
+            }`}
+          >
+            Customer
+          </button>
+          <button
+            onClick={() => setViewType('CORPORATE')}
+            className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${
+              viewType === 'CORPORATE'
+                ? 'bg-[#442D1C] text-white shadow-md'
+                : 'text-[#8E5022]'
+            }`}
+          >
+            Corporate
+          </button>
+        </div>
+
         <button
           onClick={fetchInquiries}
           className="p-2 border border-[#EDD8B4] rounded-lg hover:bg-[#FDFBF7] text-[#8E5022] transition-colors"
@@ -240,14 +299,14 @@ export default function AdminInquiriesPage() {
           />
         </div>
         <div className="flex gap-2 w-full md:w-auto overflow-x-auto pb-2 md:pb-0">
-          {["ALL", ...INQUIRY_STATUSES].map((status) => (
+          {['ALL', ...INQUIRY_STATUSES].map((status) => (
             <button
               key={status}
               onClick={() => setSelectedStatus(status)}
               className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all ${
                 selectedStatus === status
-                  ? "bg-[#442D1C] text-[#EDD8B4]"
-                  : "bg-[#FDFBF7] text-[#8E5022] border border-[#EDD8B4] hover:border-[#C85428]"
+                  ? 'bg-[#442D1C] text-[#EDD8B4]'
+                  : 'bg-[#FDFBF7] text-[#8E5022] border border-[#EDD8B4] hover:border-[#C85428]'
               }`}
             >
               {status}
@@ -269,7 +328,7 @@ export default function AdminInquiriesPage() {
               <thead className="bg-[#FDFBF7] border-b border-[#EDD8B4]">
                 <tr className="text-xs font-bold text-[#8E5022] uppercase">
                   <th className="p-4">Contact</th>
-                  <th className="p-4">Company</th>
+                  {viewType === 'CORPORATE' && <th className="p-4">Company</th>}
                   <th className="p-4">Interests</th>
                   <th className="p-4">Status</th>
                   <th className="p-4 text-right">Date</th>
@@ -288,15 +347,17 @@ export default function AdminInquiriesPage() {
                         {inquiry.email}
                       </div>
                     </td>
-                    <td className="p-4">
-                      <div className="flex items-center gap-2">
-                        <Briefcase className="w-3 h-3 text-[#8E5022]" />
-                        {inquiry.companyName}
-                      </div>
-                      <div className="text-xs text-[#8E5022] pl-5">
-                        {inquiry.companySize || "N/A"}
-                      </div>
-                    </td>
+                    {viewType === 'CORPORATE' && (
+                      <td className="p-4">
+                        <div className="flex items-center gap-2">
+                          <Briefcase className="w-3 h-3 text-[#8E5022]" />
+                          {inquiry.companyName}
+                        </div>
+                        <div className="text-xs text-[#8E5022] pl-5">
+                          {inquiry.companySize || 'N/A'}
+                        </div>
+                      </td>
+                    )}
                     <td className="p-4">
                       <div className="flex flex-wrap gap-1">
                         {inquiry.interest?.slice(0, 2).map((tag, i) => (
@@ -316,7 +377,7 @@ export default function AdminInquiriesPage() {
                       <StatusBadge status={inquiry.status} />
                     </td>
                     <td className="p-4 text-right text-[#8E5022]">
-                      {format(new Date(inquiry.createdAt), "MMM dd")}
+                      {format(new Date(inquiry.createdAt), 'MMM dd')}
                     </td>
                   </tr>
                 ))}
@@ -338,21 +399,23 @@ export default function AdminInquiriesPage() {
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
               onClick={(e) => e.stopPropagation()}
-              className="bg-white rounded-xl shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col overflow-hidden border border-[#EDD8B4]"
+              className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden border border-[#EDD8B4]"
             >
               {/* Modal Header */}
               <div className="p-6 bg-[#FDFBF7] border-b border-[#EDD8B4] flex justify-between items-start">
                 <div>
                   <h2 className="font-serif text-2xl font-bold text-[#442D1C]">
-                    {selectedInquiry.companyName}
+                    {selectedInquiry.companyName === 'Individual'
+                      ? 'Customer Inquiry'
+                      : selectedInquiry.companyName}
                   </h2>
                   <div className="flex items-center gap-2 text-sm text-[#8E5022] mt-1">
                     <User className="w-3 h-3" /> {selectedInquiry.contactName}
                     <span className="w-1 h-1 rounded-full bg-[#EDD8B4]" />
-                    <Calendar className="w-3 h-3" />{" "}
+                    <Calendar className="w-3 h-3" />{' '}
                     {format(
                       new Date(selectedInquiry.createdAt),
-                      "MMM dd, yyyy"
+                      'MMM dd, yyyy',
                     )}
                   </div>
                 </div>
@@ -365,103 +428,102 @@ export default function AdminInquiriesPage() {
               </div>
 
               {/* Modal Body */}
-              <div className="flex-1 overflow-y-auto p-6 space-y-6">
-                {/* Contact & Status Bar */}
-                <div className="flex flex-col md:flex-row gap-4 justify-between bg-[#FDFBF7] p-4 rounded-lg border border-[#EDD8B4]">
-                  <div className="space-y-1">
-                    <a
-                      href={`mailto:${selectedInquiry.email}`}
-                      className="flex items-center gap-2 text-[#442D1C] hover:text-[#C85428] transition-colors text-sm font-medium"
-                    >
-                      <Mail className="w-4 h-4" /> {selectedInquiry.email}{" "}
-                      <ArrowUpRight className="w-3 h-3" />
-                    </a>
+              <div className="flex-1 overflow-y-auto p-6 grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {/* Left Side: Message Details & Admin Notes */}
+                <div className="space-y-6">
+                  <div className="bg-[#FDFBF7] p-4 rounded-lg border border-[#EDD8B4] space-y-2">
+                    <p className="text-sm font-bold">
+                      From: {selectedInquiry.contactName}
+                    </p>
+                    <p className="text-xs text-[#8E5022] flex items-center gap-1">
+                      <Mail size={12} /> {selectedInquiry.email}
+                    </p>
                     {selectedInquiry.phone && (
-                      <div className="flex items-center gap-2 text-[#442D1C] text-sm">
-                        <Phone className="w-4 h-4" /> {selectedInquiry.phone}
-                      </div>
+                      <p className="text-xs text-[#8E5022] flex items-center gap-1">
+                        <Phone size={12} /> {selectedInquiry.phone}
+                      </p>
                     )}
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-bold text-[#8E5022] uppercase">
-                      Status:
-                    </span>
-                    <select
-                      value={selectedInquiry.status}
-                      onChange={(e) =>
-                        handleStatusChange(selectedInquiry.id, e.target.value)
-                      }
-                      className="bg-white border border-[#EDD8B4] rounded px-2 py-1 text-sm text-[#442D1C] focus:ring-1 focus:ring-[#C85428] outline-none"
-                    >
-                      {INQUIRY_STATUSES.map((s) => (
-                        <option key={s} value={s}>
-                          {s}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
 
-                {/* Message */}
-                <div>
-                  <h3 className="font-serif font-bold text-[#442D1C] mb-2">
-                    Inquiry Message
-                  </h3>
-                  <div className="bg-gray-50 p-4 rounded-lg border border-gray-100 text-[#442D1C] leading-relaxed whitespace-pre-wrap">
-                    {selectedInquiry.message}
-                  </div>
-                </div>
-
-                {/* Interests */}
-                {selectedInquiry.interest?.length > 0 && (
                   <div>
-                    <h3 className="font-serif font-bold text-[#442D1C] mb-2">
-                      Interests
+                    <h3 className="text-xs font-bold text-[#8E5022] uppercase mb-2">
+                      Message
                     </h3>
-                    <div className="flex flex-wrap gap-2">
-                      {selectedInquiry.interest.map((tag, i) => (
-                        <span
-                          key={i}
-                          className="px-3 py-1 bg-[#EDD8B4]/20 border border-[#EDD8B4] rounded-full text-sm text-[#652810]"
-                        >
-                          {tag}
-                        </span>
-                      ))}
+                    <div className="bg-gray-50 p-4 rounded-lg text-sm leading-relaxed whitespace-pre-wrap border border-gray-100">
+                      {selectedInquiry.message}
                     </div>
                   </div>
-                )}
 
-                {/* Admin Internal Notes */}
-                <div>
-                  <div className="flex justify-between items-center mb-2">
-                    <h3 className="font-serif font-bold text-[#442D1C] flex items-center gap-2">
-                      <FileText className="w-4 h-4" /> Admin Notes
+                  <div>
+                    <h3 className="text-xs font-bold text-[#8E5022] uppercase mb-2">
+                      Internal Admin Notes
                     </h3>
-                    {savingNote && (
-                      <span className="text-xs text-[#8E5022] animate-pulse">
-                        Saving...
-                      </span>
-                    )}
+                    <textarea
+                      value={adminNote}
+                      onChange={(e) => setAdminNote(e.target.value)}
+                      className="w-full h-32 p-3 bg-[#FDFBF7] border border-[#EDD8B4] rounded-lg text-sm outline-none"
+                    />
+                    <div className="mt-2 flex justify-between items-center">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-[#8E5022] uppercase">
+                          Status:
+                        </span>
+                        <select
+                          value={selectedInquiry.status}
+                          onChange={(e) =>
+                            handleStatusChange(
+                              selectedInquiry.id,
+                              e.target.value,
+                            )
+                          }
+                          className="bg-white border border-[#EDD8B4] rounded px-2 py-1 text-sm outline-none"
+                        >
+                          {INQUIRY_STATUSES.map((s) => (
+                            <option key={s} value={s}>
+                              {s}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <button
+                        onClick={saveAdminNote}
+                        className="text-xs font-bold text-[#C85428] hover:underline"
+                      >
+                        {savingNote ? 'Saving...' : 'Save Notes'}
+                      </button>
+                    </div>
                   </div>
+                </div>
+
+                {/* Right Side: Email Composer */}
+                <div className="bg-[#FDFBF7] p-6 rounded-xl border border-[#EDD8B4] flex flex-col">
+                  <div className="flex items-center gap-2 mb-4 text-[#442D1C]">
+                    <Send size={18} />
+                    <h3 className="font-serif font-bold text-lg">
+                      Send Email Reply
+                    </h3>
+                  </div>
+
                   <textarea
-                    value={adminNote}
-                    onChange={(e) => setAdminNote(e.target.value)}
-                    placeholder="Write internal notes here (e.g. 'Sent catalog on 12th', 'Follow up next week')..."
-                    className="w-full h-24 p-3 bg-[#FDFBF7] border border-[#EDD8B4] rounded-lg focus:ring-1 focus:ring-[#C85428] outline-none text-sm text-[#442D1C]"
+                    value={replyMessage}
+                    onChange={(e) => setReplyMessage(e.target.value)}
+                    className="flex-1 min-h-[250px] p-4 bg-white border border-[#EDD8B4] rounded-lg text-sm outline-none focus:ring-2 focus:ring-[#C85428]/20"
+                    placeholder="Write your professional response to the customer here..."
                   />
-                  <div className="mt-2 flex justify-end">
-                    <button
-                      onClick={saveAdminNote}
-                      disabled={
-                        savingNote || adminNote === selectedInquiry.notes
-                      }
-                      className="text-xs font-bold text-[#C85428] hover:text-[#8E5022] disabled:opacity-50"
-                    >
-                      {adminNote === selectedInquiry.notes
-                        ? "Saved"
-                        : "Save Note"}
-                    </button>
-                  </div>
+
+                  <button
+                    onClick={handleSendReply}
+                    disabled={isReplying || !replyMessage.trim()}
+                    className="mt-4 w-full bg-[#442D1C] text-white py-3 rounded-lg font-bold flex items-center justify-center gap-2 hover:bg-[#652810] disabled:opacity-50 transition-colors"
+                  >
+                    {isReplying ? (
+                      <Loader2 className="animate-spin" size={18} />
+                    ) : (
+                      <>
+                        <Send size={18} /> Send Official Reply
+                      </>
+                    )}
+                  </button>
                 </div>
               </div>
 
@@ -473,13 +535,12 @@ export default function AdminInquiriesPage() {
                 >
                   <Trash2 className="w-5 h-5" />
                 </button>
-
-                <a
-                  href={`mailto:${selectedInquiry.email}?subject=Regarding your inquiry to Bashō&body=Hi ${selectedInquiry.contactName},%0D%0A%0D%0AThank you for reaching out to us regarding ${selectedInquiry.companyName}.%0D%0A%0D%0A`}
-                  className="flex items-center gap-2 bg-[#442D1C] text-[#EDD8B4] px-6 py-2.5 rounded-lg font-bold hover:bg-[#652810] transition-colors"
+                <button
+                  onClick={() => setIsModalOpen(false)}
+                  className="text-sm font-medium text-[#8E5022] hover:text-[#442D1C]"
                 >
-                  <Send className="w-4 h-4" /> Reply via Email
-                </a>
+                  Close Detail
+                </button>
               </div>
             </motion.div>
           </div>
@@ -506,21 +567,19 @@ function StatCard({ label, value, icon, color }) {
 
 function StatusBadge({ status }) {
   const styles = {
-    PENDING: "bg-yellow-100 text-yellow-800 border-yellow-200",
-    CONTACTED: "bg-blue-100 text-blue-800 border-blue-200",
-    QUOTED: "bg-purple-100 text-purple-800 border-purple-200",
-    CONVERTED: "bg-green-100 text-green-800 border-green-200",
-    ARCHIVED: "bg-gray-100 text-gray-600 border-gray-200",
+    PENDING: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+    CONTACTED: 'bg-blue-100 text-blue-800 border-blue-200',
+    QUOTED: 'bg-purple-100 text-purple-800 border-purple-200',
+    CONVERTED: 'bg-green-100 text-green-800 border-green-200',
+    ARCHIVED: 'bg-gray-100 text-gray-600 border-gray-200',
   };
   return (
     <span
       className={`px-2 py-0.5 rounded text-xs font-bold border ${
-        styles[status] || "bg-gray-100"
+        styles[status] || 'bg-gray-100'
       }`}
     >
       {status}
     </span>
   );
 }
-
-import React from "react";

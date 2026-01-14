@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
-import Link from "next/link";
-import Image from "next/image";
-import { usePathname } from "next/navigation";
-import NotificationBell from "@/components/NotificationBell";
+import { useEffect, useState } from 'react';
+import Link from 'next/link';
+import Image from 'next/image';
+import { usePathname } from 'next/navigation';
+import NotificationBell from '@/components/NotificationBell';
 import {
   ShoppingBag,
   Menu,
@@ -15,13 +15,13 @@ import {
   LogOut,
   ChevronDown,
   Bell,
-} from "lucide-react";
-import { Button } from "@/components/ui/Button";
-import { useAuth } from "@/components/AuthProvider";
-import { motion, AnimatePresence } from "framer-motion";
-import UserMenu from "@/components/UserMenu";
-import { useCart } from "@/context/CartContext";
-import { useWishlist } from "@/context/WishlistContext";
+} from 'lucide-react';
+import { Button } from '@/components/ui/Button';
+import { useAuth } from '@/components/AuthProvider';
+import { motion, AnimatePresence } from 'framer-motion';
+import UserMenu from '@/components/UserMenu';
+import { useCart } from '@/context/CartContext';
+import { useWishlist } from '@/context/WishlistContext';
 
 export default function Header() {
   const pathname = usePathname();
@@ -32,67 +32,67 @@ export default function Header() {
   const { getWishlistCount } = useWishlist();
   const { user, loading } = useAuth();
 
-  const isHomePage = pathname === "/";
+  const isHomePage = pathname === '/';
 
   useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 20);
     };
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
   const handleLogout = async () => {
     try {
-      await fetch("/api/auth/logout", { method: "POST" });
+      await fetch('/api/auth/logout', { method: 'POST' });
       setIsMobileMenuOpen(false);
-      window.location.href = "/";
+      window.location.href = '/';
     } catch (error) {
-      console.error("Logout failed", error);
+      console.error('Logout failed', error);
     }
   };
 
   const navLinks = [
     {
-      label: "Shop",
-      href: "/products",
+      label: 'Shop',
+      href: '/products',
       submenu: [
-        { href: "/products", label: "All Products" },
-        { href: "/products?category=tea-ware", label: "Tea Ceremony" },
-        { href: "/products?category=dinnerware", label: "Dining" },
-        { href: "/products?category=seasonal", label: "Special Edition" },
+        { href: '/products', label: 'All Products' },
+        { href: '/products?category=tea-ware', label: 'Tea Ceremony' },
+        { href: '/products?category=dinnerware', label: 'Dining' },
+        { href: '/products?category=seasonal', label: 'Special Edition' },
       ],
     },
-    { href: "/custom-order", label: "Custom Order" },
-    { href: "/workshops", label: "Workshops" },
-    { href: "/connect", label: "Connect" },
+    { href: '/custom-order', label: 'Custom Order' },
+    { href: '/workshops', label: 'Workshops' },
+    { href: '/contact', label: 'Contact' },
     {
-      label: "More",
-      href: "#",
+      label: 'More',
+      href: '#',
       submenu: [
-        { href: "/events", label: "Events" },
-        { href: "/gallery", label: "Gallery" },
-        { href: "/testimonials", label: "Testimonials" },
+        { href: '/events', label: 'Events' },
+        { href: '/gallery', label: 'Gallery' },
+        { href: '/testimonials', label: 'Testimonials' },
       ],
     },
   ];
 
-  if (pathname && pathname.startsWith("/admin")) return null;
+  if (pathname && pathname.startsWith('/admin')) return null;
 
   const isHeaderWhite = !isHomePage || isScrolled;
 
-  const textColorClass = isHeaderWhite ? "text-[#442D1C]" : "text-white";
+  const textColorClass = isHeaderWhite ? 'text-[#442D1C]' : 'text-white';
   const hoverBgClass = isHeaderWhite
-    ? "hover:bg-[#EDD8B4]/20"
-    : "hover:bg-white/20";
+    ? 'hover:bg-[#EDD8B4]/20'
+    : 'hover:bg-white/20';
 
   return (
     <>
       <header
         className={`fixed top-0 z-50 w-full transition-all duration-500 ${
           isHeaderWhite
-            ? "bg-white/95 backdrop-blur-xl border-b border-[#EDD8B4]/30 shadow-sm py-2"
-            : "bg-transparent py-6"
+            ? 'bg-white/95 backdrop-blur-xl border-b border-[#EDD8B4]/30 shadow-sm py-2'
+            : 'bg-transparent py-6'
         }`}
       >
         <div className="container mx-auto flex h-14 items-center justify-between px-4 md:px-8">
@@ -121,8 +121,8 @@ export default function Header() {
               <Image
                 src={
                   isHeaderWhite
-                    ? "/brand/logo-basho-byy-shivangi.png"
-                    : "/brand/logo-basho-byy-shivangi.png"
+                    ? '/brand/logo-basho-byy-shivangi.png'
+                    : '/brand/logo-basho-byy-shivangi.png'
                 }
                 alt="Basho Logo"
                 fill
@@ -143,7 +143,7 @@ export default function Header() {
                     <span
                       className={`text-sm font-medium ${
                         pathname === link.href
-                          ? "text-[#C85428]"
+                          ? 'text-[#C85428]'
                           : textColorClass
                       }`}
                     >
@@ -226,7 +226,7 @@ export default function Header() {
               <div className="w-9 h-9 rounded-full bg-gray-200/50 animate-pulse ml-2" />
             ) : user ? (
               <div className="ml-2 hidden lg:block">
-                {" "}
+                {' '}
                 {/* Only show avatar on Desktop/Large */}
                 <UserMenu user={user} />
               </div>
@@ -236,8 +236,8 @@ export default function Header() {
                   size="sm"
                   className={`rounded-full px-6 font-medium transition-transform hover:scale-105 ${
                     isHeaderWhite
-                      ? "bg-[#442D1C] text-[#EDD8B4] hover:bg-[#652810]"
-                      : "bg-white text-[#442D1C] hover:bg-[#FDFBF7]"
+                      ? 'bg-[#442D1C] text-[#EDD8B4] hover:bg-[#652810]'
+                      : 'bg-white text-[#442D1C] hover:bg-[#FDFBF7]'
                   }`}
                 >
                   Sign In
@@ -260,10 +260,10 @@ export default function Header() {
               className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 lg:hidden" // md->lg
             />
             <motion.div
-              initial={{ x: "-100%" }}
+              initial={{ x: '-100%' }}
               animate={{ x: 0 }}
-              exit={{ x: "-100%" }}
-              transition={{ type: "spring", damping: 25, stiffness: 200 }}
+              exit={{ x: '-100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
               className="fixed top-0 left-0 h-full w-[300px] bg-[#FDFBF7] shadow-2xl z-50 lg:hidden overflow-y-auto border-r border-[#EDD8B4]" // md->lg
             >
               <div className="p-6 flex flex-col h-full">
@@ -320,6 +320,18 @@ export default function Header() {
                       )}
                     </div>
                   ))}
+                  <Link
+                    href="/wishlist"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="flex items-center justify-between text-xl font-medium text-[#442D1C] mt-4 mb-3"
+                  >
+                    <span>Wishlist</span>
+                    {getWishlistCount() > 0 && (
+                      <span className="bg-[#C85428] text-white text-xs font-bold h-6 min-w-[24px] px-2 flex items-center justify-center rounded-full">
+                        {getWishlistCount()}
+                      </span>
+                    )}
+                  </Link>
                 </div>
 
                 {/* Mobile Auth Actions - FIXED: Added pb-10 for bottom spacing */}
@@ -332,7 +344,7 @@ export default function Header() {
                           {user.image ? (
                             <Image
                               src={user.image}
-                              alt={user.name || "User"}
+                              alt={user.name || 'User'}
                               fill
                               className="object-cover"
                             />
@@ -352,7 +364,7 @@ export default function Header() {
                       </div>
 
                       <div className="grid grid-cols-2 gap-3">
-                        {user.role === "ADMIN" && (
+                        {user.role === 'ADMIN' && (
                           <Link
                             href="/admin"
                             onClick={() => setIsMobileMenuOpen(false)}
