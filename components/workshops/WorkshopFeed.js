@@ -360,21 +360,27 @@ function WorkshopCard({ workshop, isPast }) {
       {/* Image Area */}
       <Link
         href={!isPast ? `/workshops/${workshop.id}` : "#"}
-        // FIXED: Added 'block w-full' so the anchor tag doesn't collapse or behave as inline
-        className={`block w-full ${isPast ? "cursor-default" : ""}`}
+        className={`relative block w-full ${isPast ? "cursor-default" : ""}`}
       >
         <div className="relative h-72 w-full overflow-hidden bg-stone-100">
           {workshop.image ? (
-            <img
-              src={workshop.image}
-              alt={workshop.title}
-              // FIXED: Unconditional 'object-cover' and 'object-center' ensures fit for both Archive and Upcoming
-              className={`w-full h-full object-cover object-center ${
-                !isPast
-                  ? "transition-transform duration-700 group-hover:scale-110"
-                  : ""
-              }`}
-            />
+            <div className="w-full h-full relative">
+              {/* This div ensures the image always fills the container */}
+              <div className="absolute inset-0">
+                <img
+                  src={workshop.image}
+                  alt={workshop.title}
+                  className="absolute inset-0 w-full h-full object-cover object-center min-w-full min-h-full"
+                  style={{
+                    objectPosition: "center center",
+                    // Force the image to scale up if needed
+                    transform: "scale(1.1)", // Slight zoom to eliminate white space
+                  }}
+                />
+              </div>
+              {/* Optional: Dark overlay to hide any remaining edges */}
+              <div className="absolute inset-0 bg-black/5"></div>
+            </div>
           ) : (
             <div className="w-full h-full flex items-center justify-center bg-stone-200">
               <div className="w-16 h-16 rounded-full bg-stone-300 flex items-center justify-center">
