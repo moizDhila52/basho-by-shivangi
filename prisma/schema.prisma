@@ -408,15 +408,14 @@ model NewsletterSubscriber {
   updatedAt DateTime @updatedAt
 }
 
-// Add this new model
 model NewsletterCampaign {
-  id          String   @id @default(uuid())
-  subject     String
-  type        String   // "PRODUCT", "WORKSHOP", "EVENT"
-  referenceId String?  // The ID of the product/workshop/event being promoted
-  sentAt      DateTime @default(now())
-  recipientCount Int   @default(0)
-  status      String   @default("SENT") // SENT, FAILED
+  id             String   @id @default(uuid())
+  subject        String
+  type           String
+  referenceId    String?
+  sentAt         DateTime @default(now())
+  recipientCount Int      @default(0)
+  status         String   @default("SENT")
 }
 
 model WorkshopRegistration {
@@ -531,4 +530,3 @@ enum CustomOrderStatus {
   SHIPPED
   CANCELLED
 }
-

@@ -283,8 +283,8 @@ export default function LandingPage() {
         </AnimatePresence>
 
         {/* Text Content Layer */}
-        <div className="absolute inset-0 z-20 flex items-center px-4 md:px-16 lg:px-24">
-          <div className="max-w-3xl overflow-hidden">
+        <div className="absolute inset-0 z-20 flex items-center justify-center md:justify-start px-4 md:px-16 lg:px-24">
+          <div className="max-w-3xl overflow-hidden text-center md:text-left">
             <AnimatePresence mode="wait">
               <motion.div
                 key={index} // Remount text on slide change
@@ -292,19 +292,24 @@ export default function LandingPage() {
                 animate="visible"
                 exit={{ opacity: 0, y: -20, transition: { duration: 0.2 } }}
               >
-                <motion.div custom={0} variants={textReveal} className="mb-4">
+                <motion.div
+                  custom={0}
+                  variants={textReveal}
+                  className="mb-4 flex justify-center md:justify-start"
+                >
                   <div className="inline-flex items-center gap-3">
                     <div className="w-12 h-[1px] bg-[#EDD8B4]" />
                     <span className="text-[#EDD8B4] uppercase tracking-[0.3em] text-sm font-medium">
                       Bashō Pottery
                     </span>
+                    <div className="w-12 h-[1px] bg-[#EDD8B4] md:hidden" />
                   </div>
                 </motion.div>
 
                 <motion.h1
                   custom={1}
                   variants={textReveal}
-                  className="font-serif text-5xl md:text-7xl lg:text-8xl text-white mb-6 leading-[1.1]"
+                  className="font-serif text-6xl md:text-7xl lg:text-8xl text-white mb-6 leading-[1.1]"
                 >
                   {currentSlide.title}
                 </motion.h1>
@@ -312,12 +317,16 @@ export default function LandingPage() {
                 <motion.p
                   custom={2}
                   variants={textReveal}
-                  className="text-lg md:text-2xl text-stone-200 font-light mb-10 max-w-xl leading-relaxed"
+                  className="text-lg md:text-2xl text-stone-200 font-light mb-10 max-w-xl mx-auto md:mx-0 leading-relaxed"
                 >
                   {currentSlide.subtitle}
                 </motion.p>
 
-                <motion.div custom={3} variants={textReveal}>
+                <motion.div
+                  custom={3}
+                  variants={textReveal}
+                  className="flex justify-center md:justify-start"
+                >
                   <Link href={currentSlide.link}>
                     <motion.button
                       whileHover={{ scale: 1.02 }}
