@@ -12,6 +12,9 @@ import {
   DollarSign,
   ChevronDown,
   ChevronUp,
+  Plus,
+  X,
+  Trash2,
 } from 'lucide-react';
 import { useToast } from '@/components/ToastProvider';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -23,6 +26,13 @@ export default function AdminWorkshopDetail() {
   const [workshop, setWorkshop] = useState(null);
   const [loading, setLoading] = useState(true);
   const [expandedSession, setExpandedSession] = useState(null);
+  const [isSessionModalOpen, setIsSessionModalOpen] = useState(false);
+  const [newSession, setNewSession] = useState({
+    date: '',
+    time: '10:00 AM',
+    spots: '',
+  });
+  const [submittingSession, setSubmittingSession] = useState(false);
 
   useEffect(() => {
     fetch(`/api/admin/workshops/${id}`)
@@ -60,6 +70,65 @@ export default function AdminWorkshopDetail() {
     a.href = url;
     a.download = `attendees-${session.date.split('T')[0]}.csv`;
     a.click();
+  };
+
+  const handleAddSession = async (e) => {
+    e.preventDefault();
+    setSubmittingSession(true);
+    try {
+      const res = await fetch(`/api/admin/workshops/${id}/sessions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newSession),
+      });
+
+      if (!res.ok) throw new Error('Failed');
+
+      const addedSession = await res.json();
+
+      // Update local state to show new session immediately
+      setWorkshop((prev) => ({
+        ...prev,
+        WorkshopSession: [...(prev.WorkshopSession || []), addedSession].sort(
+          (a, b) => new Date(a.date) - new Date(b.date),
+        ),
+      }));
+
+      addToast('Session added successfully', 'success');
+      setIsSessionModalOpen(false);
+      setNewSession({
+        date: '',
+        time: '10:00 AM',
+        spots: workshop.maxStudents || 10,
+      });
+    } catch (error) {
+      addToast('Failed to add session', 'error');
+    } finally {
+      setSubmittingSession(false);
+    }
+  };
+
+  const handleDeleteSession = async (sessionId) => {
+    if (!confirm('Delete this session? This cannot be undone.')) return;
+
+    try {
+      const res = await fetch(
+        `/api/admin/workshops/${id}/sessions?sessionId=${sessionId}`,
+        {
+          method: 'DELETE',
+        },
+      );
+
+      if (!res.ok) throw new Error('Failed');
+
+      setWorkshop((prev) => ({
+        ...prev,
+        WorkshopSession: prev.WorkshopSession.filter((s) => s.id !== sessionId),
+      }));
+      addToast('Session deleted', 'success');
+    } catch (error) {
+      addToast('Could not delete session', 'error');
+    }
   };
 
   if (loading)
@@ -131,9 +200,18 @@ export default function AdminWorkshopDetail() {
       {/* Sessions List */}
       <div className="space-y-6">
         <div className="flex items-center justify-between border-b border-[#EDD8B4] pb-4">
-          <h3 className="font-serif text-xl font-bold text-[#442D1C] flex items-center gap-2">
-            Scheduled Sessions
-          </h3>
+          <div className="flex items-center gap-4">
+            <h3 className="font-serif text-xl font-bold text-[#442D1C] flex items-center gap-2">
+              Scheduled Sessions
+            </h3>
+            {/* 👇 ADD THIS BUTTON 👇 */}
+            <button
+              onClick={() => setIsSessionModalOpen(true)}
+              className="flex items-center gap-1 text-xs font-bold bg-[#442D1C] text-[#EDD8B4] px-3 py-1.5 rounded-lg hover:bg-[#652810] transition-colors"
+            >
+              <Plus size={14} /> Add Session
+            </button>
+          </div>
           <span className="text-xs font-medium text-[#8E5022] bg-[#EDD8B4]/20 px-3 py-1 rounded-full">
             {
               workshop.WorkshopSession?.filter(
@@ -235,6 +313,19 @@ export default function AdminWorkshopDetail() {
                           />
                         </div>
                       </div>
+
+                      {/* 👇 NEW DELETE BUTTON 👇 */}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteSession(session.id);
+                        }}
+                        className="p-2 text-stone-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors"
+                        title="Delete Session"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                      {/* 👆 END NEW BUTTON 👆 */}
                       {isExpanded ? (
                         <ChevronUp size={20} className="text-[#C85428]" />
                       ) : (
@@ -299,6 +390,14 @@ export default function AdminWorkshopDetail() {
                                   >
                                     <td className="px-4 py-3 font-medium text-[#442D1C]">
                                       {reg.customerName}
+
+                                      {/* 👇 BADGE ADDED HERE 👇 */}
+                                      {reg.status === 'RESCHEDULED' && (
+                                        <span className="ml-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-700 border border-blue-200">
+                                          <Clock size={10} />
+                                          Rescheduled
+                                        </span>
+                                      )}
                                     </td>
 
                                     <td className="px-4 py-3 text-stone-600">
@@ -359,6 +458,86 @@ export default function AdminWorkshopDetail() {
           })}
         </div>
       </div>
+      {/* 👇 ADD THIS MODAL BLOCK 👇 */}
+      <AnimatePresence>
+        {isSessionModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#442D1C]/50 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-white rounded-xl shadow-2xl w-full max-w-md p-6"
+            >
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="font-serif text-xl font-bold text-[#442D1C]">
+                  Add New Session
+                </h3>
+                <button onClick={() => setIsSessionModalOpen(false)}>
+                  <X
+                    size={20}
+                    className="text-stone-400 hover:text-[#442D1C]"
+                  />
+                </button>
+              </div>
+
+              <form onSubmit={handleAddSession} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-bold text-[#8E5022] uppercase mb-1">
+                    Date
+                  </label>
+                  <input
+                    type="date"
+                    required
+                    value={newSession.date}
+                    onChange={(e) =>
+                      setNewSession({ ...newSession, date: e.target.value })
+                    }
+                    className="w-full p-3 bg-[#FDFBF7] border border-[#EDD8B4] rounded-lg"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-[#8E5022] uppercase mb-1">
+                      Time
+                    </label>
+                    <input
+                      type="time"
+                      required
+                      value={newSession.time}
+                      onChange={(e) =>
+                        setNewSession({ ...newSession, time: e.target.value })
+                      }
+                      className="w-full p-3 bg-[#FDFBF7] border border-[#EDD8B4] rounded-lg"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-[#8E5022] uppercase mb-1">
+                      Capacity
+                    </label>
+                    <input
+                      type="number"
+                      required
+                      value={newSession.spots}
+                      onChange={(e) =>
+                        setNewSession({ ...newSession, spots: e.target.value })
+                      }
+                      className="w-full p-3 bg-[#FDFBF7] border border-[#EDD8B4] rounded-lg"
+                      placeholder={workshop.maxStudents}
+                    />
+                  </div>
+                </div>
+                <button
+                  type="submit"
+                  disabled={submittingSession}
+                  className="w-full py-3 bg-[#442D1C] text-[#EDD8B4] font-bold rounded-xl hover:bg-[#652810] transition-colors flex items-center justify-center gap-2"
+                >
+                  {submittingSession ? 'Adding...' : 'Confirm Session'}
+                </button>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

@@ -18,7 +18,18 @@ export default function LoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { addToast } = useToast();
-  const { user, refreshAuth } = useAuth();
+ 
+
+  // 👇 FIX 1: Destructure 'loading' from useAuth
+  const { user, loading: authLoading, refreshAuth } = useAuth();
+
+  // 👇 FIX 2: Only redirect if NOT loading and user exists
+  useEffect(() => {
+    if (!authLoading && user) {
+      const redirect = searchParams.get("redirect") || "/";
+      router.push(redirect);
+    }
+  }, [user, authLoading, router, searchParams]);
 
   // Redirect if already logged in
   useEffect(() => {
