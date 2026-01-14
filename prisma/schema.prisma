@@ -181,10 +181,6 @@ model Product {
   Review          Review[]
   testimonials    Testimonial[]
   WishlistItem    WishlistItem[]
-<<<<<<< HEAD
-=======
-  
->>>>>>> 04092962bbf1a4a59894d22f24fccf0649f757ea
 
   @@index([categoryId])
   @@index([isBestseller])
@@ -202,6 +198,7 @@ model Review {
   isVerified Boolean  @default(false)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
+  images     String[]
   Product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
   User       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -411,15 +408,14 @@ model NewsletterSubscriber {
   updatedAt DateTime @updatedAt
 }
 
-// Add this new model
 model NewsletterCampaign {
-  id          String   @id @default(uuid())
-  subject     String
-  type        String   // "PRODUCT", "WORKSHOP", "EVENT"
-  referenceId String?  // The ID of the product/workshop/event being promoted
-  sentAt      DateTime @default(now())
-  recipientCount Int   @default(0)
-  status      String   @default("SENT") // SENT, FAILED
+  id             String   @id @default(uuid())
+  subject        String
+  type           String
+  referenceId    String?
+  sentAt         DateTime @default(now())
+  recipientCount Int      @default(0)
+  status         String   @default("SENT")
 }
 
 model WorkshopRegistration {
@@ -443,7 +439,7 @@ model WorkshopRegistration {
 }
 
 model Notification {
-  id        String   @id @default(uuid()) 
+  id        String   @id @default(uuid())
   userId    String
   title     String
   message   String
@@ -533,7 +529,3 @@ enum CustomOrderStatus {
   SHIPPED
   CANCELLED
 }
-<<<<<<< HEAD
-
-=======
->>>>>>> 04092962bbf1a4a59894d22f24fccf0649f757ea
