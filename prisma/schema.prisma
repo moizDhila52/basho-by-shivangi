@@ -417,24 +417,40 @@ model NewsletterCampaign {
   status         String   @default("SENT")
 }
 
+// Update or add these sections in your schema.prisma
+
 model WorkshopRegistration {
   id              String          @id @default(uuid())
   customerName    String
   customerEmail   String
+  customerPhone   String?
   amountPaid      Float
   sessionId       String
-  createdAt       DateTime        @default(now())
-  customerPhone   String?
+  userId          String?
+  
+  // Status to track rescheduling and cancellations
+  status          RegistrationStatus @default(CONFIRMED)
+  
   paymentId       String?
   paymentStatus   String?         @default("PENDING")
   razorpayOrderId String?
-  userId          String?
+  
+  createdAt       DateTime        @default(now())
+ updatedAt DateTime @default(now()) @updatedAt
+
   WorkshopSession WorkshopSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
   User            User?           @relation(fields: [userId], references: [id])
 
   @@index([customerEmail])
   @@index([sessionId])
   @@index([userId])
+}
+
+// Add this enum for better tracking
+enum RegistrationStatus {
+  CONFIRMED
+  RESCHEDULED
+  CANCELLED
 }
 
 model Notification {
