@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
-import { sendCampaignEmail } from '@/lib/mailer'; // <--- IMPORT THIS
+import { sendCampaignEmail } from '@/lib/mailer';
 
-// Helper for Slug
+// Helper for Slug (Preserved from original code)
 const createSlug = (title) => {
   return (
     title
@@ -14,39 +14,79 @@ const createSlug = (title) => {
   );
 };
 
-export async function GET() {
+// --- UPDATED GET FUNCTION (With Auto-Cleanup & Detail Fetch) ---
+export async function GET(req, { params }) {
   try {
-    const workshops = await prisma.workshop.findMany({
+    const { id } = await params;
+
+    // --- 🧹 START: AUTO-CLEANUP LOGIC 🧹 ---
+    // 1. Define cutoff time (1 hour ago)
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+
+    // 2. Find expired "PENDING" registrations for this workshop
+    // We need to find them first so we can restore the spot counts
+    const expiredRegistrations = await prisma.workshopRegistration.findMany({
+      where: {
+        paymentStatus: 'PENDING',
+        createdAt: { lt: oneHourAgo },
+        WorkshopSession: {
+          workshopId: id, // Only clean up for the current workshop
+        },
+      },
+    });
+
+    // 3. Restore spots and delete records
+    if (expiredRegistrations.length > 0) {
+      await prisma.$transaction(async (tx) => {
+        for (const reg of expiredRegistrations) {
+          // A. Free up the spot in the session
+          await tx.workshopSession.update({
+            where: { id: reg.sessionId },
+            data: { spotsBooked: { decrement: 1 } },
+          });
+
+          // B. Delete the stale registration
+          await tx.workshopRegistration.delete({
+            where: { id: reg.id },
+          });
+        }
+      });
+      console.log(
+        `Cleaned up ${expiredRegistrations.length} expired pending registrations.`,
+      );
+    }
+    // --- 🧹 END CLEANUP LOGIC 🧹 ---
+
+    // ... Existing code to fetch the workshop details ...
+    const workshop = await prisma.workshop.findUnique({
+      where: { id },
       include: {
         WorkshopSession: {
           orderBy: { date: 'asc' },
+          include: {
+            WorkshopRegistration: {
+              orderBy: { createdAt: 'desc' },
+            },
+          },
         },
       },
-      orderBy: { createdAt: 'desc' },
     });
 
-    // Calculate Status Dynamically
-    const processedWorkshops = workshops.map((workshop) => {
-      const now = new Date();
-      const sessions = workshop.WorkshopSession || [];
+    if (!workshop) {
+      return NextResponse.json({ error: 'Not found' }, { status: 404 });
+    }
 
-      // Check if all sessions are in the past
-      const isCompleted =
-        sessions.length > 0 && sessions.every((s) => new Date(s.date) < now);
-
-      return {
-        ...workshop,
-        // Override status for display purposes
-        status: isCompleted ? 'COMPLETED' : workshop.status,
-      };
-    });
-
-    return NextResponse.json(processedWorkshops);
+    return NextResponse.json(workshop);
   } catch (error) {
-    return NextResponse.json({ error: 'Fetch failed' }, { status: 500 });
+    console.error('Fetch Error:', error);
+    return NextResponse.json(
+      { error: 'Internal Server Error' },
+      { status: 500 },
+    );
   }
 }
 
+// --- POST FUNCTION (Preserved from original code) ---
 export async function POST(req) {
   try {
     const body = await req.json();
@@ -93,14 +133,22 @@ export async function POST(req) {
       try {
         // 1. Fetch Subscribers
         const [users, guestSubscribers] = await Promise.all([
-          prisma.user.findMany({ where: { isSubscribed: true }, select: { email: true } }),
-          prisma.newsletterSubscriber.findMany({ where: { isActive: true }, select: { email: true } })
+          prisma.user.findMany({
+            where: { isSubscribed: true },
+            select: { email: true },
+          }),
+          prisma.newsletterSubscriber.findMany({
+            where: { isActive: true },
+            select: { email: true },
+          }),
         ]);
 
-        const allEmails = [...new Set([
-          ...users.map(u => u.email),
-          ...guestSubscribers.map(s => s.email)
-        ])];
+        const allEmails = [
+          ...new Set([
+            ...users.map((u) => u.email),
+            ...guestSubscribers.map((s) => s.email),
+          ]),
+        ];
 
         if (allEmails.length > 0) {
           // 2. Send Campaign
@@ -108,7 +156,7 @@ export async function POST(req) {
             type: 'WORKSHOP',
             item: workshop,
             customSubject: `New Workshop: ${workshop.title}`,
-            customMessage: `We are excited to announce a new ${workshop.level} level workshop on ${workshop.title}. Slots are limited!`
+            customMessage: `We are excited to announce a new ${workshop.level} level workshop on ${workshop.title}. Slots are limited!`,
           });
 
           // 3. Log History
@@ -118,12 +166,12 @@ export async function POST(req) {
               type: 'WORKSHOP',
               referenceId: workshop.id,
               recipientCount: result.count,
-              status: 'SENT'
-            }
+              status: 'SENT',
+            },
           });
         }
       } catch (mailError) {
-        console.error("Failed to send workshop newsletter:", mailError);
+        console.error('Failed to send workshop newsletter:', mailError);
       }
     }
     // ---------------------------------------------

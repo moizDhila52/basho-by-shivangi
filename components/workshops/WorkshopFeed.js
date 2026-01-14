@@ -65,6 +65,19 @@ export default function WorkshopFeed({ initialWorkshops, pastWorkshops }) {
 
   const [filteredWorkshops, setFilteredWorkshops] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [blobs, setBlobs] = useState([]);
+
+  useEffect(() => {
+    // Generate random values only once on the client side
+    const newBlobs = [...Array(8)].map(() => ({
+      width: Math.random() * 200 + 50 + "px",
+      height: Math.random() * 200 + 50 + "px",
+      left: Math.random() * 100 + "%",
+      top: Math.random() * 100 + "%",
+      opacity: Math.random() * 0.2 + 0.1,
+    }));
+    setBlobs(newBlobs);
+  }, []);
 
   // Filter Logic
   useEffect(() => {
@@ -93,19 +106,13 @@ export default function WorkshopFeed({ initialWorkshops, pastWorkshops }) {
       {/* --- HERO SECTION --- */}
       <section className="relative bg-gradient-to-b from-white to-[#EDD8B4]/20 pt-32 pb-20 px-4 overflow-hidden">
         <div className="absolute inset-0 overflow-hidden opacity-10 pointer-events-none">
-          {[...Array(8)].map((_, i) => (
-            <div
-              key={i}
-              className="absolute rounded-full bg-[#8E5022]"
-              style={{
-                width: Math.random() * 200 + 50 + "px",
-                height: Math.random() * 200 + 50 + "px",
-                left: Math.random() * 100 + "%",
-                top: Math.random() * 100 + "%",
-                opacity: Math.random() * 0.2 + 0.1,
-              }}
-            />
-          ))}
+          {blobs.map((style, i) => (
+  <div
+    key={i}
+    className="absolute rounded-full bg-[#8E5022]"
+    style={style}
+  />
+))}
         </div>
 
         <div className="max-w-7xl mx-auto relative z-10 text-center">

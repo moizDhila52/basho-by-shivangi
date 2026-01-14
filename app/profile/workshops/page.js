@@ -7,12 +7,23 @@ import {
   Ticket,
   AlertCircle,
   History,
+  X,
+  Check,
+  Loader2,
 } from 'lucide-react';
+import { format } from 'date-fns';
+import { useToast } from '@/components/ToastProvider';
 
 export default function MyWorkshopsPage() {
   const [registrations, setRegistrations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [reschedulingId, setReschedulingId] = useState(null); // Track which booking is being moved
+  const [availableSlots, setAvailableSlots] = useState([]); // Store slots fetched from API
+  const [selectedNewSlot, setSelectedNewSlot] = useState(null); // Track user's new selection
+  const [isSubmitting, setIsSubmitting] = useState(false); // Loading state for the action
+
+  const { addToast } = useToast();
 
   useEffect(() => {
     fetch('/api/user/workshops')
@@ -30,6 +41,55 @@ export default function MyWorkshopsPage() {
         setLoading(false);
       });
   }, []);
+
+  const openRescheduleModal = async (reg) => {
+    setReschedulingId(reg.id);
+    setSelectedNewSlot(null);
+
+    try {
+      // Fetch fresh workshop details
+      const res = await fetch(
+        `/api/workshops/${reg.WorkshopSession.Workshop.slug}`,
+      );
+      const data = await res.json();
+
+      // Filter logic: Exclude current session AND full sessions
+      const validSlots = data.WorkshopSession.filter(
+        (s) => s.id !== reg.sessionId && s.spotsBooked < s.spotsTotal,
+      );
+      setAvailableSlots(validSlots);
+    } catch (error) {
+      addToast('Failed to load available slots', 'error');
+    }
+  };
+
+  // Execute the Reschedule Logic
+  const handleRescheduleConfirm = async () => {
+    if (!selectedNewSlot) return;
+    setIsSubmitting(true);
+
+    try {
+      const res = await fetch('/api/workshops/reschedule', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          registrationId: reschedulingId,
+          newSessionId: selectedNewSlot,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+
+      addToast('Session rescheduled successfully!', 'success');
+      setReschedulingId(null);
+      window.location.reload(); // Refresh to show new date
+    } catch (error) {
+      addToast(error.message, 'error');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   if (loading)
     return (
@@ -130,6 +190,47 @@ export default function MyWorkshopsPage() {
                       {reg.WorkshopSession.Workshop.location}
                     </span>
                   </div>
+                  {/* 👇 PASTE YOUR SNIPPET HERE 👇 */}
+                  {/* Logic to check 48-hour rule AND "Once Only" rule */}
+                  {(() => {
+                    const sessionDate = new Date(reg.WorkshopSession.date);
+                    const hoursDiff =
+                      (sessionDate - new Date()) / (1000 * 60 * 60);
+
+                    // 👇 UPDATED CONDITION: Check if status is NOT 'RESCHEDULED'
+                    const isRescheduledOnce = reg.status === 'RESCHEDULED';
+                    const canReschedule =
+                      hoursDiff >= 48 &&
+                      reg.status !== 'CANCELLED' &&
+                      !isRescheduledOnce;
+
+                    return (
+                      <div className="mt-6">
+                        {canReschedule ? (
+                          <button
+                            onClick={() => openRescheduleModal(reg)}
+                            className="text-xs font-bold text-[#C85428] hover:underline flex items-center gap-1"
+                          >
+                            <Calendar size={14} /> Reschedule Session
+                          </button>
+                        ) : (
+                          <p
+                            className="text-xs text-stone-400 flex items-center gap-1 cursor-help"
+                            title={
+                              isRescheduledOnce
+                                ? 'You have already rescheduled once.'
+                                : 'Rescheduling is closed 48 hours before session'
+                            }
+                          >
+                            <AlertCircle size={14} />
+                            {isRescheduledOnce
+                              ? 'Already Rescheduled'
+                              : 'Rescheduling closed'}
+                          </p>
+                        )}
+                      </div>
+                    );
+                  })()}
                 </div>
 
                 {/* Action */}
@@ -184,6 +285,64 @@ export default function MyWorkshopsPage() {
             ))}
           </div>
         </section>
+      )}
+
+      {/* --- RESCHEDULE MODAL --- */}
+      {reschedulingId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#442D1C]/50 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl w-full max-w-lg p-6 shadow-2xl">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="font-serif text-xl text-[#442D1C]">
+                Select New Session
+              </h3>
+              <button onClick={() => setReschedulingId(null)}>
+                <X size={20} className="text-stone-400" />
+              </button>
+            </div>
+
+            <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+              {availableSlots.length > 0 ? (
+                availableSlots.map((slot) => (
+                  <div
+                    key={slot.id}
+                    onClick={() => setSelectedNewSlot(slot.id)}
+                    className={`p-4 rounded-xl border-2 cursor-pointer flex justify-between items-center transition-all ${
+                      selectedNewSlot === slot.id
+                        ? 'border-[#C85428] bg-[#FDFBF7]'
+                        : 'border-[#EDD8B4]/30 hover:border-[#EDD8B4]'
+                    }`}
+                  >
+                    <div>
+                      <p className="font-bold text-[#442D1C]">
+                        {format(new Date(slot.date), 'EEEE, MMM dd')}
+                      </p>
+                      <p className="text-xs text-[#8E5022]">{slot.time}</p>
+                    </div>
+                    {selectedNewSlot === slot.id && (
+                      <Check size={20} className="text-[#C85428]" />
+                    )}
+                  </div>
+                ))
+              ) : (
+                <p className="text-center text-stone-500 py-4">
+                  No other upcoming slots available.
+                </p>
+              )}
+            </div>
+
+            <button
+              onClick={handleRescheduleConfirm}
+              disabled={!selectedNewSlot || isSubmitting}
+              className="w-full mt-6 bg-[#442D1C] text-white py-3 rounded-xl font-bold hover:bg-[#652810] disabled:opacity-50 flex justify-center items-center gap-2"
+            >
+              {isSubmitting ? (
+                <Loader2 className="animate-spin" />
+              ) : (
+                'Confirm New Time'
+              )}
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );
