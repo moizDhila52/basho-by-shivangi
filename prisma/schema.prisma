@@ -181,7 +181,6 @@ model Product {
   Review          Review[]
   testimonials    Testimonial[]
   WishlistItem    WishlistItem[]
-  
 
   @@index([categoryId])
   @@index([isBestseller])
@@ -429,7 +428,7 @@ model WorkshopRegistration {
 }
 
 model Notification {
-  id        String   @id @default(uuid()) 
+  id        String   @id @default(uuid())
   userId    String
   title     String
   message   String
@@ -454,6 +453,16 @@ model ProductWaitlist {
 
   @@unique([productId, email])
   @@index([productId])
+}
+
+model NewsletterCampaign {
+  id             String   @id
+  subject        String
+  type           String
+  referenceId    String?
+  sentAt         DateTime @default(now())
+  recipientCount Int      @default(0)
+  status         String   @default("SENT")
 }
 
 enum EventType {
