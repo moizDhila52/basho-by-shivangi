@@ -309,7 +309,7 @@ export default function LandingPage() {
                 <motion.h1
                   custom={1}
                   variants={textReveal}
-                  className="font-serif text-6xl md:text-7xl lg:text-8xl text-white mb-6 leading-[1.1]"
+                  className="font-serif text-5xl md:text-7xl lg:text-8xl text-white mb-6 leading-[1.1]"
                 >
                   {currentSlide.title}
                 </motion.h1>
