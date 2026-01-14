@@ -27,7 +27,8 @@ import {
   Heart,
   ShoppingCart,
   ChevronRight,
-  ArrowLeft
+  ArrowLeft,
+  XCircle,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
@@ -50,20 +51,20 @@ export default function AdminOrdersPage() {
   const [loading, setLoading] = useState(true);
   const [selectedStatus, setSelectedStatus] = useState('ALL');
   const [searchQuery, setSearchQuery] = useState('');
-  
+
   // Modal States
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  
+
   // Analytics States
   const [isAnalyticsOpen, setIsAnalyticsOpen] = useState(false);
   const [fullListType, setFullListType] = useState(null); // 'PURCHASES' | 'WISHLIST' | 'CART'
-  
+
   // Analytics Data State
   const [analyticsData, setAnalyticsData] = useState({
     purchases: { top5: [], all: [] },
     wishlist: { top5: [], all: [] },
-    cart: { top5: [], all: [] }
+    cart: { top5: [], all: [] },
   });
 
   const [updatingOrder, setUpdatingOrder] = useState(null);
@@ -107,22 +108,22 @@ export default function AdminOrdersPage() {
           const data = await res.json();
           setAnalyticsData({
             purchases: {
-                top5: data.topProducts.slice(0, 5),
-                all: data.topProducts
+              top5: data.topProducts.slice(0, 5),
+              all: data.topProducts,
             },
             wishlist: {
-                top5: data.mostWishlisted.slice(0, 5),
-                all: data.mostWishlisted
+              top5: data.mostWishlisted.slice(0, 5),
+              all: data.mostWishlisted,
             },
             cart: {
-                top5: data.mostCarted.slice(0, 5),
-                all: data.mostCarted
-            }
+              top5: data.mostCarted.slice(0, 5),
+              all: data.mostCarted,
+            },
           });
         }
       } catch (error) {
-        console.error("Analytics load failed", error);
-        addToast("Failed to load analytics", "error");
+        console.error('Analytics load failed', error);
+        addToast('Failed to load analytics', 'error');
       }
     };
 
@@ -134,7 +135,8 @@ export default function AdminOrdersPage() {
   // Filter Logic
   const filteredOrders = useMemo(() => {
     return orders.filter((order) => {
-      const matchesStatus = selectedStatus === 'ALL' || order.status === selectedStatus;
+      const matchesStatus =
+        selectedStatus === 'ALL' || order.status === selectedStatus;
       const searchLower = searchQuery.toLowerCase();
       const displayId = order.orderNumber || order.id.slice(-8);
 
@@ -207,10 +209,17 @@ export default function AdminOrdersPage() {
   };
 
   const stats = useMemo(() => {
-    const totalRevenue = orders.reduce(
+    // 1. Define statuses that count as "Real Sales" (Money secured)
+    const validStatuses = ['CONFIRMED', 'PROCESSING', 'SHIPPED', 'DELIVERED'];
+
+    // 2. Filter orders for Revenue & Total Counts (Excludes PENDING & CANCELLED)
+    const validOrders = orders.filter((o) => validStatuses.includes(o.status));
+
+    const totalRevenue = validOrders.reduce(
       (sum, order) => sum + (order.total || 0),
       0,
     );
+
     const today = new Date().toDateString();
 
     return {
@@ -218,16 +227,19 @@ export default function AdminOrdersPage() {
         style: 'currency',
         currency: 'INR',
       }),
-      totalOrders: orders.length,
-      pendingOrders: orders.filter(
-        (o) => o.status === 'PENDING' || o.status === 'CONFIRMED',
+      totalOrders: validOrders.length, // Only counts Confirmed+ orders
+
+      // 3. Active = Orders that need fulfillment (Confirmed/Processing/Shipped)
+      // We removed 'PENDING' from here as requested
+      pendingOrders: orders.filter((o) =>
+        ['CONFIRMED', 'PROCESSING', 'SHIPPED'].includes(o.status),
       ).length,
-      todayOrders: orders.filter(
+
+      todayOrders: validOrders.filter(
         (o) => new Date(o.createdAt).toDateString() === today,
       ).length,
     };
   }, [orders]);
-
   const verifyPayment = async (order) => {
     if (!order.razorpayOrderId) {
       addToast('No Razorpay Order ID linked', 'error');
@@ -246,7 +258,7 @@ export default function AdminOrdersPage() {
       toast.dismiss(loadingToast);
       if (data.success) {
         toast.success('Payment Verified! Order Confirmed.');
-        fetchOrders(); 
+        fetchOrders();
       } else {
         toast.error('Payment not found on Razorpay.');
       }
@@ -310,10 +322,26 @@ export default function AdminOrdersPage() {
   // --- HELPER FOR FULL LIST MODAL CONTENT ---
   const getFullListData = () => {
     switch (fullListType) {
-        case 'PURCHASES': return { title: 'All Product Sales', data: analyticsData.purchases.all, type: 'sales' };
-        case 'WISHLIST': return { title: 'Most Wishlisted Products', data: analyticsData.wishlist.all, type: 'wishlist' };
-        case 'CART': return { title: 'Products in Cart', data: analyticsData.cart.all, type: 'cart' };
-        default: return { title: '', data: [], type: '' };
+      case 'PURCHASES':
+        return {
+          title: 'All Product Sales',
+          data: analyticsData.purchases.all,
+          type: 'sales',
+        };
+      case 'WISHLIST':
+        return {
+          title: 'Most Wishlisted Products',
+          data: analyticsData.wishlist.all,
+          type: 'wishlist',
+        };
+      case 'CART':
+        return {
+          title: 'Products in Cart',
+          data: analyticsData.cart.all,
+          type: 'cart',
+        };
+      default:
+        return { title: '', data: [], type: '' };
     }
   };
 
@@ -350,7 +378,7 @@ export default function AdminOrdersPage() {
           >
             <BarChart2 className="w-4 h-4" /> Analytics
           </button>
-          
+
           <button
             onClick={handleCleanup}
             className="hidden md:flex items-center gap-2 px-4 py-2 border border-red-200 text-red-700 bg-red-50 rounded-lg hover:bg-red-100 transition-colors text-sm font-medium"
@@ -481,21 +509,34 @@ export default function AdminOrdersPage() {
                       {format(new Date(order.createdAt), 'MMM dd, HH:mm')}
                     </div>
                   </td>
+
+                  {/* 👇👇👇 REPLACE THIS ENTIRE 2ND <TD> BLOCK WITH YOUR CODE 👇👇👇 */}
                   <td className="p-4">
-                    <div className="flex flex-col">
-                      <span className="font-mono font-bold">
-                        #{order.orderNumber || order.id.slice(-8).toUpperCase()}
-                      </span>
-                      {order.status === 'PENDING' && (
-                        <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-100 w-fit mt-1 animate-pulse">
-                          <AlertCircle className="w-3 h-3" /> Check Payment
+                    <div className="flex items-center gap-3">
+                      {/* Avatar Logic */}
+                      <div className="w-8 h-8 rounded-full bg-[#EDD8B4] flex items-center justify-center overflow-hidden border border-[#C85428]/30">
+                        {order.User?.image ? (
+                          <img
+                            src={order.User.image}
+                            alt={order.customerName}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <User className="w-4 h-4 text-[#442D1C]" />
+                        )}
+                      </div>
+                      {/* Name & Email */}
+                      <div className="flex flex-col">
+                        <span className="font-bold text-[#442D1C]">
+                          {order.customerName || 'Guest'}
                         </span>
-                      )}
-                      <div className="text-xs text-[#8E5022] mt-1">
-                        {format(new Date(order.createdAt), 'MMM dd, HH:mm')}
+                        <span className="text-xs text-[#8E5022]">
+                          {order.customerEmail}
+                        </span>
                       </div>
                     </div>
                   </td>
+                  {/* 👆👆👆 END REPLACEMENT 👆👆👆 */}
                   <td className="p-4">
                     <div className="text-xs space-y-1">
                       {order.OrderItem?.slice(0, 2).map((item, idx) => (
@@ -524,7 +565,9 @@ export default function AdminOrdersPage() {
                           <div
                             key={s}
                             className={`flex-1 rounded-full ${
-                              STATUS_FLOW.indexOf(order.status) >= i
+                              order.status === 'CANCELLED'
+                                ? 'bg-red-500' // 👈 CHANGED TO RED
+                                : STATUS_FLOW.indexOf(order.status) >= i
                                 ? getStatusColor(order.status, true)
                                 : 'bg-[#EDD8B4]/30'
                             }`}
@@ -556,6 +599,7 @@ export default function AdminOrdersPage() {
                         <option value="PROCESSING">Processing</option>
                         <option value="SHIPPED">Shipped</option>
                         <option value="DELIVERED">Delivered</option>
+                        <option value="CANCELLED">Cancelled</option>
                       </select>
                       <button
                         onClick={() => viewOrderDetails(order)}
@@ -598,7 +642,9 @@ export default function AdminOrdersPage() {
                   <h2 className="font-serif text-2xl font-bold text-[#442D1C] flex items-center gap-2">
                     <BarChart2 className="text-[#C85428]" /> Product Analytics
                   </h2>
-                  <p className="text-sm text-[#8E5022]">Real-time insights based on current data.</p>
+                  <p className="text-sm text-[#8E5022]">
+                    Real-time insights based on current data.
+                  </p>
                 </div>
                 <button
                   onClick={() => setIsAnalyticsOpen(false)}
@@ -609,39 +655,60 @@ export default function AdminOrdersPage() {
               </div>
 
               <div className="flex-1 overflow-y-auto p-8 grid grid-cols-1 lg:grid-cols-2 gap-8 bg-gray-50/50">
-                
                 {/* 1. TOP SELLING PRODUCTS */}
                 <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col">
                   <h3 className="font-serif text-lg font-bold text-[#442D1C] mb-6 flex items-center gap-2">
-                    <TrendingUp className="w-5 h-5 text-green-600" /> Most Purchased
+                    <TrendingUp className="w-5 h-5 text-green-600" /> Most
+                    Purchased
                   </h3>
                   <div className="space-y-4 flex-1">
                     {analyticsData.purchases.top5.map((item, i) => (
-                      <div key={i} className="flex items-center gap-4 p-3 hover:bg-[#FDFBF7] rounded-lg transition-colors border border-transparent hover:border-[#EDD8B4]">
+                      <div
+                        key={i}
+                        className="flex items-center gap-4 p-3 hover:bg-[#FDFBF7] rounded-lg transition-colors border border-transparent hover:border-[#EDD8B4]"
+                      >
                         <div className="w-12 h-12 bg-gray-100 rounded-md overflow-hidden flex-shrink-0">
-                          {item.image && <img src={item.image} alt={item.name} className="w-full h-full object-cover" />}
+                          {item.image && (
+                            <img
+                              src={item.image}
+                              alt={item.name}
+                              className="w-full h-full object-cover"
+                            />
+                          )}
                         </div>
                         <div className="flex-1">
-                          <p className="font-bold text-sm text-gray-800">{item.name}</p>
+                          <p className="font-bold text-sm text-gray-800">
+                            {item.name}
+                          </p>
                           <p className="text-xs text-gray-500 font-medium bg-green-50 text-green-700 px-2 py-0.5 rounded-full w-fit mt-1">
-                             {item.qty} {item.qty === 1 ? 'purchase' : 'purchases'}
+                            {item.qty}{' '}
+                            {item.qty === 1 ? 'purchase' : 'purchases'}
                           </p>
                         </div>
                         <div className="text-right">
-                          <p className="font-bold text-[#C85428]">₹{item.revenue ? item.revenue.toLocaleString() : '-'}</p>
+                          <p className="font-bold text-[#C85428]">
+                            ₹
+                            {item.revenue ? item.revenue.toLocaleString() : '-'}
+                          </p>
                         </div>
-                        <div className="text-2xl font-bold text-gray-200">#{i + 1}</div>
+                        <div className="text-2xl font-bold text-gray-200">
+                          #{i + 1}
+                        </div>
                       </div>
                     ))}
-                    {analyticsData.purchases.top5.length === 0 && <p className="text-center text-gray-400 py-4">No sales data yet.</p>}
+                    {analyticsData.purchases.top5.length === 0 && (
+                      <p className="text-center text-gray-400 py-4">
+                        No sales data yet.
+                      </p>
+                    )}
                   </div>
-                  
+
                   {analyticsData.purchases.all.length > 5 && (
-                    <button 
+                    <button
                       onClick={() => setFullListType('PURCHASES')}
                       className="mt-4 w-full py-2 flex items-center justify-center gap-2 text-sm font-bold text-[#8E5022] hover:bg-[#FDFBF7] rounded-lg transition-colors border border-dashed border-[#EDD8B4]"
                     >
-                      View All Purchases <ChevronRight className="w-4 h-4"/>
+                      View All Purchases <ChevronRight className="w-4 h-4" />
                     </button>
                   )}
                 </div>
@@ -653,28 +720,45 @@ export default function AdminOrdersPage() {
                   </h3>
                   <div className="space-y-4 flex-1">
                     {analyticsData.wishlist.top5.map((item, i) => (
-                      <div key={i} className="flex items-center gap-4 p-3 hover:bg-[#FDFBF7] rounded-lg transition-colors border border-transparent hover:border-[#EDD8B4]">
+                      <div
+                        key={i}
+                        className="flex items-center gap-4 p-3 hover:bg-[#FDFBF7] rounded-lg transition-colors border border-transparent hover:border-[#EDD8B4]"
+                      >
                         <div className="w-12 h-12 bg-gray-100 rounded-md overflow-hidden flex-shrink-0">
-                          {item.image && <img src={item.image} alt={item.name} className="w-full h-full object-cover" />}
+                          {item.image && (
+                            <img
+                              src={item.image}
+                              alt={item.name}
+                              className="w-full h-full object-cover"
+                            />
+                          )}
                         </div>
                         <div className="flex-1">
-                          <p className="font-bold text-sm text-gray-800">{item.name}</p>
+                          <p className="font-bold text-sm text-gray-800">
+                            {item.name}
+                          </p>
                           <p className="text-xs text-red-500 font-medium bg-red-50 px-2 py-0.5 rounded-full w-fit mt-1">
-                             Wishlisted by {item.qty} users
+                            Wishlisted by {item.qty} users
                           </p>
                         </div>
-                        <div className="text-2xl font-bold text-gray-200">#{i + 1}</div>
+                        <div className="text-2xl font-bold text-gray-200">
+                          #{i + 1}
+                        </div>
                       </div>
                     ))}
-                     {analyticsData.wishlist.top5.length === 0 && <p className="text-center text-gray-400 py-4">No data available.</p>}
+                    {analyticsData.wishlist.top5.length === 0 && (
+                      <p className="text-center text-gray-400 py-4">
+                        No data available.
+                      </p>
+                    )}
                   </div>
 
                   {analyticsData.wishlist.all.length > 5 && (
-                    <button 
+                    <button
                       onClick={() => setFullListType('WISHLIST')}
                       className="mt-4 w-full py-2 flex items-center justify-center gap-2 text-sm font-bold text-[#8E5022] hover:bg-[#FDFBF7] rounded-lg transition-colors border border-dashed border-[#EDD8B4]"
                     >
-                      View All Wishlist <ChevronRight className="w-4 h-4"/>
+                      View All Wishlist <ChevronRight className="w-4 h-4" />
                     </button>
                   )}
                 </div>
@@ -682,36 +766,54 @@ export default function AdminOrdersPage() {
                 {/* 3. MOST CARTED */}
                 <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col lg:col-span-2">
                   <h3 className="font-serif text-lg font-bold text-[#442D1C] mb-6 flex items-center gap-2">
-                    <ShoppingCart className="w-5 h-5 text-blue-500" /> High Cart Additions
+                    <ShoppingCart className="w-5 h-5 text-blue-500" /> High Cart
+                    Additions
                   </h3>
                   <div className="space-y-4 flex-1">
                     {analyticsData.cart.top5.map((item, i) => (
-                      <div key={i} className="flex items-center gap-4 p-3 hover:bg-[#FDFBF7] rounded-lg transition-colors border border-transparent hover:border-[#EDD8B4]">
+                      <div
+                        key={i}
+                        className="flex items-center gap-4 p-3 hover:bg-[#FDFBF7] rounded-lg transition-colors border border-transparent hover:border-[#EDD8B4]"
+                      >
                         <div className="w-12 h-12 bg-gray-100 rounded-md overflow-hidden flex-shrink-0">
-                          {item.image && <img src={item.image} alt={item.name} className="w-full h-full object-cover" />}
+                          {item.image && (
+                            <img
+                              src={item.image}
+                              alt={item.name}
+                              className="w-full h-full object-cover"
+                            />
+                          )}
                         </div>
                         <div className="flex-1">
-                          <p className="font-bold text-sm text-gray-800">{item.name}</p>
+                          <p className="font-bold text-sm text-gray-800">
+                            {item.name}
+                          </p>
                           <p className="text-xs text-blue-600 font-medium bg-blue-50 px-2 py-0.5 rounded-full w-fit mt-1">
-                             In {item.qty} active carts
+                            In {item.qty} active carts
                           </p>
                         </div>
-                        <div className="text-2xl font-bold text-gray-200">#{i + 1}</div>
+                        <div className="text-2xl font-bold text-gray-200">
+                          #{i + 1}
+                        </div>
                       </div>
                     ))}
-                     {analyticsData.cart.top5.length === 0 && <p className="text-center text-gray-400 py-4">No data available.</p>}
+                    {analyticsData.cart.top5.length === 0 && (
+                      <p className="text-center text-gray-400 py-4">
+                        No data available.
+                      </p>
+                    )}
                   </div>
 
                   {analyticsData.cart.all.length > 5 && (
-                    <button 
+                    <button
                       onClick={() => setFullListType('CART')}
                       className="mt-4 w-full py-2 flex items-center justify-center gap-2 text-sm font-bold text-[#8E5022] hover:bg-[#FDFBF7] rounded-lg transition-colors border border-dashed border-[#EDD8B4]"
                     >
-                      View All Cart Additions <ChevronRight className="w-4 h-4"/>
+                      View All Cart Additions{' '}
+                      <ChevronRight className="w-4 h-4" />
                     </button>
                   )}
                 </div>
-
               </div>
 
               {/* --- NESTED MODAL: DYNAMIC FULL LIST --- */}
@@ -725,59 +827,73 @@ export default function AdminOrdersPage() {
                     className="absolute inset-0 bg-white z-10 flex flex-col"
                   >
                     <div className="p-6 bg-[#FDFBF7] border-b border-[#EDD8B4] flex items-center gap-4">
-                      <button 
+                      <button
                         onClick={() => setFullListType(null)}
                         className="p-2 hover:bg-[#EDD8B4]/20 rounded-full text-[#442D1C]"
                       >
                         <ArrowLeft className="w-5 h-5" />
                       </button>
-                      <h3 className="font-serif text-xl font-bold text-[#442D1C]">{fullListContent.title}</h3>
+                      <h3 className="font-serif text-xl font-bold text-[#442D1C]">
+                        {fullListContent.title}
+                      </h3>
                     </div>
                     <div className="flex-1 overflow-y-auto p-6 space-y-4">
-                       {fullListContent.data.map((item, i) => (
-                          <div key={i} className="flex items-center gap-6 p-4 bg-white border border-gray-100 rounded-xl hover:shadow-md transition-shadow">
-                            <div className="text-3xl font-bold text-[#EDD8B4] w-12 text-center">#{i + 1}</div>
-                            <div className="w-16 h-16 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0 border border-[#EDD8B4]">
-                              {item.image && <img src={item.image} alt={item.name} className="w-full h-full object-cover" />}
-                            </div>
-                            <div className="flex-1">
-                              <p className="font-bold text-lg text-[#442D1C]">{item.name}</p>
-                              
-                              {fullListContent.type === 'sales' && (
-                                <div className="flex gap-4 mt-1">
-                                    <span className="text-sm text-green-700 bg-green-50 px-2 py-0.5 rounded-md font-medium">
-                                    {item.qty} Purchases
-                                    </span>
-                                    <span className="text-sm text-[#8E5022]">
-                                    Total Revenue: ₹{item.revenue.toLocaleString()}
-                                    </span>
-                                </div>
-                              )}
-
-                              {fullListContent.type === 'wishlist' && (
-                                <div className="flex gap-4 mt-1">
-                                    <span className="text-sm text-red-600 bg-red-50 px-2 py-0.5 rounded-md font-medium">
-                                    {item.qty} Users Wishlisted
-                                    </span>
-                                </div>
-                              )}
-
-                              {fullListContent.type === 'cart' && (
-                                <div className="flex gap-4 mt-1">
-                                    <span className="text-sm text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md font-medium">
-                                    In {item.qty} Active Carts
-                                    </span>
-                                </div>
-                              )}
-
-                            </div>
+                      {fullListContent.data.map((item, i) => (
+                        <div
+                          key={i}
+                          className="flex items-center gap-6 p-4 bg-white border border-gray-100 rounded-xl hover:shadow-md transition-shadow"
+                        >
+                          <div className="text-3xl font-bold text-[#EDD8B4] w-12 text-center">
+                            #{i + 1}
                           </div>
-                        ))}
+                          <div className="w-16 h-16 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0 border border-[#EDD8B4]">
+                            {item.image && (
+                              <img
+                                src={item.image}
+                                alt={item.name}
+                                className="w-full h-full object-cover"
+                              />
+                            )}
+                          </div>
+                          <div className="flex-1">
+                            <p className="font-bold text-lg text-[#442D1C]">
+                              {item.name}
+                            </p>
+
+                            {fullListContent.type === 'sales' && (
+                              <div className="flex gap-4 mt-1">
+                                <span className="text-sm text-green-700 bg-green-50 px-2 py-0.5 rounded-md font-medium">
+                                  {item.qty} Purchases
+                                </span>
+                                <span className="text-sm text-[#8E5022]">
+                                  Total Revenue: ₹
+                                  {item.revenue.toLocaleString()}
+                                </span>
+                              </div>
+                            )}
+
+                            {fullListContent.type === 'wishlist' && (
+                              <div className="flex gap-4 mt-1">
+                                <span className="text-sm text-red-600 bg-red-50 px-2 py-0.5 rounded-md font-medium">
+                                  {item.qty} Users Wishlisted
+                                </span>
+                              </div>
+                            )}
+
+                            {fullListContent.type === 'cart' && (
+                              <div className="flex gap-4 mt-1">
+                                <span className="text-sm text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md font-medium">
+                                  In {item.qty} Active Carts
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </motion.div>
                 )}
               </AnimatePresence>
-
             </motion.div>
           </div>
         )}
@@ -844,7 +960,8 @@ export default function AdminOrdersPage() {
                             onClick={() => verifyPayment(selectedOrder)}
                             className="flex items-center gap-2 px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-bold hover:bg-blue-700 shadow-sm transition-colors"
                           >
-                            <RefreshCw className="w-3 h-3" /> Verify with Razorpay
+                            <RefreshCw className="w-3 h-3" /> Verify with
+                            Razorpay
                           </button>
                           <button
                             onClick={() =>
@@ -868,8 +985,17 @@ export default function AdminOrdersPage() {
                     </h3>
                     <div className="space-y-3 text-sm">
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-[#EDD8B4] flex items-center justify-center">
-                          <User className="w-4 h-4 text-[#442D1C]" />
+                        <div className="w-8 h-8 rounded-full bg-[#EDD8B4] flex items-center justify-center overflow-hidden border border-[#C85428]/30">
+                          {/* 👇 Image Logic Added Here 👇 */}
+                          {selectedOrder.User?.image ? (
+                            <img
+                              src={selectedOrder.User.image}
+                              alt={selectedOrder.customerName}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <User className="w-4 h-4 text-[#442D1C]" />
+                          )}
                         </div>
                         <div>
                           <p className="font-bold text-[#442D1C]">
@@ -1024,6 +1150,7 @@ export default function AdminOrdersPage() {
                     <option value="PROCESSING">Processing</option>
                     <option value="SHIPPED">Shipped</option>
                     <option value="DELIVERED">Delivered</option>
+                    <option value="CANCELLED">Cancelled</option>
                   </select>
                 </div>
 
@@ -1077,6 +1204,7 @@ function StatusBadge({ status }) {
     PROCESSING: 'bg-blue-100 text-blue-800 border-blue-200',
     SHIPPED: 'bg-purple-100 text-purple-800 border-purple-200',
     DELIVERED: 'bg-green-100 text-green-800 border-green-200',
+    CANCELLED: 'bg-red-100 text-red-800 border-red-200', // 👈 Added
   };
 
   const icons = {
@@ -1085,6 +1213,7 @@ function StatusBadge({ status }) {
     PROCESSING: Package,
     SHIPPED: Truck,
     DELIVERED: CheckCircle,
+    CANCELLED: XCircle,
   };
 
   const Icon = icons[status] || AlertCircle;
@@ -1112,6 +1241,8 @@ function getStatusColor(status, bg = false) {
       return bg ? 'bg-purple-400' : 'text-purple-600';
     case 'DELIVERED':
       return bg ? 'bg-green-400' : 'text-green-600';
+    case 'CANCELLED':
+      return bg ? 'bg-red-400' : 'text-red-600';
     default:
       return bg ? 'bg-gray-400' : 'text-gray-600';
   }
