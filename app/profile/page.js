@@ -13,13 +13,15 @@ import {
   MapPin,
 } from 'lucide-react';
 
+// 👇 NUCLEAR CACHE BUSTING
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 // --- Smaller Components ---
 
-// Updated StatCard Component with better visibility and earthy colors
 function StatCard({ icon: Icon, label, value, subtext }) {
   return (
     <div className="bg-white p-6 rounded-2xl border border-stone-100 shadow-sm flex items-start gap-4 transition-all hover:shadow-md">
-      {/* Light background with Basho brand color icon */}
       <div className="p-3 rounded-xl bg-[#8E5022]/10 text-[#8E5022]">
         <Icon className="w-6 h-6" />
       </div>
@@ -36,13 +38,16 @@ function StatCard({ icon: Icon, label, value, subtext }) {
 
 function ActiveOrderTracker({ order }) {
   if (!order) return null;
+
+  // 👇 FIXED LOGIC HERE: Added 'CONFIRMED' to the first step
   const getProgressStep = (status) => {
-    if (['PENDING'].includes(status)) return 1;
+    if (['PENDING', 'CONFIRMED'].includes(status)) return 1;
     if (['PROCESSING'].includes(status)) return 2;
     if (['SHIPPED'].includes(status)) return 3;
     if (['DELIVERED'].includes(status)) return 4;
     return 0;
   };
+
   const currentStep = getProgressStep(order.status);
   const steps = [
     { id: 1, label: 'Confirmed', icon: CheckCircle },
@@ -122,13 +127,21 @@ export default async function ProfilePage() {
 
   const user = await prisma.user.findUnique({
     where: { id: session.userId },
-    include: {
-      Order: { orderBy: { createdAt: 'desc' }, include: { OrderItem: true } },
-    },
   });
 
-  const totalOrders = user.Order.length;
-  const activeOrders = user.Order.filter((o) =>
+  if (!user) redirect('/login');
+
+  // Fetch orders (Including Guest Orders by Email)
+  const allOrders = await prisma.order.findMany({
+    where: {
+      OR: [{ userId: session.userId }, { customerEmail: user.email }],
+    },
+    include: { OrderItem: true },
+    orderBy: { createdAt: 'desc' },
+  });
+
+  const totalOrders = allOrders.length;
+  const activeOrders = allOrders.filter((o) =>
     ['PENDING', 'CONFIRMED', 'PROCESSING', 'SHIPPED'].includes(o.status),
   );
   const activeCount = activeOrders.length;
@@ -137,7 +150,7 @@ export default async function ProfilePage() {
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-500">
-      {/* 1. Header Section - Full Width */}
+      {/* 1. Header Section */}
       <div>
         <h1 className="text-2xl md:text-3xl font-serif text-[#442D1C] mb-2">
           Welcome back, {user.name?.split(' ')[0] || 'Guest'}
@@ -147,7 +160,7 @@ export default async function ProfilePage() {
         </p>
       </div>
 
-      {/* 2. Stat Cards Grid - MOVED BELOW HEADER */}
+      {/* 2. Stat Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <StatCard
           icon={ShoppingBag}
@@ -190,13 +203,13 @@ export default async function ProfilePage() {
               </Link>
             </div>
 
-            {user.Order.length === 0 ? (
+            {allOrders.length === 0 ? (
               <div className="p-8 text-center text-stone-500">
                 No orders yet.
               </div>
             ) : (
               <div className="divide-y divide-stone-50">
-                {user.Order.slice(0, 4).map((order) => (
+                {allOrders.slice(0, 4).map((order) => (
                   <Link
                     key={order.id}
                     href={`/profile/orders/${order.id}`}
@@ -256,7 +269,6 @@ export default async function ProfilePage() {
                 <p className="text-xs text-stone-500">Update your profile</p>
               </div>
             </div>
-            {/* Reusing your ProfileForm component */}
             <ProfileForm user={user} />
           </div>
         </div>

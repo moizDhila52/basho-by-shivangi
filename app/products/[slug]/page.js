@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   ArrowLeft,
   Heart,
@@ -20,6 +20,9 @@ import {
   Minus,
   Loader2,
   AlertCircle,
+  Image as ImageIcon,
+  X,
+  Upload,
 } from 'lucide-react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
@@ -27,9 +30,10 @@ import CartSlider from '@/components/CartSlider';
 import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/components/AuthProvider';
 import toast from 'react-hot-toast';
-import NotifyButton from '@/components/NotifyButton'; // 👈 ADD THIS IMPORT
+import NotifyButton from '@/components/NotifyButton';
 
-// Wishlist API functions
+// --- API Functions ---
+
 const fetchWishlist = async () => {
   try {
     const response = await fetch('/api/wishlist', {
@@ -98,12 +102,60 @@ const removeFromWishlistAPI = async (productId) => {
   }
 };
 
-// Review Form Component
+// --- Review Form Component ---
+
 function ReviewForm({ productSlug, onReviewSubmitted }) {
   const [rating, setRating] = useState(0);
   const [hoveredRating, setHoveredRating] = useState(0);
   const [comment, setComment] = useState('');
   const [submitting, setSubmitting] = useState(false);
+
+  // Image Upload State
+  const [images, setImages] = useState([]);
+  const [uploading, setUploading] = useState(false);
+
+  // Handle Cloudinary Upload
+  const handleFileUpload = async (e) => {
+    const files = Array.from(e.target.files);
+    if (files.length === 0) return;
+
+    // Limit check
+    if (images.length + files.length > 5) {
+      toast.error('You can upload a maximum of 5 images');
+      return;
+    }
+
+    setUploading(true);
+    const newImages = [];
+
+    try {
+      for (const file of files) {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append(
+          'upload_preset',
+          process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET,
+        );
+
+        const res = await fetch(
+          `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload`,
+          { method: 'POST', body: formData },
+        );
+        const data = await res.json();
+        if (data.secure_url) newImages.push(data.secure_url);
+        else throw new Error('Upload failed');
+      }
+      setImages((prev) => [...prev, ...newImages]);
+    } catch (error) {
+      console.error(error);
+      toast.error('Failed to upload images');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const removeImage = (index) =>
+    setImages((prev) => prev.filter((_, i) => i !== index));
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -125,6 +177,7 @@ function ReviewForm({ productSlug, onReviewSubmitted }) {
         body: JSON.stringify({
           rating,
           comment,
+          images, // Send uploaded images
         }),
       });
 
@@ -137,6 +190,7 @@ function ReviewForm({ productSlug, onReviewSubmitted }) {
       toast.success('Review submitted successfully!');
       setRating(0);
       setComment('');
+      setImages([]);
 
       if (onReviewSubmitted) {
         onReviewSubmitted();
@@ -150,7 +204,7 @@ function ReviewForm({ productSlug, onReviewSubmitted }) {
   };
 
   return (
-    <div className="bg-white shadow-md rounded-3xl p-8 mb-10">
+    <div className="bg-white shadow-md rounded-3xl p-8 mb-10 border border-stone-100">
       <h4 className="font-serif text-xl text-[#442D1C] mb-6">Write a Review</h4>
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Rating Stars */}
@@ -166,7 +220,7 @@ function ReviewForm({ productSlug, onReviewSubmitted }) {
                 onClick={() => setRating(star)}
                 onMouseEnter={() => setHoveredRating(star)}
                 onMouseLeave={() => setHoveredRating(0)}
-                className="transition-transform hover:scale-110"
+                className="transition-transform hover:scale-110 focus:outline-none"
               >
                 <Star
                   className={`w-8 h-8 ${
@@ -178,18 +232,14 @@ function ReviewForm({ productSlug, onReviewSubmitted }) {
               </button>
             ))}
             {rating > 0 && (
-              <span className="ml-3 text-stone-600">
-                {rating === 1 && 'Poor'}
-                {rating === 2 && 'Fair'}
-                {rating === 3 && 'Good'}
-                {rating === 4 && 'Very Good'}
-                {rating === 5 && 'Excellent'}
+              <span className="ml-3 text-stone-600 font-medium">
+                {['Poor', 'Fair', 'Good', 'Very Good', 'Excellent'][rating - 1]}
               </span>
             )}
           </div>
         </div>
 
-        {/* Comment */}
+        {/* Comment Field */}
         <div>
           <label
             htmlFor="comment"
@@ -202,21 +252,77 @@ function ReviewForm({ productSlug, onReviewSubmitted }) {
             value={comment}
             onChange={(e) => setComment(e.target.value)}
             rows={4}
-            placeholder="Share your experience with this product..."
+            placeholder="Share your experience..."
             className="w-full px-4 py-3 border-2 border-stone-200 rounded-xl focus:border-[#8E5022] focus:ring-2 focus:ring-[#8E5022]/20 outline-none transition-all resize-none"
             maxLength={500}
           />
-          <div className="text-sm text-stone-500 mt-2 text-right">
-            {comment.length}/500 characters
+        </div>
+
+        {/* Image Upload Area */}
+        <div>
+          <label className="block text-sm font-medium text-stone-700 mb-3">
+            Add Photos
+          </label>
+          <div className="flex flex-wrap gap-3">
+            {/* Previews */}
+            {images.map((img, idx) => (
+              <div
+                key={idx}
+                className="relative w-20 h-20 rounded-lg overflow-hidden border border-stone-200 group"
+              >
+                <img
+                  src={img}
+                  alt="Review"
+                  className="w-full h-full object-cover"
+                />
+                <button
+                  type="button"
+                  onClick={() => removeImage(idx)}
+                  className="absolute top-1 right-1 bg-black/50 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <X size={12} />
+                </button>
+              </div>
+            ))}
+
+            {/* Upload Button */}
+            {images.length < 5 && (
+              <label
+                className={`w-20 h-20 border-2 border-dashed rounded-lg flex flex-col items-center justify-center cursor-pointer transition-colors ${
+                  uploading
+                    ? 'border-[#8E5022] bg-amber-50'
+                    : 'border-stone-300 hover:bg-stone-50 hover:border-stone-400'
+                }`}
+              >
+                {uploading ? (
+                  <Loader2 className="w-6 h-6 text-[#8E5022] animate-spin" />
+                ) : (
+                  <>
+                    <Upload className="w-6 h-6 text-stone-400" />
+                    <span className="text-[10px] text-stone-500 mt-1">
+                      Upload
+                    </span>
+                  </>
+                )}
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  className="hidden"
+                  onChange={handleFileUpload}
+                  disabled={uploading}
+                />
+              </label>
+            )}
           </div>
         </div>
 
         {/* Submit Button */}
         <button
           type="submit"
-          disabled={submitting || !rating}
+          disabled={submitting || !rating || uploading}
           className={`w-full py-4 rounded-xl font-medium text-lg transition-all flex items-center justify-center gap-3 ${
-            submitting || !rating
+            submitting || !rating || uploading
               ? 'bg-stone-200 text-stone-400 cursor-not-allowed'
               : 'bg-[#8E5022] text-white hover:bg-[#652810]'
           }`}
@@ -238,6 +344,8 @@ function ReviewForm({ productSlug, onReviewSubmitted }) {
   );
 }
 
+// --- Main Product Page ---
+
 export default function ProductDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -253,15 +361,14 @@ export default function ProductDetailPage() {
   const [wishlist, setWishlist] = useState(new Set());
   const [wishlistLoading, setWishlistLoading] = useState(false);
 
-  // Add these states
+  // Review & Lightbox States
   const [canReview, setCanReview] = useState(false);
   const [reviewEligibility, setReviewEligibility] = useState(null);
+  const [lightboxImages, setLightboxImages] = useState(null);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
 
   const productId = params.slug;
   const quantityInCart = product ? getItemQuantity(product.id) : 0;
-
-  console.log('ProductDetailPage params:', params);
-  console.log('params.slug:', params?.slug);
 
   // Load product data
   useEffect(() => {
@@ -297,6 +404,7 @@ export default function ProductDetailPage() {
   }, [productId]);
 
   // Check review eligibility
+  // Check review eligibility
   useEffect(() => {
     async function checkReviewEligibility() {
       if (!user || !product) {
@@ -305,9 +413,18 @@ export default function ProductDetailPage() {
       }
 
       try {
-        const response = await fetch(`/api/products/${productId}/review`, {
-          credentials: 'include',
-        });
+        // 👇 FIX: Added timestamp and headers to bypass browser cache
+        const response = await fetch(
+          `/api/products/${productId}/review?_t=${new Date().getTime()}`, 
+          {
+            credentials: 'include',
+            headers: {
+              'Cache-Control': 'no-store, no-cache, must-revalidate',
+              'Pragma': 'no-cache',
+              'Expires': '0',
+            }
+          }
+        );
 
         if (response.ok) {
           const data = await response.json();
@@ -342,29 +459,24 @@ export default function ProductDetailPage() {
   const toggleWishlist = useCallback(async () => {
     if (!product) return;
 
-    // Check if auth is still loading
     if (authLoading) {
       toast.error('Please wait...');
       return;
     }
 
-    // Check if user exists BEFORE calling any API
     if (!user) {
       toast.error('Please login to add to wishlist');
       router.push(`/login?returnUrl=/products/${productId}`);
       return;
     }
 
-    // Set loading state
     setWishlistLoading(true);
 
     try {
       const isInWishlist = wishlist.has(product.id);
 
       if (isInWishlist) {
-        // Remove from wishlist
         const result = await removeFromWishlistAPI(product.id);
-
         if (result.success) {
           setWishlist((prev) => {
             const newSet = new Set(prev);
@@ -373,7 +485,6 @@ export default function ProductDetailPage() {
           });
           toast.success('Removed from wishlist');
         } else {
-          // Don't show "Authentication required" since we already checked
           if (result.error && result.error !== 'Authentication required') {
             toast.error(result.error);
           } else if (!result.error) {
@@ -381,14 +492,11 @@ export default function ProductDetailPage() {
           }
         }
       } else {
-        // Add to wishlist
         const result = await addToWishlistAPI(product.id);
-
         if (result.success) {
           setWishlist((prev) => new Set([...prev, product.id]));
           toast.success('Added to wishlist');
         } else {
-          // Don't show "Authentication required" since we already checked
           if (result.error && result.error !== 'Authentication required') {
             toast.error(result.error);
           } else if (!result.error) {
@@ -398,7 +506,6 @@ export default function ProductDetailPage() {
       }
     } catch (err) {
       console.error('Error in toggleWishlist:', err);
-      // Don't show authentication errors since we handle login redirect above
       if (err.message !== 'Authentication required') {
         toast.error(err.message || 'Failed to update wishlist');
       }
@@ -516,7 +623,6 @@ export default function ProductDetailPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-16">
           {/* Left Column - Images */}
           <div className="relative">
-            {/* Main Image */}
             {product.images && product.images.length > 0 ? (
               <motion.div
                 key={selectedImage}
@@ -608,7 +714,6 @@ export default function ProductDetailPage() {
 
           {/* Right Column - Details */}
           <div>
-            {/* Category & Breadcrumb */}
             <div className="mb-6">
               <span className="text-[#8E5022] font-medium uppercase tracking-wider">
                 {product.category?.name || 'Uncategorized'}
@@ -636,12 +741,10 @@ export default function ProductDetailPage() {
               </div>
             </div>
 
-            {/* Product Name */}
             <h1 className="font-serif text-5xl md:text-6xl text-[#442D1C] mb-6 leading-tight">
               {product.name}
             </h1>
 
-            {/* Rating */}
             <div className="flex items-center gap-4 mb-8">
               {product.averageRating > 0 && (
                 <>
@@ -677,12 +780,10 @@ export default function ProductDetailPage() {
               </span>
             </div>
 
-            {/* Description */}
             <p className="text-stone-600 text-lg mb-8 leading-relaxed">
               {product.description}
             </p>
 
-            {/* Product details if available */}
             {product.material || product.dimensions || product.color ? (
               <div className="grid grid-cols-2 gap-6 mb-10">
                 {product.material && (
@@ -718,7 +819,6 @@ export default function ProductDetailPage() {
               </div>
             ) : null}
 
-            {/* Price */}
             <div className="mb-8 p-8 bg-gradient-to-r from-[#FDFBF7] to-[#EDD8B4]/20 rounded-3xl">
               <div className="flex items-baseline gap-4 mb-4">
                 <span className="font-serif text-6xl text-[#442D1C]">
@@ -743,7 +843,6 @@ export default function ProductDetailPage() {
               </p>
             </div>
 
-            {/* Quantity Selector */}
             <div className="mb-8">
               <div className="text-sm text-stone-500 mb-3">Quantity</div>
               {quantityInCart > 0 ? (
@@ -808,8 +907,6 @@ export default function ProductDetailPage() {
               )}
             </div>
 
-            {/* Action Buttons */}
-            {/* Action Buttons */}
             <div className="flex flex-col sm:flex-row gap-4 mb-12">
               {quantityInCart > 0 ? (
                 <>
@@ -843,12 +940,10 @@ export default function ProductDetailPage() {
                   </Link>
                 </>
               ) : !product.inStock ? (
-                // 👇 NEW: Show Notify Button if Out of Stock
                 <div className="flex-1">
                   <NotifyButton productId={product.id} stock={product.stock} />
                 </div>
               ) : (
-                // 👇 EXISTING: Show Add to Cart if In Stock
                 <button
                   onClick={addToCartHandler}
                   disabled={isUpdating}
@@ -893,7 +988,6 @@ export default function ProductDetailPage() {
               </button>
             </div>
 
-            {/* Features */}
             {product.features && product.features.length > 0 && (
               <div className="mb-12">
                 <h3 className="font-serif text-2xl text-[#442D1C] mb-6">
@@ -913,7 +1007,6 @@ export default function ProductDetailPage() {
               </div>
             )}
 
-            {/* Care & Shipping */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
               <div className="bg-gradient-to-br from-white to-[#EDD8B4]/20 rounded-2xl p-6">
                 <h4 className="font-serif text-xl text-[#442D1C] mb-3">
@@ -938,13 +1031,11 @@ export default function ProductDetailPage() {
               </div>
             </div>
 
-            {/* Reviews */}
             <div className="mb-12">
               <h3 className="font-serif text-2xl text-[#442D1C] mb-6">
                 Customer Reviews
               </h3>
 
-              {/* Show review form if eligible */}
               {user && canReview && (
                 <ReviewForm
                   productSlug={productId}
@@ -952,7 +1043,6 @@ export default function ProductDetailPage() {
                 />
               )}
 
-              {/* Show message if user has purchased but already reviewed */}
               {user && reviewEligibility?.hasReviewed && (
                 <div className="bg-blue-50 border-2 border-blue-200 rounded-2xl p-6 mb-8">
                   <div className="flex items-center gap-3">
@@ -965,7 +1055,6 @@ export default function ProductDetailPage() {
                 </div>
               )}
 
-              {/* Show message if user hasn't purchased */}
               {user && reviewEligibility && !reviewEligibility.hasPurchased && (
                 <div className="bg-amber-50 border-2 border-amber-200 rounded-2xl p-6 mb-8">
                   <div className="flex items-center gap-3">
@@ -977,16 +1066,14 @@ export default function ProductDetailPage() {
                 </div>
               )}
 
-              {/* Existing reviews */}
               {product.reviews && product.reviews.length > 0 ? (
                 <div className="space-y-6">
-                  {product.reviews.slice(0, 3).map((review) => (
+                  {product.reviews.map((review) => (
                     <div
                       key={review.id}
                       className="border-b border-stone-200 pb-6 last:border-0"
                     >
                       <div className="flex items-center gap-4 mb-3">
-                        {/* Avatar Circle */}
                         <div className="w-10 h-10 bg-[#EDD8B4] rounded-full flex items-center justify-center text-[#442D1C] font-serif font-bold text-lg border-2 border-transparent hover:border-[#C85428] transition-all">
                           {review.User?.name
                             ? review.User.name[0].toUpperCase()
@@ -1019,9 +1106,64 @@ export default function ProductDetailPage() {
                           {new Date(review.createdAt).toLocaleDateString()}
                         </span>
                       </div>
+
                       {review.comment && (
                         <p className="text-stone-600 ml-14">{review.comment}</p>
                       )}
+
+                      {/* --- REVIEW IMAGES (Myntra Style Display) --- */}
+                      {review.images && review.images.length > 0 && (
+                        <div className="flex gap-2 mt-4 ml-14">
+                          {review.images.slice(0, 3).map((img, index) => {
+                            const isLastVisible = index === 2;
+                            const remainingCount = review.images.length - 3;
+
+                            // If this is the 3rd image AND there are more hidden
+                            if (isLastVisible && remainingCount > 0) {
+                              return (
+                                <div
+                                  key={index}
+                                  onClick={() => {
+                                    setLightboxImages(review.images);
+                                    setLightboxIndex(index);
+                                  }}
+                                  className="relative w-24 h-24 rounded-xl overflow-hidden cursor-pointer"
+                                >
+                                  <img
+                                    src={img}
+                                    alt=""
+                                    className="w-full h-full object-cover"
+                                  />
+                                  <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                                    <span className="text-white font-bold text-xl">
+                                      +{remainingCount}
+                                    </span>
+                                  </div>
+                                </div>
+                              );
+                            }
+
+                            // Standard Image Display
+                            return (
+                              <div
+                                key={index}
+                                onClick={() => {
+                                  setLightboxImages(review.images);
+                                  setLightboxIndex(index);
+                                }}
+                                className="w-24 h-24 rounded-xl overflow-hidden border border-stone-200 cursor-pointer hover:opacity-90 transition-opacity"
+                              >
+                                <img
+                                  src={img}
+                                  alt=""
+                                  className="w-full h-full object-cover"
+                                />
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                      {/* --- End Review Images --- */}
                     </div>
                   ))}
                 </div>
@@ -1036,7 +1178,6 @@ export default function ProductDetailPage() {
               )}
             </div>
 
-            {/* Share */}
             <div>
               <h4 className="font-serif text-xl text-[#442D1C] mb-4">
                 Share this piece
@@ -1064,7 +1205,6 @@ export default function ProductDetailPage() {
           </div>
         </div>
 
-        {/* Related Products */}
         {relatedProducts.length > 0 && (
           <div className="mt-32">
             <h2 className="font-serif text-4xl text-[#442D1C] mb-12 text-center">
@@ -1125,7 +1265,78 @@ export default function ProductDetailPage() {
         )}
       </div>
 
-      {/* Cart Slider */}
+      {/* --- LIGHTBOX MODAL --- */}
+      <AnimatePresence>
+        {lightboxImages && (
+          <div className="fixed inset-0 bg-black/90 z-[60] flex flex-col justify-center items-center backdrop-blur-md">
+            <button
+              onClick={() => setLightboxImages(null)}
+              className="absolute top-4 right-4 text-white/80 hover:text-white p-2"
+            >
+              <X size={32} />
+            </button>
+
+            <div className="relative w-full max-w-4xl h-[80vh] flex items-center justify-center">
+              <img
+                src={lightboxImages[lightboxIndex]}
+                alt="Review Fullscreen"
+                className="max-h-full max-w-full object-contain"
+              />
+              {/* Nav Buttons */}
+              {lightboxImages.length > 1 && (
+                <>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setLightboxIndex(
+                        (prev) =>
+                          (prev - 1 + lightboxImages.length) %
+                          lightboxImages.length,
+                      );
+                    }}
+                    className="absolute left-4 bg-white/10 hover:bg-white/20 p-3 rounded-full text-white backdrop-blur-sm"
+                  >
+                    <ChevronLeft size={24} />
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setLightboxIndex(
+                        (prev) => (prev + 1) % lightboxImages.length,
+                      );
+                    }}
+                    className="absolute right-4 bg-white/10 hover:bg-white/20 p-3 rounded-full text-white backdrop-blur-sm"
+                  >
+                    <ChevronRight size={24} />
+                  </button>
+                </>
+              )}
+            </div>
+
+            {/* Thumbnails Strip */}
+            <div className="absolute bottom-6 flex gap-2 overflow-x-auto max-w-full px-4">
+              {lightboxImages.map((img, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => setLightboxIndex(idx)}
+                  className={`w-16 h-16 rounded-lg overflow-hidden border-2 transition-all ${
+                    lightboxIndex === idx
+                      ? 'border-white scale-110'
+                      : 'border-transparent opacity-60'
+                  }`}
+                >
+                  <img
+                    src={img}
+                    className="w-full h-full object-cover"
+                    alt={`thumbnail-${idx}`}
+                  />
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+      </AnimatePresence>
+
       <CartSlider />
     </main>
   );

@@ -30,6 +30,7 @@ import {
   ArrowLeft
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import toast from 'react-hot-toast';
 import { format } from 'date-fns';
 import { useToast } from '@/components/ToastProvider';
 import React from 'react';

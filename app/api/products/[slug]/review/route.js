@@ -76,7 +76,7 @@ export async function POST(request, { params }) {
     }
 
     const { slug } = await params;
-    const { rating, comment } = await request.json();
+    const { rating, comment, images } = await request.json();
 
     // Validate rating
     if (!rating || rating < 1 || rating > 5) {
@@ -139,6 +139,7 @@ export async function POST(request, { params }) {
         productId: product.id,
         userId: session.userId,
         isVerified: true,
+        images: images || [],
       },
       include: {
         User: {

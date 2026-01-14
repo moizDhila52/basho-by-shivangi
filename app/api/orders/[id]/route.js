@@ -1,8 +1,13 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getSession } from '@/lib/session'; // Ensure this path is correct for your project
+import { unstable_noStore as noStore } from 'next/cache';
+
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 export async function GET(req, { params }) {
+  noStore();
   try {
     const session = await getSession();
     // 1. Security Check: Must be logged in

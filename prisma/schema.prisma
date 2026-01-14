@@ -181,13 +181,6 @@ model Product {
   Review          Review[]
   testimonials    Testimonial[]
   WishlistItem    WishlistItem[]
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
-=======
-  
->>>>>>> 04092962bbf1a4a59894d22f24fccf0649f757ea
->>>>>>> a1bcefe18038bb6dcd4ef52bdbd62483cf5e6b54
 
   @@index([categoryId])
   @@index([isBestseller])
@@ -200,6 +193,7 @@ model Review {
   id         String   @id @default(uuid())
   rating     Float
   comment    String?
+  images      String[]
   productId  String
   userId     String
   isVerified Boolean  @default(false)
@@ -473,15 +467,6 @@ model ProductWaitlist {
   @@index([productId])
 }
 
-model NewsletterCampaign {
-  id             String   @id
-  subject        String
-  type           String
-  referenceId    String?
-  sentAt         DateTime @default(now())
-  recipientCount Int      @default(0)
-  status         String   @default("SENT")
-}
 
 enum EventType {
   EXHIBITION
