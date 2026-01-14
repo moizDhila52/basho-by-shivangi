@@ -108,7 +108,7 @@ async function fetchProducts(params = {}) {
 
 // Fetch categories function
 async function fetchCategories() {
-  const response = await fetch('/api/categories');
+  const response = await fetch('/api/admin/categories');
   if (!response.ok) {
     throw new Error('Failed to fetch categories');
   }
