@@ -1,7 +1,9 @@
-// app/api/products/[slug]/review/route.js
-import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
-import { getSession } from "@/lib/session";
+import { NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
+import { getSession } from '@/lib/session';
+
+// Force dynamic to ensure we check fresh data
+export const dynamic = 'force-dynamic';
 
 export async function GET(request, { params }) {
   try {
@@ -11,8 +13,15 @@ export async function GET(request, { params }) {
       return NextResponse.json({ canReview: false }, { status: 200 });
     }
 
-    // Get product by slug
+    // 1. Get current user to access their email
+    const currentUser = await prisma.user.findUnique({
+      where: { id: session.userId },
+      select: { email: true },
+    });
+
     const { slug } = await params;
+
+    // 2. Get product
     const product = await prisma.product.findUnique({
       where: { slug },
       select: { id: true },
@@ -22,28 +31,41 @@ export async function GET(request, { params }) {
       return NextResponse.json({ canReview: false }, { status: 200 });
     }
 
-    // Check if user has purchased this product
-    const hasPurchased = await prisma.orderItem.findFirst({
+    // 3. PRIORITY CHECK: Is there a DELIVERED purchase?
+    const deliveredPurchase = await prisma.orderItem.findFirst({
       where: {
         productId: product.id,
         Order: {
-          userId: session.userId,
-          status: {
-            in: ["DELIVERED", "CONFIRMED", "SHIPPED"],
-          },
-        },
-      },
-      include: {
-        Order: {
-          select: {
-            status: true,
-            orderNumber: true,
-          },
+          OR: [
+            { userId: session.userId },
+            { customerEmail: currentUser?.email },
+          ],
+          status: 'DELIVERED', // 👈 Specific check for delivery
         },
       },
     });
 
-    // Check if user has already reviewed
+    // 4. FALLBACK CHECK: If not delivered, is there ANY active purchase?
+    // (Used to show the "Order is on the way" message)
+    let anyPurchase = deliveredPurchase;
+    if (!deliveredPurchase) {
+      anyPurchase = await prisma.orderItem.findFirst({
+        where: {
+          productId: product.id,
+          Order: {
+            OR: [
+              { userId: session.userId },
+              { customerEmail: currentUser?.email },
+            ],
+            status: {
+              in: ['CONFIRMED', 'SHIPPED', 'PROCESSING', 'PENDING'],
+            },
+          },
+        },
+      });
+    }
+
+    // 5. Check if already reviewed
     const existingReview = await prisma.review.findFirst({
       where: {
         productId: product.id,
@@ -51,15 +73,18 @@ export async function GET(request, { params }) {
       },
     });
 
-    const result = {
-      canReview: !!hasPurchased && !existingReview,
-      hasPurchased: !!hasPurchased,
-      hasReviewed: !!existingReview,
-    };
+    // 6. Set Flags
+    const isDelivered = !!deliveredPurchase; // True ONLY if we found a delivered order
+    const hasPurchased = !!anyPurchase; // True if we found ANY order (Delivered or otherwise)
 
-    return NextResponse.json(result);
+    return NextResponse.json({
+      canReview: isDelivered && !existingReview,
+      hasPurchased: hasPurchased,
+      isDelivered: isDelivered,
+      hasReviewed: !!existingReview,
+    });
   } catch (error) {
-    console.error("Error checking review eligibility:", error);
+    console.error('Error checking review eligibility:', error);
     return NextResponse.json({ canReview: false }, { status: 200 });
   }
 }
@@ -70,53 +95,58 @@ export async function POST(request, { params }) {
 
     if (!session || !session.userId) {
       return NextResponse.json(
-        { error: "Authentication required" },
-        { status: 401 }
+        { error: 'Authentication required' },
+        { status: 401 },
       );
     }
+
+    const currentUser = await prisma.user.findUnique({
+      where: { id: session.userId },
+      select: { email: true },
+    });
 
     const { slug } = await params;
     const { rating, comment, images } = await request.json();
 
-    // Validate rating
     if (!rating || rating < 1 || rating > 5) {
       return NextResponse.json(
-        { error: "Rating must be between 1 and 5" },
-        { status: 400 }
+        { error: 'Rating must be between 1 and 5' },
+        { status: 400 },
       );
     }
 
-    // Get product
     const product = await prisma.product.findUnique({
       where: { slug },
       select: { id: true },
     });
 
     if (!product) {
-      return NextResponse.json({ error: "Product not found" }, { status: 404 });
+      return NextResponse.json({ error: 'Product not found' }, { status: 404 });
     }
 
-    // Check if user has purchased this product
-    const hasPurchased = await prisma.orderItem.findFirst({
+    // 2. Verify Purchase AND Delivery Status
+    const purchase = await prisma.orderItem.findFirst({
       where: {
         productId: product.id,
         Order: {
-          userId: session.userId,
-          status: {
-            in: ["DELIVERED", "CONFIRMED", "SHIPPED"],
-          },
+          OR: [
+            { userId: session.userId },
+            { customerEmail: currentUser?.email },
+          ],
+          // 👇 STRICT CHECK: Only allow submission if DELIVERED
+          status: 'DELIVERED',
         },
       },
     });
 
-    if (!hasPurchased) {
+    if (!purchase) {
       return NextResponse.json(
-        { error: "You must purchase this product before reviewing" },
-        { status: 403 }
+        { error: 'You can only review products that have been delivered.' },
+        { status: 403 },
       );
     }
 
-    // Check if user has already reviewed
+    // 3. Check for existing review
     const existingReview = await prisma.review.findFirst({
       where: {
         productId: product.id,
@@ -126,12 +156,12 @@ export async function POST(request, { params }) {
 
     if (existingReview) {
       return NextResponse.json(
-        { error: "You have already reviewed this product" },
-        { status: 400 }
+        { error: 'You have already reviewed this product' },
+        { status: 400 },
       );
     }
 
-    // Create review
+    // 4. Create Review
     const review = await prisma.review.create({
       data: {
         rating: parseFloat(rating),
@@ -143,23 +173,17 @@ export async function POST(request, { params }) {
       },
       include: {
         User: {
-          select: {
-            name: true,
-            email: true,
-          },
+          select: { name: true, email: true },
         },
       },
     });
 
-    return NextResponse.json({
-      success: true,
-      review,
-    });
+    return NextResponse.json({ success: true, review });
   } catch (error) {
-    console.error("Error submitting review:", error);
+    console.error('Error submitting review:', error);
     return NextResponse.json(
-      { error: "Failed to submit review" },
-      { status: 500 }
+      { error: 'Failed to submit review' },
+      { status: 500 },
     );
   }
 }

@@ -1055,6 +1055,22 @@ export default function ProductDetailPage() {
                 </div>
               )}
 
+              {/* 👇👇👇 PASTE YOUR NEW CODE HERE 👇👇👇 */}
+              
+              {/* Show message if purchased but not delivered */}
+              {user && reviewEligibility?.hasPurchased && !reviewEligibility?.isDelivered && !reviewEligibility?.hasReviewed && (
+                <div className="bg-blue-50 border-2 border-blue-200 rounded-2xl p-6 mb-8">
+                  <div className="flex items-center gap-3">
+                    <Truck className="w-5 h-5 text-blue-600" />
+                    <p className="text-blue-800 font-medium">
+                      Your order is on the way! You can review this product once it is delivered.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* 👆👆👆 END PASTE 👆👆👆 */}
+
               {user && reviewEligibility && !reviewEligibility.hasPurchased && (
                 <div className="bg-amber-50 border-2 border-amber-200 rounded-2xl p-6 mb-8">
                   <div className="flex items-center gap-3">
