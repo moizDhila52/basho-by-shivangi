@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import {
   Search,
@@ -15,6 +15,9 @@ import {
   ChevronRight,
   Calendar,
   Package,
+  IndianRupee,
+  Activity,
+  FileText
 } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth } from '@/components/AuthProvider';
@@ -63,6 +66,38 @@ export default function AdminCustomOrdersPage() {
       setLoading(false);
     }
   };
+
+  // --- ANALYTICS CALCULATION ---
+  const stats = useMemo(() => {
+    // 1. Calculate Total Revenue (Sum of actualPrice for valid orders)
+    // We assume 'actualPrice' is set when a quote is finalized/paid
+    const totalRevenue = orders.reduce((sum, order) => {
+      // Only count revenue if the order isn't cancelled and has a price
+      if (order.status !== 'CANCELLED' && order.actualPrice) {
+        return sum + order.actualPrice;
+      }
+      return sum;
+    }, 0);
+
+    // 2. Count Total Requests (All non-cancelled)
+    const totalRequests = orders.length;
+
+    // 3. Pending Reviews (Action needed)
+    const pendingReviews = orders.filter(o => o.status === 'PENDING').length;
+
+    // 4. Active Production (In Progress)
+    const inProduction = orders.filter(o => o.status === 'IN_PROGRESS').length;
+
+    return {
+      revenue: totalRevenue.toLocaleString('en-IN', {
+        style: 'currency',
+        currency: 'INR',
+      }),
+      totalRequests,
+      pendingReviews,
+      inProduction
+    };
+  }, [orders]);
 
   if (authLoading) {
     return (
@@ -118,6 +153,34 @@ export default function AdminCustomOrdersPage() {
             Manage and review custom order requests
           </p>
         </div>
+      </div>
+
+      {/* --- STATS CARDS --- */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <StatCard
+          label="Total Custom Revenue"
+          value={stats.revenue}
+          icon={<IndianRupee className="text-[#C85428]" />}
+          color="bg-[#C85428]/10"
+        />
+        <StatCard
+          label="Total Requests"
+          value={stats.totalRequests}
+          icon={<FileText className="text-[#8E5022]" />}
+          color="bg-[#8E5022]/10"
+        />
+        <StatCard
+          label="Pending Review"
+          value={stats.pendingReviews}
+          icon={<Clock className="text-[#F59E0B]" />}
+          color="bg-[#F59E0B]/10"
+        />
+        <StatCard
+          label="In Production"
+          value={stats.inProduction}
+          icon={<Activity className="text-[#10B981]" />}
+          color="bg-[#10B981]/10"
+        />
       </div>
 
       {/* Filter Tabs */}
@@ -240,6 +303,21 @@ export default function AdminCustomOrdersPage() {
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+// Helper Component for Stats
+function StatCard({ label, value, icon, color }) {
+  return (
+    <div className="bg-white p-4 rounded-xl border border-[#EDD8B4] shadow-sm flex items-center justify-between">
+      <div>
+        <p className="text-xs text-[#8E5022] font-bold uppercase">{label}</p>
+        <p className="text-2xl font-bold text-[#442D1C] mt-1">{value}</p>
+      </div>
+      <div className={`p-3 rounded-lg ${color}`}>
+        {React.cloneElement(icon, { size: 24 })}
+      </div>
     </div>
   );
 }
