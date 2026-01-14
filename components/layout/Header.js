@@ -320,6 +320,18 @@ export default function Header() {
                       )}
                     </div>
                   ))}
+                  <Link
+                    href="/wishlist"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="flex items-center justify-between text-xl font-medium text-[#442D1C] mt-4 mb-3"
+                  >
+                    <span>Wishlist</span>
+                    {getWishlistCount() > 0 && (
+                      <span className="bg-[#C85428] text-white text-xs font-bold h-6 min-w-[24px] px-2 flex items-center justify-center rounded-full">
+                        {getWishlistCount()}
+                      </span>
+                    )}
+                  </Link>
                 </div>
 
                 {/* Mobile Auth Actions - FIXED: Added pb-10 for bottom spacing */}

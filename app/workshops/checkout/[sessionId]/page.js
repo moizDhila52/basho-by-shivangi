@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import Script from 'next/script';
+import { useState, useEffect } from "react";
+import { useParams, useRouter } from "next/navigation";
+import Script from "next/script";
 import {
   Loader2,
   Clock,
@@ -11,8 +11,32 @@ import {
   ArrowLeft,
   AlertCircle,
   ShieldCheck,
-} from 'lucide-react';
-import { useToast } from '@/components/ToastProvider';
+  XCircle,
+  CheckCircle2,
+} from "lucide-react";
+import { useToast } from "@/components/ToastProvider";
+
+// --- Validation Logic ---
+const validators = {
+  name: (value) => {
+    if (!value.trim()) return "Name is required";
+    if (value.trim().length < 2) return "Name must be at least 2 characters";
+    if (!/^[a-zA-Z\s'-]+$/.test(value))
+      return "Name contains invalid characters";
+    return "";
+  },
+  email: (value) => {
+    if (!value.trim()) return "Email is required";
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(value)) return "Please enter a valid email";
+    return "";
+  },
+  phone: (value) => {
+    if (!value) return "Phone is required";
+    if (value.length !== 10) return "Phone must be exactly 10 digits";
+    return "";
+  },
+};
 
 export default function WorkshopCheckout() {
   const { sessionId } = useParams();
@@ -23,34 +47,59 @@ export default function WorkshopCheckout() {
   const [processing, setProcessing] = useState(false);
   const [verifying, setVerifying] = useState(false);
   const [sessionData, setSessionData] = useState(null);
-  const [checkingAuth, setCheckingAuth] = useState(true); // New loading state for auth check
+  const [checkingAuth, setCheckingAuth] = useState(true);
 
+  // Form State
   const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    phone: '',
+    name: "",
+    email: "",
+    phone: "",
   });
 
-  // 1. GATEKEEPER: Check if user already booked this session
+  // Validation State
+  const [touched, setTouched] = useState({});
+  const [errors, setErrors] = useState({});
+
+  // 1. Fetch User Profile to Prefill Data
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      try {
+        const res = await fetch("/api/user/me");
+        if (res.ok) {
+          const profile = await res.json();
+          setFormData((prev) => ({
+            ...prev,
+            name: profile.name || "",
+            email: profile.email || "",
+            phone: profile.phone || "",
+          }));
+        }
+      } catch (error) {
+        console.error("Failed to load user profile", error);
+      }
+    };
+    fetchUserProfile();
+  }, []);
+
+  // 2. GATEKEEPER: Check if user already booked this session
   useEffect(() => {
     const checkExistingBooking = async () => {
       try {
-        const res = await fetch('/api/user/workshops');
+        const res = await fetch("/api/user/workshops");
         if (res.ok) {
           const bookings = await res.json();
-          // Check if current sessionId exists in their paid bookings
           const alreadyBooked = bookings.some(
-            (booking) => booking.sessionId === sessionId,
+            (booking) => booking.sessionId === sessionId
           );
 
           if (alreadyBooked) {
-            addToast('You are already enrolled in this workshop!', 'success');
-            router.replace('/profile/workshops'); // Redirect immediately
+            addToast("You are already enrolled in this workshop!", "success");
+            router.replace("/profile/workshops");
             return;
           }
         }
       } catch (error) {
-        console.error('Auth check failed', error);
+        console.error("Auth check failed", error);
       } finally {
         setCheckingAuth(false);
       }
@@ -58,19 +107,19 @@ export default function WorkshopCheckout() {
     checkExistingBooking();
   }, [sessionId, router, addToast]);
 
-  // 2. Fetch Session Details (Only runs if not redirected)
+  // 3. Fetch Session Details
   useEffect(() => {
-    if (checkingAuth) return; // Wait for auth check to finish
+    if (checkingAuth) return;
 
     const fetchSession = async () => {
       try {
         const res = await fetch(`/api/workshops/session/${sessionId}`);
-        if (!res.ok) throw new Error('Failed to load session details');
+        if (!res.ok) throw new Error("Failed to load session details");
         const data = await res.json();
         setSessionData(data);
       } catch (error) {
         console.error(error);
-        addToast('Could not load workshop details', 'error');
+        addToast("Could not load workshop details", "error");
       } finally {
         setLoading(false);
       }
@@ -78,14 +127,63 @@ export default function WorkshopCheckout() {
     if (sessionId) fetchSession();
   }, [sessionId, addToast, checkingAuth]);
 
+  // --- Handlers ---
+
+  const handleBlur = (field) => {
+    setTouched({ ...touched, [field]: true });
+    const error = validators[field](formData[field]);
+    setErrors({ ...errors, [field]: error });
+  };
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    let processedValue = value;
+
+    // Restrict phone to strictly 10 digits
+    if (name === "phone") {
+      processedValue = value.replace(/\D/g, "").slice(0, 10);
+    }
+
+    setFormData({ ...formData, [name]: processedValue });
+
+    // Real-time validation if already touched
+    if (touched[name]) {
+      const error = validators[name](processedValue);
+      setErrors({ ...errors, [name]: error });
+    }
+  };
+
+  const validateForm = () => {
+    const newErrors = {};
+    let isValid = true;
+
+    Object.keys(validators).forEach((field) => {
+      const error = validators[field](formData[field]);
+      if (error) {
+        newErrors[field] = error;
+        isValid = false;
+      }
+    });
+
+    setErrors(newErrors);
+    setTouched({ name: true, email: true, phone: true });
+    return isValid;
+  };
+
   const handlePayment = async () => {
     if (!sessionData) return;
+
+    if (!validateForm()) {
+      addToast("Please fix the errors before proceeding", "error");
+      return;
+    }
+
     setProcessing(true);
 
     try {
-      const res = await fetch('/api/workshops/checkout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const res = await fetch("/api/workshops/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           sessionId,
           customerName: formData.name,
@@ -101,15 +199,15 @@ export default function WorkshopCheckout() {
         key: data.key,
         amount: data.amount,
         currency: data.currency,
-        name: 'Bashō Workshops',
+        name: "Bashō Workshops",
         description: sessionData.Workshop.title,
         order_id: data.orderId,
         handler: async function (response) {
           setVerifying(true);
           try {
-            const verifyRes = await fetch('/api/workshops/verify', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
+            const verifyRes = await fetch("/api/workshops/verify", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
                 razorpay_payment_id: response.razorpay_payment_id,
                 razorpay_order_id: response.razorpay_order_id,
@@ -119,14 +217,14 @@ export default function WorkshopCheckout() {
             });
 
             if (verifyRes.ok) {
-              router.push('/workshops/success');
+              router.push("/workshops/success");
             } else {
               setVerifying(false);
-              addToast('Payment verification failed', 'error');
+              addToast("Payment verification failed", "error");
             }
           } catch (err) {
             setVerifying(false);
-            addToast('Verification network error', 'error');
+            addToast("Verification network error", "error");
           }
         },
         prefill: {
@@ -134,7 +232,7 @@ export default function WorkshopCheckout() {
           email: formData.email,
           contact: formData.phone,
         },
-        theme: { color: '#442D1C' },
+        theme: { color: "#442D1C" },
         modal: {
           ondismiss: function () {
             setProcessing(false);
@@ -146,11 +244,12 @@ export default function WorkshopCheckout() {
       rzp.open();
     } catch (error) {
       setProcessing(false);
-      addToast(error.message || 'Something went wrong', 'error');
+      addToast(error.message || "Something went wrong", "error");
     }
   };
 
-  // Verification Overlay
+  // --- Render States ---
+
   if (verifying) {
     return (
       <div className="fixed inset-0 bg-white/90 backdrop-blur-sm z-50 flex flex-col items-center justify-center p-4">
@@ -170,7 +269,6 @@ export default function WorkshopCheckout() {
     );
   }
 
-  // Loading State (Shows while checking both Auth and Data)
   if (loading || checkingAuth) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#FDFBF7]">
@@ -179,7 +277,6 @@ export default function WorkshopCheckout() {
     );
   }
 
-  // Error State (If session ID is invalid)
   if (!sessionData) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-[#FDFBF7] text-center p-4">
@@ -196,6 +293,14 @@ export default function WorkshopCheckout() {
       </div>
     );
   }
+
+  const isFormValid =
+    !errors.name &&
+    !errors.email &&
+    !errors.phone &&
+    formData.name &&
+    formData.email &&
+    formData.phone;
 
   return (
     <div className="min-h-screen bg-[#FDFBF7] flex items-center justify-center py-12 px-4">
@@ -222,48 +327,110 @@ export default function WorkshopCheckout() {
             Enter your details to confirm your booking.
           </p>
 
-          <div className="space-y-4">
+          <div className="space-y-5">
+            {/* NAME INPUT */}
             <div>
               <label className="block text-xs font-bold text-[#8E5022] uppercase mb-1 ml-1">
                 Full Name
               </label>
-              <input
-                type="text"
-                placeholder="e.g. Aditi Sharma"
-                className="w-full p-4 bg-white border border-[#EDD8B4] rounded-xl outline-none focus:border-[#C85428] focus:ring-1 focus:ring-[#C85428]"
-                value={formData.name}
-                onChange={(e) =>
-                  setFormData({ ...formData, name: e.target.value })
-                }
-              />
+              <div className="relative">
+                <input
+                  type="text"
+                  name="name"
+                  placeholder="e.g. Aditi Sharma"
+                  className={`w-full p-4 bg-white border rounded-xl outline-none transition-colors ${
+                    touched.name && errors.name
+                      ? "border-red-400 focus:border-red-500"
+                      : touched.name && !errors.name
+                      ? "border-green-500 focus:border-green-600"
+                      : "border-[#EDD8B4] focus:border-[#C85428] focus:ring-1 focus:ring-[#C85428]"
+                  }`}
+                  value={formData.name}
+                  onChange={handleChange}
+                  onBlur={() => handleBlur("name")}
+                />
+                {touched.name && !errors.name && (
+                  <CheckCircle2 className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-green-500" />
+                )}
+              </div>
+              {touched.name && errors.name && (
+                <div className="flex items-center gap-1 mt-1 text-red-600 text-xs">
+                  <XCircle size={12} />
+                  <span>{errors.name}</span>
+                </div>
+              )}
             </div>
+
+            {/* EMAIL INPUT */}
             <div>
               <label className="block text-xs font-bold text-[#8E5022] uppercase mb-1 ml-1">
                 Email Address
               </label>
-              <input
-                type="email"
-                placeholder="e.g. aditi@example.com"
-                className="w-full p-4 bg-white border border-[#EDD8B4] rounded-xl outline-none focus:border-[#C85428] focus:ring-1 focus:ring-[#C85428]"
-                value={formData.email}
-                onChange={(e) =>
-                  setFormData({ ...formData, email: e.target.value })
-                }
-              />
+              <div className="relative">
+                <input
+                  type="email"
+                  name="email"
+                  placeholder="e.g. aditi@example.com"
+                  className={`w-full p-4 bg-white border rounded-xl outline-none transition-colors ${
+                    touched.email && errors.email
+                      ? "border-red-400 focus:border-red-500"
+                      : touched.email && !errors.email
+                      ? "border-green-500 focus:border-green-600"
+                      : "border-[#EDD8B4] focus:border-[#C85428] focus:ring-1 focus:ring-[#C85428]"
+                  }`}
+                  value={formData.email}
+                  onChange={handleChange}
+                  onBlur={() => handleBlur("email")}
+                />
+                {touched.email && !errors.email && (
+                  <CheckCircle2 className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-green-500" />
+                )}
+              </div>
+              {touched.email && errors.email && (
+                <div className="flex items-center gap-1 mt-1 text-red-600 text-xs">
+                  <XCircle size={12} />
+                  <span>{errors.email}</span>
+                </div>
+              )}
             </div>
+
+            {/* PHONE INPUT */}
             <div>
               <label className="block text-xs font-bold text-[#8E5022] uppercase mb-1 ml-1">
                 Phone Number
               </label>
-              <input
-                type="tel"
-                placeholder="e.g. 9876543210"
-                className="w-full p-4 bg-white border border-[#EDD8B4] rounded-xl outline-none focus:border-[#C85428] focus:ring-1 focus:ring-[#C85428]"
-                value={formData.phone}
-                onChange={(e) =>
-                  setFormData({ ...formData, phone: e.target.value })
-                }
-              />
+              <div className="relative">
+                <input
+                  type="tel"
+                  name="phone"
+                  placeholder="e.g. 9876543210"
+                  // Prevents user from typing strictly more than 10 via keyboard
+                  maxLength={10}
+                  className={`w-full p-4 bg-white border rounded-xl outline-none transition-colors ${
+                    touched.phone && errors.phone
+                      ? "border-red-400 focus:border-red-500"
+                      : touched.phone &&
+                        !errors.phone &&
+                        formData.phone.length === 10
+                      ? "border-green-500 focus:border-green-600"
+                      : "border-[#EDD8B4] focus:border-[#C85428] focus:ring-1 focus:ring-[#C85428]"
+                  }`}
+                  value={formData.phone}
+                  onChange={handleChange}
+                  onBlur={() => handleBlur("phone")}
+                />
+                {touched.phone &&
+                  !errors.phone &&
+                  formData.phone.length === 10 && (
+                    <CheckCircle2 className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-green-500" />
+                  )}
+              </div>
+              {touched.phone && errors.phone && (
+                <div className="flex items-center gap-1 mt-1 text-red-600 text-xs">
+                  <XCircle size={12} />
+                  <span>{errors.phone}</span>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -293,8 +460,8 @@ export default function WorkshopCheckout() {
                   {new Date(sessionData.date).getDate()}
                 </p>
                 <p className="text-xs text-[#8E5022] font-bold uppercase">
-                  {new Date(sessionData.date).toLocaleString('default', {
-                    month: 'short',
+                  {new Date(sessionData.date).toLocaleString("default", {
+                    month: "short",
                   })}
                 </p>
               </div>
@@ -303,7 +470,7 @@ export default function WorkshopCheckout() {
                   Time
                 </p>
                 <p className="text-[#442D1C] flex items-center gap-2 font-medium">
-                  <Clock size={16} className="text-[#C85428]" />{' '}
+                  <Clock size={16} className="text-[#C85428]" />{" "}
                   {sessionData.time}
                 </p>
               </div>
@@ -319,8 +486,16 @@ export default function WorkshopCheckout() {
 
           <button
             onClick={handlePayment}
-            disabled={processing || !formData.name || !formData.email}
-            className="w-full bg-[#442D1C] text-[#EDD8B4] py-4 rounded-xl font-bold hover:bg-[#2c1d12] transition-colors flex items-center justify-center gap-2 disabled:opacity-70 shadow-lg"
+            // Button is disabled only if processing
+            // We allow click to trigger validation messages even if form is invalid
+            disabled={processing}
+            className={`w-full py-4 rounded-xl font-bold transition-all flex items-center justify-center gap-2 shadow-lg ${
+              processing
+                ? "bg-stone-200 text-stone-500 cursor-not-allowed"
+                : isFormValid
+                ? "bg-[#442D1C] text-[#EDD8B4] hover:bg-[#2c1d12]"
+                : "bg-[#442D1C]/50 text-[#EDD8B4] cursor-pointer"
+            }`}
           >
             {processing ? (
               <Loader2 className="animate-spin" />
