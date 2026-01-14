@@ -181,12 +181,7 @@ model Product {
   Review          Review[]
   testimonials    Testimonial[]
   WishlistItem    WishlistItem[]
-<<<<<<< HEAD
-  
-=======
->>>>>>> 782ca5150d155a655889558ac458bd08bf7950e0
 
-  @@index([categoryId])
   @@index([isBestseller])
   @@index([isFeatured])
   @@index([isNew])
@@ -533,8 +528,5 @@ enum CustomOrderStatus {
   COMPLETED
   SHIPPED
   CANCELLED
-<<<<<<< HEAD
+
 }
-=======
-}
->>>>>>> 782ca5150d155a655889558ac458bd08bf7950e0

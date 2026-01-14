@@ -87,7 +87,7 @@ const NAVIGATION_GROUPS = [
         hasBadge: true,
       },
       {
-        name: 'Corporate Inquiries',
+        name: 'Inquiries',
         icon: <Briefcase size={20} />,
         path: '/admin/inquiries',
         hasBadge: true,

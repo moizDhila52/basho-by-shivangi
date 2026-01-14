@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import React, { useState } from "react";
+import React, { useState } from 'react';
 import {
   Gift,
   Users,
@@ -16,61 +16,58 @@ import {
   Check,
   Loader2,
   ArrowRight,
-} from "lucide-react";
-import { motion } from "framer-motion";
-import { useToast } from "@/components/ToastProvider"; // Ensure you have this wrapped in layout
+} from 'lucide-react';
+import { motion } from 'framer-motion';
+import { useToast } from '@/components/ToastProvider'; // Ensure you have this wrapped in layout
 
 // Brand Colors
 const COLORS = {
-  dark: "#442D1C",
-  brown: "#652810",
-  clay: "#8E5022",
-  terracotta: "#C85428",
-  cream: "#EDD8B4",
-  background: "#FDFBF7",
+  dark: '#442D1C',
+  brown: '#652810',
+  clay: '#8E5022',
+  terracotta: '#C85428',
+  cream: '#EDD8B4',
+  background: '#FDFBF7',
 };
 
 export default function ConnectPage() {
+  const [inquiryType, setInquiryType] = useState('general'); // "general" or "corporate"
+  const { addToast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [formData, setFormData] = useState({
-    companyName: "",
-    contactName: "",
-    email: "",
-    phone: "",
-    service: "",
-    teamSize: "",
-    budget: "",
-    timeline: "",
-    message: "",
+    companyName: '',
+    contactName: '',
+    email: '',
+    phone: '',
+    service: '',
+    teamSize: '',
+    budget: '',
+    timeline: '',
+    message: '',
   });
 
   const services = [
     {
-      icon: <Gift className="w-8 h-8" />,
-      title: "Corporate Gifting",
-      description: "Bespoke ceramic gifts that reflect your company's values.",
-      features: ["Custom branding", "Bulk orders", "Premium packaging"],
+      icon: <Mail className="w-8 h-8" />, // Change icon to Mail
+      title: 'General Inquiries',
+      description:
+        'Questions about your order, shipping, or our handcrafted process?',
+      features: ['Quick support', 'Order tracking', 'Care instructions'],
     },
     {
       icon: <Users className="w-8 h-8" />,
-      title: "Team Workshops",
-      description: "Hands-on pottery workshops for creative team building.",
-      features: [
-        "On-site or studio",
-        "All materials included",
-        "Expert instruction",
-      ],
+      title: 'Workshops & Events',
+      description:
+        'Inquire about private sessions, group bookings, or studio visits.',
+      features: ['Private lessons', 'Team building', 'Event space'],
     },
     {
-      icon: <Handshake className="w-8 h-8" />,
-      title: "Collaborations",
-      description: "Co-branded collections aligned with your brand identity.",
-      features: [
-        "Product development",
-        "Marketing support",
-        "Exclusive designs",
-      ],
+      icon: <Gift className="w-8 h-8" />, // Icon change
+      title: 'Bespoke & Corporate',
+      description:
+        'Custom commissions, bulk orders, and corporate gifting solutions.',
+      features: ['Custom branding', 'B2B solutions', 'Bulk gifting'],
     },
   ];
 
@@ -83,34 +80,34 @@ export default function ConnectPage() {
     setIsSubmitting(true);
 
     try {
-      const res = await fetch("/api/inquiries", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const res = await fetch('/api/inquiries', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
       });
 
-      if (!res.ok) throw new Error("Submission failed");
+      if (!res.ok) throw new Error('Submission failed');
 
       addToast(
-        "Inquiry sent successfully! We will contact you soon.",
-        "success"
+        'Inquiry sent successfully! We will contact you soon.',
+        'success',
       );
 
       // Reset Form
       setFormData({
-        companyName: "",
-        contactName: "",
-        email: "",
-        phone: "",
-        service: "",
-        teamSize: "",
-        budget: "",
-        timeline: "",
-        message: "",
+        companyName: '',
+        contactName: '',
+        email: '',
+        phone: '',
+        service: '',
+        teamSize: '',
+        budget: '',
+        timeline: '',
+        message: '',
       });
     } catch (error) {
       console.error(error);
-      addToast("Something went wrong. Please try again.", "error");
+      addToast('Something went wrong. Please try again.', 'error');
     } finally {
       setIsSubmitting(false);
     }
@@ -130,15 +127,15 @@ export default function ConnectPage() {
             transition={{ duration: 0.6 }}
           >
             <span className="text-[#C85428] font-bold tracking-widest text-sm uppercase mb-4 block">
-              Partnerships & Inquiries
+              Get in Touch
             </span>
             <h1 className="font-serif text-5xl md:text-7xl text-[#442D1C] mb-6 leading-tight">
-              Let's Create <br />{" "}
-              <span className="italic text-[#8E5022]">Together.</span>
+              Connect with <br />{' '}
+              <span className="italic text-[#8E5022]">Bashō</span>
             </h1>
             <p className="text-[#652810] text-lg md:text-xl max-w-2xl mx-auto leading-relaxed">
-              Explore partnerships, corporate solutions, and collaborative
-              opportunities that bring artisanal craftsmanship to your business.
+              Whether you have a question about a piece, a special request, or a
+              business proposal, we’re here to listen and create together.
             </p>
           </motion.div>
         </div>
@@ -197,16 +194,16 @@ export default function ConnectPage() {
                 Get in Touch
               </h2>
               <p className="mb-10 text-white/80">
-                Prefer to speak directly? Reach out to our corporate team via
-                email or visit our studio.
+                Have something specific in mind? Reach out to our studio team directly.
               </p>
+
 
               <div className="space-y-6">
                 <div className="flex items-start gap-4">
                   <Mail className="w-6 h-6 text-[#C85428] mt-1" />
                   <div>
                     <p className="text-xs font-bold uppercase tracking-wider text-white/50">
-                      Email
+                      Write to us
                     </p>
                     <a
                       href="mailto:corporate@basho.com"
@@ -221,7 +218,7 @@ export default function ConnectPage() {
                   <Phone className="w-6 h-6 text-[#C85428] mt-1" />
                   <div>
                     <p className="text-xs font-bold uppercase tracking-wider text-white/50">
-                      Phone
+                      Call us
                     </p>
                     <p className="text-lg">+91 98765 43210</p>
                   </div>
@@ -263,27 +260,62 @@ export default function ConnectPage() {
           </div>
 
           {/* Right: Form */}
+          {/* Right: Form */}
           <div className="md:w-2/3 p-10 md:p-14 bg-white">
+            {/* NEW: Inquiry Type Toggle */}
+            <div className="flex gap-4 mb-8 border-b border-[#EDD8B4] pb-4">
+              <button
+                type="button"
+                onClick={() => setInquiryType('general')}
+                className={`pb-2 px-4 font-bold text-sm uppercase tracking-wider transition-all ${
+                  inquiryType === 'general'
+                    ? 'text-[#C85428] border-b-2 border-[#C85428]'
+                    : 'text-stone-400 hover:text-[#8E5022]'
+                }`}
+              >
+                General Contact
+              </button>
+              <button
+                type="button"
+                onClick={() => setInquiryType('corporate')}
+                className={`pb-2 px-4 font-bold text-sm uppercase tracking-wider transition-all ${
+                  inquiryType === 'corporate'
+                    ? 'text-[#C85428] border-b-2 border-[#C85428]'
+                    : 'text-stone-400 hover:text-[#8E5022]'
+                }`}
+              >
+                Business Inquiry
+              </button>
+            </div>
+
             <h2 className="font-serif text-3xl text-[#442D1C] mb-8">
-              Start a Conversation
+              {inquiryType === 'general'
+                ? 'Send us a Message'
+                : 'Start a Conversation'}
             </h2>
+
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="grid md:grid-cols-2 gap-6">
+                {/* Conditional Company Name */}
+                {inquiryType === 'corporate' && (
+                  <div className="space-y-2">
+                    <label className="text-sm font-bold text-[#8E5022] uppercase tracking-wider">
+                      Company Name *
+                    </label>
+                    <input
+                      required
+                      name="companyName"
+                      value={formData.companyName}
+                      onChange={handleChange}
+                      className="w-full bg-[#FDFBF7] border border-[#EDD8B4] rounded-xl p-3 focus:ring-2 focus:ring-[#C85428] focus:border-transparent outline-none transition-all text-[#442D1C]"
+                    />
+                  </div>
+                )}
                 <div className="space-y-2">
                   <label className="text-sm font-bold text-[#8E5022] uppercase tracking-wider">
-                    Company Name *
-                  </label>
-                  <input
-                    required
-                    name="companyName"
-                    value={formData.companyName}
-                    onChange={handleChange}
-                    className="w-full bg-[#FDFBF7] border border-[#EDD8B4] rounded-xl p-3 focus:ring-2 focus:ring-[#C85428] focus:border-transparent outline-none transition-all text-[#442D1C]"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-bold text-[#8E5022] uppercase tracking-wider">
-                    Contact Person *
+                    {inquiryType === 'corporate'
+                      ? 'Contact Person *'
+                      : 'Your Name *'}
                   </label>
                   <input
                     required
@@ -323,58 +355,63 @@ export default function ConnectPage() {
                 </div>
               </div>
 
-              <div className="grid md:grid-cols-3 gap-6">
-                <div className="space-y-2">
-                  <label className="text-sm font-bold text-[#8E5022] uppercase tracking-wider">
-                    Service
-                  </label>
-                  <select
-                    name="service"
-                    value={formData.service}
-                    onChange={handleChange}
-                    className="w-full bg-[#FDFBF7] border border-[#EDD8B4] rounded-xl p-3 focus:ring-2 focus:ring-[#C85428] outline-none text-[#442D1C] appearance-none cursor-pointer"
-                  >
-                    <option value="">Select...</option>
-                    <option value="Corporate Gifting">Corporate Gifting</option>
-                    <option value="Team Workshop">Team Workshop</option>
-                    <option value="Brand Collaboration">Collaboration</option>
-                    <option value="Bulk Order">Bulk Order</option>
-                  </select>
+              {/* Conditional Business Details */}
+              {inquiryType === 'corporate' && (
+                <div className="grid md:grid-cols-3 gap-6">
+                  <div className="space-y-2">
+                    <label className="text-sm font-bold text-[#8E5022] uppercase tracking-wider">
+                      Service
+                    </label>
+                    <select
+                      name="service"
+                      value={formData.service}
+                      onChange={handleChange}
+                      className="w-full bg-[#FDFBF7] border border-[#EDD8B4] rounded-xl p-3 focus:ring-2 focus:ring-[#C85428] outline-none text-[#442D1C] appearance-none cursor-pointer"
+                    >
+                      <option value="">Select...</option>
+                      <option value="Corporate Gifting">
+                        Corporate Gifting
+                      </option>
+                      <option value="Team Workshop">Team Workshop</option>
+                      <option value="Brand Collaboration">Collaboration</option>
+                      <option value="Bulk Order">Bulk Order</option>
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-bold text-[#8E5022] uppercase tracking-wider">
+                      Budget
+                    </label>
+                    <select
+                      name="budget"
+                      value={formData.budget}
+                      onChange={handleChange}
+                      className="w-full bg-[#FDFBF7] border border-[#EDD8B4] rounded-xl p-3 focus:ring-2 focus:ring-[#C85428] outline-none text-[#442D1C] appearance-none cursor-pointer"
+                    >
+                      <option value="">Select...</option>
+                      <option value="Under 50k">Under ₹50k</option>
+                      <option value="50k - 1L">₹50k - ₹1L</option>
+                      <option value="1L - 5L">₹1L - ₹5L</option>
+                      <option value="5L+">₹5L+</option>
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-bold text-[#8E5022] uppercase tracking-wider">
+                      Timeline
+                    </label>
+                    <select
+                      name="timeline"
+                      value={formData.timeline}
+                      onChange={handleChange}
+                      className="w-full bg-[#FDFBF7] border border-[#EDD8B4] rounded-xl p-3 focus:ring-2 focus:ring-[#C85428] outline-none text-[#442D1C] appearance-none cursor-pointer"
+                    >
+                      <option value="">Select...</option>
+                      <option value="Urgent">Urgent (2 weeks)</option>
+                      <option value="1 Month">1 Month</option>
+                      <option value="Flexible">Flexible</option>
+                    </select>
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-bold text-[#8E5022] uppercase tracking-wider">
-                    Budget
-                  </label>
-                  <select
-                    name="budget"
-                    value={formData.budget}
-                    onChange={handleChange}
-                    className="w-full bg-[#FDFBF7] border border-[#EDD8B4] rounded-xl p-3 focus:ring-2 focus:ring-[#C85428] outline-none text-[#442D1C] appearance-none cursor-pointer"
-                  >
-                    <option value="">Select...</option>
-                    <option value="Under 50k">Under ₹50k</option>
-                    <option value="50k - 1L">₹50k - ₹1L</option>
-                    <option value="1L - 5L">₹1L - ₹5L</option>
-                    <option value="5L+">₹5L+</option>
-                  </select>
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-bold text-[#8E5022] uppercase tracking-wider">
-                    Timeline
-                  </label>
-                  <select
-                    name="timeline"
-                    value={formData.timeline}
-                    onChange={handleChange}
-                    className="w-full bg-[#FDFBF7] border border-[#EDD8B4] rounded-xl p-3 focus:ring-2 focus:ring-[#C85428] outline-none text-[#442D1C] appearance-none cursor-pointer"
-                  >
-                    <option value="">Select...</option>
-                    <option value="Urgent">Urgent (2 weeks)</option>
-                    <option value="1 Month">1 Month</option>
-                    <option value="Flexible">Flexible</option>
-                  </select>
-                </div>
-              </div>
+              )}
 
               <div className="space-y-2">
                 <label className="text-sm font-bold text-[#8E5022] uppercase tracking-wider">
@@ -387,7 +424,11 @@ export default function ConnectPage() {
                   onChange={handleChange}
                   rows="4"
                   className="w-full bg-[#FDFBF7] border border-[#EDD8B4] rounded-xl p-3 focus:ring-2 focus:ring-[#C85428] focus:border-transparent outline-none transition-all text-[#442D1C]"
-                  placeholder="Tell us more about your requirements..."
+                  placeholder={
+                    inquiryType === 'general'
+                      ? 'How can we help you today?'
+                      : 'How can we help you today? Share your thoughts or questions with us...'
+                  }
                 ></textarea>
               </div>
 
@@ -402,7 +443,10 @@ export default function ConnectPage() {
                   </>
                 ) : (
                   <>
-                    <Send className="w-5 h-5" /> Send Inquiry
+                    <Send className="w-5 h-5" />{' '}
+                    {inquiryType === 'general'
+                      ? 'Send Message'
+                      : 'Send Inquiry'}
                   </>
                 )}
               </button>
