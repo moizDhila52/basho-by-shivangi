@@ -1,7 +1,7 @@
 import { prisma } from '@/lib/prisma';
 import { getSession } from '@/lib/session';
 import { redirect, notFound } from 'next/navigation';
-import ClientItemsList from '@/components/ClientItemsList'; // Ensure this file exists!
+import ClientItemsList from '@/components/ClientItemsList';
 import OrderPaymentStatus from '@/components/OrderPaymentStatus';
 import Link from 'next/link';
 import {
@@ -15,8 +15,12 @@ import {
   HelpCircle,
 } from 'lucide-react';
 
-// --- Helper Components ---
+// 👇 NUCLEAR CACHE BUSTING
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+export const fetchCache = 'force-no-store';
 
+// --- Helper Components ---
 function OrderTracker({ status }) {
   const steps = [
     { id: 1, label: 'Confirmed', icon: CheckCircle },
@@ -112,16 +116,41 @@ function InfoRow({ label, value, isTotal = false }) {
 
 export default async function OrderDetailPage({ params }) {
   const session = await getSession();
-  if (!session) redirect('/login');
+
+  if (!session) {
+    redirect('/login');
+  }
 
   const { id } = await params;
+
+  // 1. 👇 FETCH CURRENT USER EMAIL from DB (Because session email was undefined)
+  const currentUser = await prisma.user.findUnique({
+    where: { id: session.userId },
+    select: { email: true },
+  });
 
   const order = await prisma.order.findUnique({
     where: { id: id },
     include: { OrderItem: true },
   });
 
-  if (!order || order.userId !== session.userId) {
+  if (!order) {
+    notFound();
+  }
+
+  // 2. 👇 UPDATED SECURITY LOGIC
+  const isOwner = order.userId === session.userId;
+
+  // Now we compare against 'currentUser.email', not 'session.user.email'
+  const isGuestOwner =
+    order.userId === null && order.customerEmail === currentUser?.email;
+
+  if (!isOwner && !isGuestOwner) {
+    console.log('❌ Permission Denied.');
+    console.log(`Order Owner: ${order.userId} | Email: ${order.customerEmail}`);
+    console.log(
+      `Current User ID: ${session.userId} | Fetched Email: ${currentUser?.email}`,
+    );
     notFound();
   }
 
@@ -222,7 +251,6 @@ export default async function OrderDetailPage({ params }) {
                   Items in this shipment ({order.OrderItem.length})
                 </h3>
               </div>
-              {/* Pass the items to the Client Component */}
               <ClientItemsList items={order.OrderItem} />
             </div>
           </div>

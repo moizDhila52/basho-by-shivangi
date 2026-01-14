@@ -12,6 +12,10 @@ import {
   ShoppingBag,
 } from 'lucide-react';
 
+// 👇 NUCLEAR CACHE BUSTING
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 // Helper to format currency
 const formatPrice = (amount) => {
   return new Intl.NumberFormat('en-IN', {
@@ -29,7 +33,7 @@ const getStatusBadge = (status) => {
         icon: <Clock className="w-3 h-3" />,
         label: 'Payment Pending',
       };
-      case 'CONFIRMED':
+    case 'CONFIRMED':
       return {
         color: 'bg-teal-50 text-teal-700',
         icon: <CheckCircle className="w-3 h-3" />,
@@ -72,9 +76,19 @@ export default async function MyOrdersPage() {
   const session = await getSession();
   if (!session) redirect('/login');
 
-  // Fetch all orders with items
+  // 1. Fetch User to get Email
+  const user = await prisma.user.findUnique({
+    where: { id: session.userId },
+    select: { email: true },
+  });
+
+  if (!user) redirect('/login');
+
+  // 2. Fetch all orders (User ID Match OR Email Match)
   const orders = await prisma.order.findMany({
-    where: { userId: session.userId },
+    where: {
+      OR: [{ userId: session.userId }, { customerEmail: user.email }],
+    },
     include: {
       OrderItem: true,
     },
@@ -231,9 +245,12 @@ function OrderCard({ order, isActive }) {
                 </button>
               </Link>
             )}
-            <button className="text-stone-500 text-sm hover:text-[#8E5022] hover:underline">
-              View Invoice
-            </button>
+            {/* 👇 FIXED: Wrapped in Link to point to the invoice page */}
+            <Link href={`/invoice/${order.id}`} target="_blank">
+              <button className="w-full text-stone-500 text-sm hover:text-[#8E5022] hover:underline">
+                View Invoice
+              </button>
+            </Link>
           </div>
         </div>
       </div>

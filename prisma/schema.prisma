@@ -181,7 +181,10 @@ model Product {
   Review          Review[]
   testimonials    Testimonial[]
   WishlistItem    WishlistItem[]
+<<<<<<< HEAD
   
+=======
+>>>>>>> 782ca5150d155a655889558ac458bd08bf7950e0
 
   @@index([categoryId])
   @@index([isBestseller])
@@ -194,6 +197,7 @@ model Review {
   id         String   @id @default(uuid())
   rating     Float
   comment    String?
+  images      String[]
   productId  String
   userId     String
   isVerified Boolean  @default(false)
@@ -408,15 +412,14 @@ model NewsletterSubscriber {
   updatedAt DateTime @updatedAt
 }
 
-// Add this new model
 model NewsletterCampaign {
-  id          String   @id @default(uuid())
-  subject     String
-  type        String   // "PRODUCT", "WORKSHOP", "EVENT"
-  referenceId String?  // The ID of the product/workshop/event being promoted
-  sentAt      DateTime @default(now())
-  recipientCount Int   @default(0)
-  status      String   @default("SENT") // SENT, FAILED
+  id             String   @id @default(uuid())
+  subject        String
+  type           String
+  referenceId    String?
+  sentAt         DateTime @default(now())
+  recipientCount Int      @default(0)
+  status         String   @default("SENT")
 }
 
 model WorkshopRegistration {
@@ -440,7 +443,7 @@ model WorkshopRegistration {
 }
 
 model Notification {
-  id        String   @id @default(uuid()) 
+  id        String   @id @default(uuid())
   userId    String
   title     String
   message   String
@@ -466,6 +469,7 @@ model ProductWaitlist {
   @@unique([productId, email])
   @@index([productId])
 }
+
 
 enum EventType {
   EXHIBITION
@@ -529,4 +533,8 @@ enum CustomOrderStatus {
   COMPLETED
   SHIPPED
   CANCELLED
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> 782ca5150d155a655889558ac458bd08bf7950e0
