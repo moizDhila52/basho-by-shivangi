@@ -265,7 +265,7 @@ export default function Footer() {
           <div className="flex flex-col-reverse md:flex-row justify-between items-center gap-6 md:gap-4">
             <div className="text-xs text-stone-500 flex items-center gap-1">
               <Copyright className="h-3 w-3" />
-              {new Date().getFullYear()} Bashō Ceramics.
+              {new Date().getFullYear()} Bashō byy Shivangi.
             </div>
 
             <div className="flex flex-wrap justify-center gap-x-6 gap-y-3 text-xs font-medium">
