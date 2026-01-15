@@ -5,12 +5,8 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('🌱 Starting seed...');
 
-<<<<<<< HEAD
-  console.log("🧹 Cleaning database...");
-=======
   // --- CLEANUP ---
   console.log('🧹 Cleaning database...');
->>>>>>> 0c617250e2dedf4ac51ae7728b13c019dd58ec7f
   const tablenames = await prisma.$queryRaw`
     SELECT tablename FROM pg_tables WHERE schemaname='public'
   `;
@@ -20,13 +16,6 @@ async function main() {
     .filter((name) => name !== '_prisma_migrations')
     .map((name) => `"public"."${name}"`)
     .join(', ');
-<<<<<<< HEAD
-
-  if (tables.length > 0) {
-    await prisma.$executeRawUnsafe(`TRUNCATE TABLE ${tables} CASCADE;`);
-  }
-=======
->>>>>>> 0c617250e2dedf4ac51ae7728b13c019dd58ec7f
 
   if (tables.length > 0) {
     await prisma.$executeRawUnsafe(`TRUNCATE TABLE ${tables} CASCADE;`);
@@ -89,30 +78,12 @@ async function main() {
 
   console.log(`✅ Created ${users.length} users`);
 
-<<<<<<< HEAD
-  // Create Categories
-  console.log("📦 Creating categories...");
-=======
   // --- CATEGORIES ---
   console.log('📦 Creating categories...');
->>>>>>> 0c617250e2dedf4ac51ae7728b13c019dd58ec7f
 
   const teaware = await prisma.category.create({
     data: {
       id: randomUUID(),
-<<<<<<< HEAD
-      name: "Tea Ware",
-      slug: "tea-ware",
-      description: "Traditional and modern tea ceremony essentials",
-    },
-  });  
-  const dinnerware = await prisma.category.create({
-    data: {
-      id: randomUUID(),
-      name: "Dinnerware",
-      slug: "dinnerware",
-      description: "Handcrafted plates, bowls, and dining sets",
-=======
       name: 'Tea Ware',
       slug: 'tea-ware',
       description: 'Traditional and modern tea ceremony essentials',
@@ -124,82 +95,35 @@ async function main() {
       name: 'Dinnerware',
       slug: 'dinnerware',
       description: 'Handcrafted plates, bowls, and dining sets',
->>>>>>> 0c617250e2dedf4ac51ae7728b13c019dd58ec7f
     },
   });
   const drinkware = await prisma.category.create({
     data: {
       id: randomUUID(),
-<<<<<<< HEAD
-      name: "Drinkware",
-      slug: "drinkware",
-      description: "Cups, mugs, and sake sets",
-=======
       name: 'Drinkware',
       slug: 'drinkware',
       description: 'Cups, mugs, and sake sets',
->>>>>>> 0c617250e2dedf4ac51ae7728b13c019dd58ec7f
     },
   });
   const homedecor = await prisma.category.create({
     data: {
       id: randomUUID(),
-<<<<<<< HEAD
-      name: "Home Decor",
-      slug: "home-decor",
-      description: "Vases, sculptures, and decorative pieces",
-=======
       name: 'Home Decor',
       slug: 'home-decor',
       description: 'Vases, sculptures, and decorative pieces',
->>>>>>> 0c617250e2dedf4ac51ae7728b13c019dd58ec7f
     },
   });
   const ritualobjects = await prisma.category.create({
     data: {
       id: randomUUID(),
-<<<<<<< HEAD
-      name: "Ritual Objects",
-      slug: "ritual-objects",
-      description: "Incense holders and ceremonial items",
-=======
       name: 'Ritual Objects',
       slug: 'ritual-objects',
       description: 'Incense holders and ceremonial items',
->>>>>>> 0c617250e2dedf4ac51ae7728b13c019dd58ec7f
     },
   });
   const seasonal = await prisma.category.create({
     data: {
       id: randomUUID(),
-<<<<<<< HEAD
-      name: "Seasonal",
-      slug: "seasonal",
-      description: "Limited edition seasonal collections",
-    },
-  });
-
-  // Create Products
-  console.log("🎨 Creating products...");
-
-  const products = await Promise.all([
-    prisma.product.create({
-      data: {
-        name: "Basho Hand-Glazed Oatmeal Pasta Bowl",
-        slug: "basho-hand-glazed-oatmeal-pasta-bowl",
-        description: "A versatile, wide-rimmed deep plate perfect for pasta, salads, or stews. Featuring a subtle, speckled oatmeal glaze and a smooth matte finish, these bowls are designed for both everyday dining and special gatherings.",
-        price: 950.00,
-        originalPrice: 1100.00,
-        stock: 24,
-        images: ["/images/products/4.jpg"],
-        categoryId: dinnerware.id, // Dinnerware
-        color: "Oatmeal / Sand",
-        material: "Stoneware",
-        dimensions: "9 inches diameter, 1.5 inches deep",
-        weight: 0.7,
-        inStock: true,
-        isFeatured: false,
-=======
       name: 'Seasonal',
       slug: 'seasonal',
       description: 'Limited edition seasonal collections',
@@ -294,7 +218,6 @@ async function main() {
         care: 'Hand wash recommended',
         leadTime: 'Ships in 1-2 days',
         features: ['Hand Wash Only', 'Food Safe'],
->>>>>>> 0c617250e2dedf4ac51ae7728b13c019dd58ec7f
         isNew: true,
         isBestseller: true,
         care: "Microwave and Dishwasher safe. Use mild detergents.",
@@ -358,44 +281,6 @@ async function main() {
         inStock: true,
         isBestseller: false,
         isFeatured: true,
-<<<<<<< HEAD
-        isNew: true,
-        leadTime: "3-5 business days",
-        material: "Stoneware clay",
-        metaDescription: "Elevate your hosting with the Organic Ginkgo Serving Platter. A white ceramic grazing board perfect for appetizers and cheese pairings.",
-        metaTitle: "Organic Ginkgo Serving Platter - Ceramic Charcuterie Board",
-        weight: 1.2,
-      },
-    }),
-    prisma.product.create({
-      data: {
-        name: "Basho Fluted Accent Bowl",
-        slug: "basho-fluted-accent-bowl",
-        description: "These hand-thrown bowls feature a tactile fluted exterior that fits perfectly in the hand. Glazed in harmonious two-tone palettes reminiscent of earth and sky—rusts, moss greens, teals, and soft pinks. The unglazed foot reveals the raw stoneware clay and bears the signature 'basho' stamp.",
-        price: 28.00,
-        stock: 24,
-        images: ["/images/products/IMG_6843.jpg"],
-        // Category: Dinnerware
-        categoryId: dinnerware.id,
-        care: "Dishwasher and microwave safe.",
-        color: "Assorted Earth Tones (Two-Tone)",
-        dimensions: "12cm diameter x 5cm height",
-        features: [
-          "Textured fluted exterior",
-          "Artistic two-tone glaze application",
-          "Stamped 'basho' logo on base",
-          "Versatile size for sides or tea"
-        ],
-        inStock: true,
-        isBestseller: false,
-        isFeatured: false,
-        isNew: true,
-        leadTime: "2-4 business days",
-        material: "Stoneware",
-        metaDescription: "Discover the Basho Fluted Accent Bowl. Hand-thrown ceramic bowls with unique two-tone glazes and a tactile ribbed texture.",
-        metaTitle: "Basho Fluted Accent Bowl | Handcrafted Ceramic Bowls",
-        weight: 0.35,
-=======
         inStock: true,
         metaTitle: 'Ceramic Sake Set - Traditional Japanese Drinkware | Bashō',
         metaDescription:
@@ -1204,7 +1089,6 @@ async function main() {
         metaDescription:
           'The ultimate breakfast set featuring plates, mugs, and a pitcher in our signature Earth & Cloud glaze.',
         leadTime: '5-7 business days',
->>>>>>> 0c617250e2dedf4ac51ae7728b13c019dd58ec7f
       },
     }),
     prisma.product.create({
