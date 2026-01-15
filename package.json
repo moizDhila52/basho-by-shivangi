@@ -4,9 +4,10 @@
   "private": true,
   "scripts": {
     "dev": "node server.js",
-    "build": "next build",
+    "build": "prisma generate && next build",
     "start": "node server.js",
-    "lint": "eslint"
+    "lint": "eslint",
+    "postinstall": "prisma generate"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",
@@ -15,7 +16,7 @@
     "cloudinary": "^2.8.0",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
-    "firebase": "^12.7.0",
+    "firebase": "^12.7.0", 
     "firebase-admin": "^13.6.0",
     "framer-motion": "^12.23.26",
     "jose": "^6.1.3",
