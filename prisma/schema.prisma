@@ -242,6 +242,7 @@ model User {
   Review               Review[]
   WishlistItem         WishlistItem[]
   WorkshopRegistration WorkshopRegistration[]
+  galleryLikes GalleryLike[]
 }
 
 model WishlistItem {
@@ -328,6 +329,20 @@ model Event {
   @@index([featured])
 }
 
+model GalleryLike {
+  id            String      @id @default(uuid())
+  userId        String
+  galleryItemId String
+  createdAt     DateTime    @default(now())
+  
+  User          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  GalleryItem   GalleryItem @relation(fields: [galleryItemId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, galleryItemId]) // A user can only like an item once
+  @@index([galleryItemId])
+  @@index([userId])
+}
+
 model GalleryItem {
   id          String          @id @default(uuid())
   title       String
@@ -341,7 +356,11 @@ model GalleryItem {
   createdAt   DateTime        @default(now())
   updatedAt   DateTime        @updatedAt
   Event       Event?          @relation(fields: [eventId], references: [id])
-
+  
+  // New fields
+  likesCount  Int             @default(0)
+  likes       GalleryLike[]
+  
   @@index([category])
   @@index([featured])
   @@index([order])

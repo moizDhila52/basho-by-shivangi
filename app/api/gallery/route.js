@@ -1,66 +1,82 @@
-// app/api/gallery/route.js
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getSession } from "@/lib/session"; // Your custom session handler
 
 export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
+    const session = await getSession();
+    const userId = session?.userId;
+
+    // 1. Extract & Parse Params
     const category = searchParams.get("category");
-    const featured = searchParams.get("featured");
-    const eventId = searchParams.get("eventId");
-    const limit = searchParams.get("limit")
-      ? parseInt(searchParams.get("limit"))
-      : 50;
-    const page = searchParams.get("page")
-      ? parseInt(searchParams.get("page"))
-      : 1;
+    const sort = searchParams.get("sort") || "newest";
+    const search = searchParams.get("search");
+    const page = parseInt(searchParams.get("page") || "1");
+    const limit = parseInt(searchParams.get("limit") || "12");
     const skip = (page - 1) * limit;
 
+    // 2. Build Where Clause
     const where = {
-      isActive: true,
+      isActive: true, // Only show active items
     };
 
-    if (category) where.category = category;
-    if (featured === "true") where.featured = true;
-    if (eventId) where.eventId = eventId;
+    // Handle Enum Category
+    if (category && category !== "all") {
+      where.category = category; // Prisma will validate this against the Enum
+    }
 
-    const [gallery, total] = await Promise.all([
+    if (search) {
+      where.OR = [
+        { title: { contains: search, mode: "insensitive" } },
+        { description: { contains: search, mode: "insensitive" } },
+      ];
+    }
+
+    // 3. Build Sort
+    let orderBy = {};
+    if (sort === "popular") {
+      orderBy = { likesCount: "desc" };
+    } else {
+      orderBy = { createdAt: "desc" };
+    }
+
+    // 4. Fetch Data
+    const [items, totalCount] = await Promise.all([
       prisma.galleryItem.findMany({
         where,
-        include: {
-          Event: {
-            select: {
-              id: true,
-              title: true,
-              slug: true,
-            },
-          },
-        },
-        orderBy: [
-          { featured: "desc" },
-          { order: "asc" },
-          { createdAt: "desc" },
-        ],
-        skip,
+        orderBy,
         take: limit,
+        skip,
+        include: {
+          // Optimization: Only fetch the like for THIS user
+          likes: userId ? { where: { userId } } : false,
+        },
       }),
       prisma.galleryItem.count({ where }),
     ]);
 
+    // 5. Transform for Frontend
+    const formattedItems = items.map((item) => ({
+      ...item,
+      // Convert relations to a simple boolean
+      isLiked: userId ? item.likes.length > 0 : false,
+      likes: undefined, // Cleanup response
+    }));
+
     return NextResponse.json({
-      success: true,
-      data: gallery,
-      meta: {
-        total,
-        page,
-        limit,
-        pages: Math.ceil(total / limit),
+      items: formattedItems,
+      pagination: {
+        total: totalCount,
+        pages: Math.ceil(totalCount / limit),
+        currentPage: page,
+        hasMore: skip + items.length < totalCount,
       },
     });
   } catch (error) {
-    console.error("Error fetching gallery:", error);
+    console.error("Gallery API Error:", error);
     return NextResponse.json(
-      { success: false, error: "Failed to fetch gallery items" },
+      { error: "Failed to fetch gallery" },
       { status: 500 }
     );
   }
@@ -68,41 +84,36 @@ export async function GET(request) {
 
 export async function POST(request) {
   try {
-    // TODO: Add authentication check for admin
+    const session = await getSession();
+    if (!session)
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
     const body = await request.json();
 
+    // Basic Validation
     if (!body.title || !body.image || !body.category) {
       return NextResponse.json(
-        { success: false, error: "Missing required fields" },
+        { error: "Missing required fields" },
         { status: 400 }
       );
     }
 
-    const maxOrder = await prisma.galleryItem.aggregate({
-      _max: { order: true },
-    });
-
-    const galleryItem = await prisma.galleryItem.create({
+    const newItem = await prisma.galleryItem.create({
       data: {
         title: body.title,
-        description: body.description || null,
+        description: body.description,
         image: body.image,
         category: body.category,
         featured: body.featured || false,
-        order: body.order || (maxOrder._max.order || 0) + 1,
         eventId: body.eventId || null,
       },
     });
 
-    return NextResponse.json({
-      success: true,
-      data: galleryItem,
-      message: "Gallery item created successfully",
-    });
+    return NextResponse.json({ success: true, data: newItem });
   } catch (error) {
-    console.error("Error creating gallery item:", error);
+    console.error("Create Error:", error);
     return NextResponse.json(
-      { success: false, error: "Failed to create gallery item" },
+      { error: "Failed to create item" },
       { status: 500 }
     );
   }
