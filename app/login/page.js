@@ -1,35 +1,21 @@
 'use client';
 
-<<<<<<< HEAD
-import { useState, useEffect } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import Link from 'next/link';
-import { Eye, EyeOff, Loader2, ArrowRight, ArrowLeft } from 'lucide-react';
-=======
 import { useState, useEffect, Suspense } from "react"; // Added Suspense
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Eye, EyeOff, Loader2, ArrowRight, ArrowLeft } from "lucide-react";
->>>>>>> c85b6e675a1257d3cf891047b52da43f163d60d9
 import {
   signInWithEmailAndPassword,
   signInWithPopup,
   GoogleAuthProvider,
   sendPasswordResetEmail,
-<<<<<<< HEAD
-  setPersistence, // 👈 1. Import this
-  browserLocalPersistence, // 👈 2. Import this
-  browserSessionPersistence, // 👈 3. Import this
-} from 'firebase/auth';
-import { auth } from '@/lib/firebase';
-import { useToast } from '@/components/ToastProvider';
-import { useAuth } from '@/components/AuthProvider';
-=======
+  setPersistence,            // 👈 ADD THIS
+  browserLocalPersistence,   // 👈 ADD THIS
+  browserSessionPersistence, // 👈 ADD THIS
 } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { useToast } from "@/components/ToastProvider";
 import { useAuth } from "@/components/AuthProvider";
->>>>>>> c85b6e675a1257d3cf891047b52da43f163d60d9
 
 // 1. We rename the main logic component to "LoginContent"
 // This component reads the URL (searchParams), so it MUST be inside Suspense.
@@ -54,16 +40,8 @@ function LoginContent() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
-<<<<<<< HEAD
-
-  // 2. View State: 'login' or 'forgot'
-  const [view, setView] = useState('login');
-
-  const [formData, setFormData] = useState({ email: '', password: '' });
-=======
   const [view, setView] = useState("login");
   const [formData, setFormData] = useState({ email: "", password: "" });
->>>>>>> c85b6e675a1257d3cf891047b52da43f163d60d9
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -148,20 +126,10 @@ function LoginContent() {
         'Link sent! Please check your inbox and spam folder.',
         'success',
       );
-<<<<<<< HEAD
-
-      setView('login'); // Return to login view
-    } catch (error) {
-      if (error.code === 'auth/user-not-found') {
-        // Optional: You can confusingly return success here for security,
-        // but for this stage, keeping it explicit is fine.
-        addToast('No account found with this email', 'error');
-=======
       setView("login");
     } catch (error) {
       if (error.code === "auth/user-not-found") {
         addToast("No account found with this email", "error");
->>>>>>> c85b6e675a1257d3cf891047b52da43f163d60d9
       } else {
         addToast(error.message, 'error');
       }
@@ -171,58 +139,6 @@ function LoginContent() {
   };
 
   return (
-<<<<<<< HEAD
-    <div className="min-h-screen flex items-center justify-center bg-[#FDFBF7] px-4 py-10">
-      <div className="bg-white p-8 rounded-3xl shadow-xl w-full max-w-[420px] border border-[#EDD8B4]">
-        {/* --- VIEW 1: FORGOT PASSWORD FORM --- */}
-        {view === 'forgot' ? (
-          <div className="animate-in fade-in slide-in-from-right duration-300">
-            <button
-              onClick={() => setView('login')}
-              className="flex items-center gap-1 text-sm text-[#8E5022] hover:text-[#442D1C] mb-6 transition-colors"
-            >
-              <ArrowLeft size={16} /> Back to Login
-            </button>
-
-            <div className="text-center mb-8">
-              <h1 className="font-serif text-3xl font-bold text-[#442D1C] mb-2">
-                Reset Password
-              </h1>
-              <p className="text-[#8E5022] text-sm">
-                Enter your email and we'll send you a link to reset your
-                password.
-              </p>
-            </div>
-
-            <form onSubmit={handleForgotPassword} className="space-y-6">
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-[#8E5022] mb-1.5">
-                  Email Address
-                </label>
-                <input
-                  type="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  className="w-full px-4 py-3 rounded-xl border border-[#EDD8B4] focus:border-[#C85428] focus:ring-1 focus:ring-[#C85428] outline-none bg-[#FDFBF7] transition-all"
-                  placeholder="basho-user@gmail.com"
-                  required
-                />
-              </div>
-
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full bg-[#442D1C] text-white py-3.5 rounded-xl hover:bg-[#652810] transition-all font-medium text-lg flex justify-center items-center gap-2 shadow-md hover:shadow-xl"
-              >
-                {loading ? (
-                  <Loader2 className="animate-spin" />
-                ) : (
-                  'Send Reset Link'
-                )}
-              </button>
-            </form>
-=======
     <div className="bg-white p-8 rounded-3xl shadow-xl w-full max-w-[420px] border border-[#EDD8B4]">
       {/* --- VIEW 1: FORGOT PASSWORD FORM --- */}
       {view === "forgot" ? (
@@ -241,7 +157,6 @@ function LoginContent() {
             <p className="text-[#8E5022] text-sm">
               Enter your email and we'll send you a link to reset your password.
             </p>
->>>>>>> c85b6e675a1257d3cf891047b52da43f163d60d9
           </div>
 
           <form onSubmit={handleForgotPassword} className="space-y-6">
@@ -315,77 +230,10 @@ function LoginContent() {
                   placeholder="••••••••"
                   required
                 />
-<<<<<<< HEAD
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-[#8E5022] mb-1.5">
-                  Password
-                </label>
-                <div className="relative">
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    name="password"
-                    value={formData.password}
-                    onChange={handleChange}
-                    className="w-full px-4 py-3 rounded-xl border border-[#EDD8B4] focus:border-[#C85428] focus:ring-1 focus:ring-[#C85428] outline-none bg-[#FDFBF7] transition-all pr-10"
-                    placeholder="••••••••"
-                    required
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-3.5 text-[#8E5022] hover:text-[#442D1C] transition-colors p-1"
-                  >
-                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                  </button>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between text-sm pt-1">
-                <label className="flex items-center gap-2 cursor-pointer group">
-                  <div className="relative flex items-center">
-                    <input
-                      type="checkbox"
-                      className="peer h-4 w-4 cursor-pointer appearance-none rounded border border-[#EDD8B4] checked:border-[#C85428] checked:bg-[#C85428] transition-all"
-                      checked={rememberMe}
-                      onChange={(e) => setRememberMe(e.target.checked)}
-                    />
-                    {/* Checkmark SVG */}
-                    <div className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-white opacity-0 peer-checked:opacity-100">
-                      <svg
-                        width="10"
-                        height="8"
-                        viewBox="0 0 10 8"
-                        fill="none"
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        <path
-                          d="M1 4L3.5 6.5L9 1"
-                          stroke="currentColor"
-                          strokeWidth="1.5"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </svg>
-                    </div>
-                  </div>
-                  <span className="text-stone-600 group-hover:text-[#442D1C] transition-colors">
-                    Remember me
-                  </span>
-                </label>
-
-                {/* TOGGLE TO FORGOT PASSWORD VIEW */}
-                <button
-                  type="button"
-                  onClick={() => setView('forgot')}
-                  className="text-[#C85428] font-medium hover:text-[#A0401C] transition-colors text-sm"
-=======
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-3 top-3.5 text-[#8E5022] hover:text-[#442D1C] transition-colors p-1"
->>>>>>> c85b6e675a1257d3cf891047b52da43f163d60d9
                 >
                   {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
@@ -429,12 +277,7 @@ function LoginContent() {
                 onClick={() => setView("forgot")}
                 className="text-[#C85428] font-medium hover:text-[#A0401C] transition-colors text-sm"
               >
-<<<<<<< HEAD
-                {loading ? <Loader2 className="animate-spin" /> : 'Sign In'}
-                {!loading && <ArrowRight size={20} />}
-=======
                 Forgot Password?
->>>>>>> c85b6e675a1257d3cf891047b52da43f163d60d9
               </button>
             </div>
 
@@ -448,16 +291,6 @@ function LoginContent() {
             </button>
           </form>
 
-<<<<<<< HEAD
-            <div className="text-center mt-8 text-sm text-stone-500">
-              New to Basho?{' '}
-              <Link
-                href="/signup"
-                className="text-[#C85428] font-bold hover:underline"
-              >
-                Create an Account
-              </Link>
-=======
           <div className="relative my-8">
             <div className="absolute inset-0 flex items-center">
               <div className="w-full border-t border-[#EDD8B4]/60"></div>
@@ -466,7 +299,6 @@ function LoginContent() {
               <span className="px-4 bg-white text-[#8E5022]">
                 Or continue with
               </span>
->>>>>>> c85b6e675a1257d3cf891047b52da43f163d60d9
             </div>
           </div>
 

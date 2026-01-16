@@ -3,6 +3,7 @@ import { getSession } from '@/lib/session';
 import { redirect, notFound } from 'next/navigation';
 import ClientItemsList from '@/components/ClientItemsList';
 import OrderPaymentStatus from '@/components/OrderPaymentStatus';
+import InvoiceActions from '@/components/InvoiceActions';
 import Link from 'next/link';
 import {
   ArrowLeft,
@@ -206,12 +207,7 @@ export default async function OrderDetailPage({ params }) {
               <HelpCircle className="w-4 h-4" />
               Need Help?
             </button>
-            <Link href={`/invoice/${order.id}`} target="_blank">
-              <button className="flex items-center gap-2 px-4 py-2 bg-[#442D1C] text-white rounded-xl text-sm font-medium hover:bg-[#2c1d12] transition-colors shadow-sm">
-                <Download className="w-4 h-4" />
-                Invoice
-              </button>
-            </Link>
+            <InvoiceActions orderId={order.id} hasGst={!!order.customerGst} />
           </div>
         </div>
 

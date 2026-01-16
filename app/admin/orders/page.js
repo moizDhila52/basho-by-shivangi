@@ -526,10 +526,17 @@ export default function AdminOrdersPage() {
                         )}
                       </div>
                       {/* Name & Email */}
-                      <div className="flex flex-col">
+                      <div className="flex items-center gap-2">
                         <span className="font-bold text-[#442D1C]">
                           {order.customerName || 'Guest'}
                         </span>
+                        {/* 👇 NEW BADGE: Shows "B2B" if GST exists */}
+                        {order.customerGst && (
+                          <span className="text-[10px] font-bold bg-[#442D1C] text-[#EDD8B4] px-1.5 py-0.5 rounded border border-[#EDD8B4]">
+                            B2B
+                          </span>
+                        )}
+
                         <span className="text-xs text-[#8E5022]">
                           {order.customerEmail}
                         </span>
@@ -976,6 +983,73 @@ export default function AdminOrdersPage() {
                     </div>
                   </div>
                 )}
+
+                {/* 👇 NEW: Invoice Correction Box (Only for Admins) 👇 */}
+                <div className="bg-white p-4 rounded-xl border border-stone-200 shadow-sm mb-6">
+                  <h3 className="font-serif font-bold text-[#442D1C] text-sm mb-3 flex items-center gap-2">
+                    <Printer className="w-4 h-4 text-[#8E5022]" /> Invoice
+                    Correction
+                  </h3>
+                  <div className="flex gap-2 items-end">
+                    <div className="flex-1">
+                      <label className="text-xs font-bold text-stone-500 uppercase mb-1 block">
+                        Customer GSTIN
+                      </label>
+                      <input
+                        type="text"
+                        defaultValue={selectedOrder.customerGst || ''}
+                        id="admin-gst-input"
+                        placeholder="Enter GSTIN (e.g. 22AAAAA0000A1Z5)"
+                        className="w-full px-3 py-2 bg-[#FDFBF7] border border-[#EDD8B4] rounded-lg text-sm text-[#442D1C] focus:ring-1 focus:ring-[#C85428] outline-none uppercase"
+                      />
+                    </div>
+                    <button
+                      onClick={async () => {
+                        const input =
+                          document.getElementById('admin-gst-input');
+                        const newGst = input.value.trim().toUpperCase();
+
+                        // Optimistic Update
+                        const oldOrder = selectedOrder;
+                        setSelectedOrder({
+                          ...selectedOrder,
+                          customerGst: newGst,
+                        });
+
+                        try {
+                          // Reuse your existing update API or create a specific action
+                          // Since your update API handles generic fields, we can use it!
+                          const res = await fetch('/api/admin/orders/update', {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                              id: selectedOrder.id,
+                              customerGst: newGst,
+                              status: selectedOrder.status,
+                            }),
+                          });
+
+                          if (!res.ok) throw new Error('Failed');
+                          toast.success(
+                            'GST Updated! User can now download Tax Invoice.',
+                          );
+                          fetchOrders(); // Refresh master list
+                        } catch (e) {
+                          setSelectedOrder(oldOrder); // Revert
+                          toast.error('Failed to save GST');
+                        }
+                      }}
+                      className="px-4 py-2 bg-[#442D1C] text-white text-sm font-medium rounded-lg hover:bg-[#2c1d12] transition-colors h-[38px]"
+                    >
+                      Save
+                    </button>
+                  </div>
+                  <p className="text-[10px] text-stone-400 mt-2 italic">
+                    * Adding a GST number here instantly enables the "Tax
+                    Invoice" option in the user's dashboard.
+                  </p>
+                </div>
+                {/* 👆 END NEW BOX 👆 */}
 
                 {/* Customer & Address */}
                 <div className="grid md:grid-cols-2 gap-8">

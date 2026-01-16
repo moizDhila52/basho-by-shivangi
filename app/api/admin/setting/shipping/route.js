@@ -1,31 +1,31 @@
-import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
+import { NextResponse } from 'next/server';
+import { prisma } from '@/lib/db';
 
 // GET: Fetch current settings
 export async function GET() {
   try {
-    // Try to find the first settings record
     let settings = await prisma.storeSettings.findFirst();
 
-    // If none exists, create a default one
+    // Create default if missing
     if (!settings) {
       settings = await prisma.storeSettings.create({
         data: {
-          shippingRate: 150,
-          freeShippingThreshold: 5000,
-          gstPercent: 12,
-          gstin: "",
-          address: "",
+          shippingBaseRate: 50.0, // Default Base
+          shippingPerKgRate: 40.0, // Default Extra
+          gstPercent: 12.0,
+          gstin: '',
+          address: '',
+          freeShippingThreshold: 0, // Legacy/Unused
         },
       });
     }
 
     return NextResponse.json(settings);
   } catch (error) {
-    console.error("Settings Fetch Error:", error);
+    console.error('Settings Fetch Error:', error);
     return NextResponse.json(
-      { error: "Failed to fetch settings" },
-      { status: 500 }
+      { error: 'Failed to fetch settings' },
+      { status: 500 },
     );
   }
 }
@@ -34,36 +34,38 @@ export async function GET() {
 export async function POST(req) {
   try {
     const body = await req.json();
-    const { shippingRate, freeShippingThreshold, gstPercent, gstin, address } =
+
+    // 👇 Destructure using the EXACT names from Frontend state
+    const { shippingBaseRate, shippingPerKgRate, gstPercent, gstin, address } =
       body;
 
-    // Find the existing record to update
     const existing = await prisma.storeSettings.findFirst();
 
     const settings = await prisma.storeSettings.upsert({
-      where: { id: existing?.id || "new" }, // Use existing ID or force create if empty
+      where: { id: existing?.id || 'new_settings' },
       update: {
-        shippingRate: parseFloat(shippingRate),
-        freeShippingThreshold: parseFloat(freeShippingThreshold),
+        shippingBaseRate: parseFloat(shippingBaseRate),
+        shippingPerKgRate: parseFloat(shippingPerKgRate),
         gstPercent: parseFloat(gstPercent),
         gstin,
         address,
       },
       create: {
-        shippingRate: parseFloat(shippingRate),
-        freeShippingThreshold: parseFloat(freeShippingThreshold),
+        shippingBaseRate: parseFloat(shippingBaseRate),
+        shippingPerKgRate: parseFloat(shippingPerKgRate),
         gstPercent: parseFloat(gstPercent),
         gstin,
         address,
+        freeShippingThreshold: 0, // Default if required by schema
       },
     });
 
     return NextResponse.json(settings);
   } catch (error) {
-    console.error("Settings Update Error:", error);
+    console.error('Settings Update Error:', error);
     return NextResponse.json(
-      { error: "Failed to update settings" },
-      { status: 500 }
+      { error: 'Failed to update settings' },
+      { status: 500 },
     );
   }
 }
