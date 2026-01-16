@@ -2,13 +2,18 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import Razorpay from 'razorpay';
 
-const razorpay = new Razorpay({
-  key_id: process.env.RAZORPAY_KEY_ID,
-  key_secret: process.env.RAZORPAY_KEY_SECRET,
-});
+// REMOVED GLOBAL INITIALIZATION FROM HERE
 
 export async function POST(req) {
   try {
+    // Initialize Razorpay INSIDE the request handler
+    // This ensures it only runs when a user actually triggers the API, 
+    // not when the server is building.
+    const razorpay = new Razorpay({
+      key_id: process.env.RAZORPAY_KEY_ID,
+      key_secret: process.env.RAZORPAY_KEY_SECRET,
+    });
+
     const { orderId, razorpayOrderId } = await req.json();
 
     // 1. Fetch payments for this Razorpay Order ID

@@ -192,7 +192,7 @@ model Review {
   id         String   @id @default(uuid())
   rating     Float
   comment    String?
-  images      String[]
+  images     String[]
   productId  String
   userId     String
   isVerified Boolean  @default(false)
@@ -417,40 +417,26 @@ model NewsletterCampaign {
   status         String   @default("SENT")
 }
 
-// Update or add these sections in your schema.prisma
-
 model WorkshopRegistration {
-  id              String          @id @default(uuid())
+  id              String             @id @default(uuid())
   customerName    String
   customerEmail   String
   customerPhone   String?
   amountPaid      Float
   sessionId       String
   userId          String?
-  
-  // Status to track rescheduling and cancellations
   status          RegistrationStatus @default(CONFIRMED)
-  
   paymentId       String?
-  paymentStatus   String?         @default("PENDING")
+  paymentStatus   String?            @default("PENDING")
   razorpayOrderId String?
-  
-  createdAt       DateTime        @default(now())
- updatedAt DateTime @default(now()) @updatedAt
-
-  WorkshopSession WorkshopSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  User            User?           @relation(fields: [userId], references: [id])
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @default(now()) @updatedAt
+  WorkshopSession WorkshopSession    @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  User            User?              @relation(fields: [userId], references: [id])
 
   @@index([customerEmail])
   @@index([sessionId])
   @@index([userId])
-}
-
-// Add this enum for better tracking
-enum RegistrationStatus {
-  CONFIRMED
-  RESCHEDULED
-  CANCELLED
 }
 
 model Notification {
@@ -481,6 +467,11 @@ model ProductWaitlist {
   @@index([productId])
 }
 
+enum RegistrationStatus {
+  CONFIRMED
+  RESCHEDULED
+  CANCELLED
+}
 
 enum EventType {
   EXHIBITION
@@ -544,5 +535,4 @@ enum CustomOrderStatus {
   COMPLETED
   SHIPPED
   CANCELLED
-
 }
