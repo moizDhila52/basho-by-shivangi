@@ -1,65 +1,59 @@
-// app/api/gallery/[id]/route.js
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getSession } from "@/lib/session"; // Your session helper
 
-export async function GET(request, { params }) {
+// --- UPDATE ITEM (PUT) ---
+export async function PUT(request, props) {
+  const params = await props.params;
   try {
+    const session = await getSession();
+    // In real world, verify User is ADMIN here
+    if (!session)
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
     const { id } = params;
-    const galleryItem = await prisma.galleryItem.findUnique({
-      where: { id, isActive: true },
-      include: {
-        Event: true,
+    const body = await request.json();
+
+    const updatedItem = await prisma.galleryItem.update({
+      where: { id },
+      data: {
+        title: body.title,
+        description: body.description,
+        image: body.image,
+        category: body.category,
+        featured: body.featured,
+        eventId: body.eventId || null,
+        // Don't update likesCount here usually
       },
     });
 
-    if (!galleryItem) {
-      return NextResponse.json(
-        { success: false, error: "Gallery item not found" },
-        { status: 404 }
-      );
-    }
-
-    return NextResponse.json({
-      success: true,
-      data: galleryItem,
-    });
+    return NextResponse.json({ success: true, data: updatedItem });
   } catch (error) {
-    console.error("Error fetching gallery item:", error);
     return NextResponse.json(
-      { success: false, error: "Failed to fetch gallery item" },
+      { error: "Failed to update item" },
       { status: 500 }
     );
   }
 }
 
-export async function PUT(request, { params }) {
+// --- DELETE ITEM (DELETE) ---
+export async function DELETE(request, props) {
+  const params = await props.params;
   try {
-    // TODO: Add authentication check for admin
+    const session = await getSession();
+    if (!session)
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
     const { id } = params;
-    const body = await request.json();
 
-    const galleryItem = await prisma.galleryItem.update({
+    await prisma.galleryItem.delete({
       where: { id },
-      data: {
-        title: body.title,
-        description: body.description,
-        category: body.category,
-        featured: body.featured,
-        order: body.order,
-        eventId: body.eventId,
-        isActive: body.isActive,
-      },
     });
 
-    return NextResponse.json({
-      success: true,
-      data: galleryItem,
-      message: "Gallery item updated successfully",
-    });
+    return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Error updating gallery item:", error);
     return NextResponse.json(
-      { success: false, error: "Failed to update gallery item" },
+      { error: "Failed to delete item" },
       { status: 500 }
     );
   }
