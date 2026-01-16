@@ -64,7 +64,7 @@ export default function NotifyButton({ productId, stock }) {
       ) : (
         <>
           <Bell className="w-4 h-4" />
-          Notify Me When Available
+          Notify Me
         </>
       )}
     </button>

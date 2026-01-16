@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import { useParams, useRouter } from "next/navigation";
-import Script from "next/script";
+import { useState, useEffect } from 'react';
+import { useParams, useRouter } from 'next/navigation';
+import Script from 'next/script';
 import {
   Loader2,
   Clock,
@@ -13,28 +13,28 @@ import {
   ShieldCheck,
   XCircle,
   CheckCircle2,
-} from "lucide-react";
-import { useToast } from "@/components/ToastProvider";
+} from 'lucide-react';
+import { useToast } from '@/components/ToastProvider';
 
 // --- Validation Logic ---
 const validators = {
   name: (value) => {
-    if (!value.trim()) return "Name is required";
-    if (value.trim().length < 2) return "Name must be at least 2 characters";
+    if (!value.trim()) return 'Name is required';
+    if (value.trim().length < 2) return 'Name must be at least 2 characters';
     if (!/^[a-zA-Z\s'-]+$/.test(value))
-      return "Name contains invalid characters";
-    return "";
+      return 'Name contains invalid characters';
+    return '';
   },
   email: (value) => {
-    if (!value.trim()) return "Email is required";
+    if (!value.trim()) return 'Email is required';
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(value)) return "Please enter a valid email";
-    return "";
+    if (!emailRegex.test(value)) return 'Please enter a valid email';
+    return '';
   },
   phone: (value) => {
-    if (!value) return "Phone is required";
-    if (value.length !== 10) return "Phone must be exactly 10 digits";
-    return "";
+    if (!value) return 'Phone is required';
+    if (value.length !== 10) return 'Phone must be exactly 10 digits';
+    return '';
   },
 };
 
@@ -51,55 +51,89 @@ export default function WorkshopCheckout() {
 
   // Form State
   const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    phone: "",
+    name: '',
+    email: '',
+    phone: '',
   });
 
   // Validation State
   const [touched, setTouched] = useState({});
   const [errors, setErrors] = useState({});
 
-  // 1. Fetch User Profile to Prefill Data
+  // ... inside WorkshopCheckout component ...
+
+  // 1. GATEKEEPER: Check Auth & Existing Booking
   useEffect(() => {
-    const fetchUserProfile = async () => {
+    const checkAuthAndBooking = async () => {
       try {
-        const res = await fetch("/api/user/me");
-        if (res.ok) {
-          const profile = await res.json();
-          setFormData((prev) => ({
-            ...prev,
-            name: profile.name || "",
-            email: profile.email || "",
-            phone: profile.phone || "",
-          }));
+        // A. Check if user is logged in
+        const userRes = await fetch('/api/user/me');
+
+        if (!userRes.ok) {
+          // 🛑 Not logged in -> Redirect to login with return URL
+          const returnUrl = encodeURIComponent(
+            `/workshops/checkout/${sessionId}`,
+          );
+          router.replace(`/login?redirect=${returnUrl}`);
+          return;
         }
+
+        const profile = await userRes.json();
+
+        // Prefill form
+        setFormData((prev) => ({
+          ...prev,
+          name: profile.name || '',
+          email: profile.email || '',
+          phone: profile.phone || '',
+        }));
+
+        // B. Check for existing booking
+        const bookingRes = await fetch('/api/user/workshops');
+        if (bookingRes.ok) {
+          const bookings = await bookingRes.json();
+          const alreadyBooked = bookings.some(
+            (booking) => booking.sessionId === sessionId,
+          );
+
+          if (alreadyBooked) {
+            addToast('You are already enrolled in this workshop!', 'success');
+            router.replace('/profile/workshops');
+            return;
+          }
+        }
+
+        // If all checks pass, allow rendering
+        setCheckingAuth(false);
       } catch (error) {
-        console.error("Failed to load user profile", error);
+        console.error('Auth check failed', error);
+        // Fallback: Redirect to login on error
+        router.replace('/login');
       }
     };
-    fetchUserProfile();
-  }, []);
+
+    if (sessionId) checkAuthAndBooking();
+  }, [sessionId, router, addToast]);
 
   // 2. GATEKEEPER: Check if user already booked this session
   useEffect(() => {
     const checkExistingBooking = async () => {
       try {
-        const res = await fetch("/api/user/workshops");
+        const res = await fetch('/api/user/workshops');
         if (res.ok) {
           const bookings = await res.json();
           const alreadyBooked = bookings.some(
-            (booking) => booking.sessionId === sessionId
+            (booking) => booking.sessionId === sessionId,
           );
 
           if (alreadyBooked) {
-            addToast("You are already enrolled in this workshop!", "success");
-            router.replace("/profile/workshops");
+            addToast('You are already enrolled in this workshop!', 'success');
+            router.replace('/profile/workshops');
             return;
           }
         }
       } catch (error) {
-        console.error("Auth check failed", error);
+        console.error('Auth check failed', error);
       } finally {
         setCheckingAuth(false);
       }
@@ -114,12 +148,12 @@ export default function WorkshopCheckout() {
     const fetchSession = async () => {
       try {
         const res = await fetch(`/api/workshops/session/${sessionId}`);
-        if (!res.ok) throw new Error("Failed to load session details");
+        if (!res.ok) throw new Error('Failed to load session details');
         const data = await res.json();
         setSessionData(data);
       } catch (error) {
         console.error(error);
-        addToast("Could not load workshop details", "error");
+        addToast('Could not load workshop details', 'error');
       } finally {
         setLoading(false);
       }
@@ -140,8 +174,8 @@ export default function WorkshopCheckout() {
     let processedValue = value;
 
     // Restrict phone to strictly 10 digits
-    if (name === "phone") {
-      processedValue = value.replace(/\D/g, "").slice(0, 10);
+    if (name === 'phone') {
+      processedValue = value.replace(/\D/g, '').slice(0, 10);
     }
 
     setFormData({ ...formData, [name]: processedValue });
@@ -174,16 +208,16 @@ export default function WorkshopCheckout() {
     if (!sessionData) return;
 
     if (!validateForm()) {
-      addToast("Please fix the errors before proceeding", "error");
+      addToast('Please fix the errors before proceeding', 'error');
       return;
     }
 
     setProcessing(true);
 
     try {
-      const res = await fetch("/api/workshops/checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const res = await fetch('/api/workshops/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           sessionId,
           customerName: formData.name,
@@ -199,15 +233,15 @@ export default function WorkshopCheckout() {
         key: data.key,
         amount: data.amount,
         currency: data.currency,
-        name: "Bashō Workshops",
+        name: 'Bashō Workshops',
         description: sessionData.Workshop.title,
         order_id: data.orderId,
         handler: async function (response) {
           setVerifying(true);
           try {
-            const verifyRes = await fetch("/api/workshops/verify", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
+            const verifyRes = await fetch('/api/workshops/verify', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
                 razorpay_payment_id: response.razorpay_payment_id,
                 razorpay_order_id: response.razorpay_order_id,
@@ -217,14 +251,14 @@ export default function WorkshopCheckout() {
             });
 
             if (verifyRes.ok) {
-              router.push("/workshops/success");
+              router.push('/workshops/success');
             } else {
               setVerifying(false);
-              addToast("Payment verification failed", "error");
+              addToast('Payment verification failed', 'error');
             }
           } catch (err) {
             setVerifying(false);
-            addToast("Verification network error", "error");
+            addToast('Verification network error', 'error');
           }
         },
         prefill: {
@@ -232,7 +266,7 @@ export default function WorkshopCheckout() {
           email: formData.email,
           contact: formData.phone,
         },
-        theme: { color: "#442D1C" },
+        theme: { color: '#442D1C' },
         modal: {
           ondismiss: function () {
             setProcessing(false);
@@ -244,7 +278,7 @@ export default function WorkshopCheckout() {
       rzp.open();
     } catch (error) {
       setProcessing(false);
-      addToast(error.message || "Something went wrong", "error");
+      addToast(error.message || 'Something went wrong', 'error');
     }
   };
 
@@ -340,14 +374,14 @@ export default function WorkshopCheckout() {
                   placeholder="e.g. Aditi Sharma"
                   className={`w-full p-4 bg-white border rounded-xl outline-none transition-colors ${
                     touched.name && errors.name
-                      ? "border-red-400 focus:border-red-500"
+                      ? 'border-red-400 focus:border-red-500'
                       : touched.name && !errors.name
-                      ? "border-green-500 focus:border-green-600"
-                      : "border-[#EDD8B4] focus:border-[#C85428] focus:ring-1 focus:ring-[#C85428]"
+                      ? 'border-green-500 focus:border-green-600'
+                      : 'border-[#EDD8B4] focus:border-[#C85428] focus:ring-1 focus:ring-[#C85428]'
                   }`}
                   value={formData.name}
                   onChange={handleChange}
-                  onBlur={() => handleBlur("name")}
+                  onBlur={() => handleBlur('name')}
                 />
                 {touched.name && !errors.name && (
                   <CheckCircle2 className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-green-500" />
@@ -373,14 +407,14 @@ export default function WorkshopCheckout() {
                   placeholder="e.g. aditi@example.com"
                   className={`w-full p-4 bg-white border rounded-xl outline-none transition-colors ${
                     touched.email && errors.email
-                      ? "border-red-400 focus:border-red-500"
+                      ? 'border-red-400 focus:border-red-500'
                       : touched.email && !errors.email
-                      ? "border-green-500 focus:border-green-600"
-                      : "border-[#EDD8B4] focus:border-[#C85428] focus:ring-1 focus:ring-[#C85428]"
+                      ? 'border-green-500 focus:border-green-600'
+                      : 'border-[#EDD8B4] focus:border-[#C85428] focus:ring-1 focus:ring-[#C85428]'
                   }`}
                   value={formData.email}
                   onChange={handleChange}
-                  onBlur={() => handleBlur("email")}
+                  onBlur={() => handleBlur('email')}
                 />
                 {touched.email && !errors.email && (
                   <CheckCircle2 className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-green-500" />
@@ -408,16 +442,16 @@ export default function WorkshopCheckout() {
                   maxLength={10}
                   className={`w-full p-4 bg-white border rounded-xl outline-none transition-colors ${
                     touched.phone && errors.phone
-                      ? "border-red-400 focus:border-red-500"
+                      ? 'border-red-400 focus:border-red-500'
                       : touched.phone &&
                         !errors.phone &&
                         formData.phone.length === 10
-                      ? "border-green-500 focus:border-green-600"
-                      : "border-[#EDD8B4] focus:border-[#C85428] focus:ring-1 focus:ring-[#C85428]"
+                      ? 'border-green-500 focus:border-green-600'
+                      : 'border-[#EDD8B4] focus:border-[#C85428] focus:ring-1 focus:ring-[#C85428]'
                   }`}
                   value={formData.phone}
                   onChange={handleChange}
-                  onBlur={() => handleBlur("phone")}
+                  onBlur={() => handleBlur('phone')}
                 />
                 {touched.phone &&
                   !errors.phone &&
@@ -460,8 +494,8 @@ export default function WorkshopCheckout() {
                   {new Date(sessionData.date).getDate()}
                 </p>
                 <p className="text-xs text-[#8E5022] font-bold uppercase">
-                  {new Date(sessionData.date).toLocaleString("default", {
-                    month: "short",
+                  {new Date(sessionData.date).toLocaleString('default', {
+                    month: 'short',
                   })}
                 </p>
               </div>
@@ -470,7 +504,7 @@ export default function WorkshopCheckout() {
                   Time
                 </p>
                 <p className="text-[#442D1C] flex items-center gap-2 font-medium">
-                  <Clock size={16} className="text-[#C85428]" />{" "}
+                  <Clock size={16} className="text-[#C85428]" />{' '}
                   {sessionData.time}
                 </p>
               </div>
@@ -491,10 +525,10 @@ export default function WorkshopCheckout() {
             disabled={processing}
             className={`w-full py-4 rounded-xl font-bold transition-all flex items-center justify-center gap-2 shadow-lg ${
               processing
-                ? "bg-stone-200 text-stone-500 cursor-not-allowed"
+                ? 'bg-stone-200 text-stone-500 cursor-not-allowed'
                 : isFormValid
-                ? "bg-[#442D1C] text-[#EDD8B4] hover:bg-[#2c1d12]"
-                : "bg-[#442D1C]/50 text-[#EDD8B4] cursor-pointer"
+                ? 'bg-[#442D1C] text-[#EDD8B4] hover:bg-[#2c1d12]'
+                : 'bg-[#442D1C]/50 text-[#EDD8B4] cursor-pointer'
             }`}
           >
             {processing ? (

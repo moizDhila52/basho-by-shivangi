@@ -15,6 +15,7 @@ import {
   LogOut,
   ChevronDown,
   Bell,
+  ChevronUp,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { useAuth } from '@/components/AuthProvider';
@@ -27,6 +28,7 @@ export default function Header() {
   const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [mobileSubmenuOpen, setMobileSubmenuOpen] = useState(null);
 
   const { getTotalItems } = useCart();
   const { getWishlistCount } = useWishlist();
@@ -115,7 +117,7 @@ export default function Header() {
           {/* 2. Logo Logic - Centered on mobile/tablet, left on desktop */}
           <Link
             href="/"
-            className="absolute left-1/2 -translate-x-1/2 lg:relative lg:left-auto lg:translate-x-0 z-50 transform transition-transform hover:scale-105"
+            className="absolute left-1/2 -translate-x-1/2 lg:relative lg:left-auto lg:translate-x-0 z-50 transform transition-transform hover:scale-105 -ml-8"
           >
             <div className="relative h-10 w-32">
               <Image
@@ -178,10 +180,12 @@ export default function Header() {
           </nav>
 
           {/* 4. Right Actions */}
-          <div className="flex items-center gap-1 md:gap-2">
+          <div className="flex items-center gap-2 md:gap-3">
             {/* 👇 MOVED NOTIFICATION BELL HERE (Visible on all screens) 👇 */}
             {user && (
-              <div className="mr-1">
+              <div className="hidden sm:block">
+                {' '}
+                {/* ADD THIS WRAPPER */}
                 <NotificationBell
                   isHeaderWhite={isHeaderWhite}
                   textColorClass={textColorClass}
@@ -207,6 +211,18 @@ export default function Header() {
               </Button>
             </Link>
 
+            {/* Mobile Notification Icon (Visible only on mobile) */}
+            {user && (
+              <div className="sm:hidden">
+                <NotificationBell
+                  isHeaderWhite={isHeaderWhite}
+                  textColorClass={textColorClass}
+                  hoverBgClass={hoverBgClass}
+                  iconOnly={true}
+                />
+              </div>
+            )}
+
             <Link href="/cart">
               <Button
                 variant="ghost"
@@ -223,26 +239,49 @@ export default function Header() {
             </Link>
 
             {loading ? (
-              <div className="w-9 h-9 rounded-full bg-gray-200/50 animate-pulse ml-2" />
+              <div className="w-9 h-9 rounded-full bg-gray-200/50 animate-pulse" />
             ) : user ? (
-              <div className="ml-2 hidden lg:block">
-                {' '}
-                {/* Only show avatar on Desktop/Large */}
-                <UserMenu user={user} />
+              <div className="flex items-center justify-center">
+                <div className="lg:hidden">
+                  {/* Mobile: Extra small avatar */}
+                  <div className="w-8 h-8">
+                    <UserMenu user={user} avatarSize="xs" />
+                  </div>
+                </div>
+                <div className="hidden lg:block">
+                  {/* Desktop: Small avatar */}
+                  <div className="w-9 h-9">
+                    <UserMenu user={user} avatarSize="sm" />
+                  </div>
+                </div>
               </div>
             ) : (
-              <Link href="/login" className="ml-2 hidden lg:block">
-                <Button
-                  size="sm"
-                  className={`rounded-full px-6 font-medium transition-transform hover:scale-105 ${
-                    isHeaderWhite
-                      ? 'bg-[#442D1C] text-[#EDD8B4] hover:bg-[#652810]'
-                      : 'bg-white text-[#442D1C] hover:bg-[#FDFBF7]'
-                  }`}
-                >
-                  Sign In
-                </Button>
-              </Link>
+              <>
+                {/* 2. NEW: Mobile User Icon (Visible only on mobile) */}
+                <Link href="/login" className="ml-1 lg:hidden">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className={`rounded-full ${hoverBgClass} ${textColorClass}`}
+                  >
+                    <User className="h-6 w-6" />
+                  </Button>
+                </Link>
+
+                {/* 3. EXISTING: Desktop Button (Visible only on Large screens) */}
+                <Link href="/login" className="ml-2 hidden lg:block">
+                  <Button
+                    size="sm"
+                    className={`rounded-full px-6 font-medium transition-transform hover:scale-105 ${
+                      isHeaderWhite
+                        ? 'bg-[#442D1C] text-[#EDD8B4] hover:bg-[#652810]'
+                        : 'bg-white text-[#442D1C] hover:bg-[#FDFBF7]'
+                    }`}
+                  >
+                    Sign In
+                  </Button>
+                </Link>
+              </>
             )}
           </div>
         </div>
@@ -293,23 +332,50 @@ export default function Header() {
                     <div key={link.label}>
                       {link.submenu ? (
                         <div className="mb-2">
-                          <span className="text-xl font-medium text-[#442D1C] block mb-2">
-                            {link.label}
-                          </span>
-                          <div className="pl-4 border-l-2 border-[#EDD8B4] space-y-3">
-                            {link.submenu.map((sub) => (
-                              <Link
-                                key={sub.href}
-                                href={sub.href}
-                                onClick={() => setIsMobileMenuOpen(false)}
-                                className="block text-sm text-[#8E5022] font-medium"
+                          {/* Main Label + Dropdown Arrow */}
+                          <button
+                            onClick={() =>
+                              setMobileSubmenuOpen(
+                                mobileSubmenuOpen === link.label ? null : link.label
+                              )
+                            }
+                            className="flex items-center justify-between w-full text-xl font-medium text-[#442D1C] mb-2 group"
+                          >
+                            <span>{link.label}</span>
+                            {mobileSubmenuOpen === link.label ? (
+                              <ChevronUp className="w-5 h-5 text-[#8E5022]" />
+                            ) : (
+                              <ChevronDown className="w-5 h-5 text-[#8E5022]/70" />
+                            )}
+                          </button>
+
+                          {/* Collapsible Submenu */}
+                          <AnimatePresence>
+                            {mobileSubmenuOpen === link.label && (
+                              <motion.div
+                                initial={{ height: 0, opacity: 0 }}
+                                animate={{ height: 'auto', opacity: 1 }}
+                                exit={{ height: 0, opacity: 0 }}
+                                className="overflow-hidden"
                               >
-                                {sub.label}
-                              </Link>
-                            ))}
-                          </div>
+                                <div className="pl-4 border-l-2 border-[#EDD8B4] space-y-3 py-2">
+                                  {link.submenu.map((sub) => (
+                                    <Link
+                                      key={sub.href}
+                                      href={sub.href}
+                                      onClick={() => setIsMobileMenuOpen(false)}
+                                      className="block text-sm text-[#8E5022] font-medium hover:text-[#C85428] transition-colors"
+                                    >
+                                      {sub.label}
+                                    </Link>
+                                  ))}
+                                </div>
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
                         </div>
                       ) : (
+                        /* Standard Link (No Submenu) */
                         <Link
                           href={link.href}
                           onClick={() => setIsMobileMenuOpen(false)}
@@ -320,6 +386,8 @@ export default function Header() {
                       )}
                     </div>
                   ))}
+
+                  {/* Wishlist Link (Kept as is) */}
                   <Link
                     href="/wishlist"
                     onClick={() => setIsMobileMenuOpen(false)}

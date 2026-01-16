@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import {
   Calendar,
   CheckCircle,
@@ -10,40 +10,47 @@ import {
   Users,
   Check,
   Loader2,
-} from "lucide-react";
-import { motion } from "framer-motion";
+} from 'lucide-react';
+import { motion } from 'framer-motion';
+import { useAuth } from '@/components/AuthProvider'; // 👈 ADDED
+import { useToast } from '@/components/ToastProvider'; // 👈 ADDED
 
 export default function BookingWidget({ workshopId, price, title, sessions }) {
   const router = useRouter();
+  const { user } = useAuth(); // 👈 GET USER
+  const { addToast } = useToast(); // 👈 GET TOAST
   const [selectedSession, setSelectedSession] = useState(null);
   const [userBookings, setUserBookings] = useState([]);
 
   useEffect(() => {
     async function checkBookings() {
+      // Only fetch if user is logged in to avoid 401s or unnecessary calls
+      if (!user) return;
+
       try {
-        const res = await fetch("/api/user/workshops");
+        const res = await fetch('/api/user/workshops');
         if (res.ok) {
           const data = await res.json();
           setUserBookings(data.map((reg) => reg.sessionId));
         }
       } catch (err) {
-        console.error("Could not check bookings", err);
+        console.error('Could not check bookings', err);
       }
     }
     checkBookings();
-  }, []);
+  }, [user]);
 
   const isSessionBooked = (sessionId) => userBookings.includes(sessionId);
 
   const formatSessionDate = (session) => {
     const date = new Date(session.date);
-    const time = session.time || "";
+    const time = session.time || '';
     const availableSpots = session.spotsTotal - session.spotsBooked;
 
     return {
-      month: date.toLocaleString("default", { month: "short" }).toUpperCase(),
+      month: date.toLocaleString('default', { month: 'short' }).toUpperCase(),
       day: date.getDate(),
-      weekday: date.toLocaleDateString("en-US", { weekday: "long" }),
+      weekday: date.toLocaleDateString('en-US', { weekday: 'long' }),
       time: time,
       availableSpots: availableSpots,
       fullDate: date,
@@ -52,7 +59,18 @@ export default function BookingWidget({ workshopId, price, title, sessions }) {
     };
   };
 
+  // 👇 UPDATED HANDLE BOOK FUNCTION
   const handleBook = (sessionId) => {
+    // 1. Check if user is logged in
+    if (!user) {
+      addToast('Please sign in to book a workshop', 'error');
+      // Redirect to login, then come back to this specific checkout page
+      const returnUrl = encodeURIComponent(`/workshops/checkout/${sessionId}`);
+      router.push(`/login?redirect=${returnUrl}`);
+      return;
+    }
+
+    // 2. If logged in, proceed to checkout
     router.push(`/workshops/checkout/${sessionId}`);
   };
 
@@ -100,11 +118,11 @@ export default function BookingWidget({ workshopId, price, title, sessions }) {
                   whileHover={{ scale: 1.0 }}
                   whileTap={{ scale: 0.99 }}
                   className={`relative cursor-pointer transition-all duration-200 ${
-                    isSelected ? "z-10" : ""
+                    isSelected ? 'z-10' : ''
                   } ${
                     formatted.isBooked || formatted.isFull
-                      ? "cursor-default opacity-80"
-                      : ""
+                      ? 'cursor-default opacity-80'
+                      : ''
                   }`}
                   onClick={() => handleSelectSession(session)}
                 >
@@ -116,12 +134,12 @@ export default function BookingWidget({ workshopId, price, title, sessions }) {
                   <div
                     className={`relative rounded-2xl border-2 transition-all duration-200 overflow-hidden ${
                       isSelected && !formatted.isBooked && !formatted.isFull
-                        ? "border-[#C85428] bg-gradient-to-r from-[#FDFBF7] to-white shadow-lg"
+                        ? 'border-[#C85428] bg-gradient-to-r from-[#FDFBF7] to-white shadow-lg'
                         : formatted.isBooked
-                        ? "border-green-200 bg-green-50/50"
+                        ? 'border-green-200 bg-green-50/50'
                         : formatted.isFull
-                        ? "border-stone-200 bg-stone-100/50"
-                        : "border-stone-200 bg-white hover:border-[#EDD8B4] hover:shadow-md"
+                        ? 'border-stone-200 bg-stone-100/50'
+                        : 'border-stone-200 bg-white hover:border-[#EDD8B4] hover:shadow-md'
                     }`}
                   >
                     <div className="p-4 flex items-start gap-4">
@@ -129,12 +147,12 @@ export default function BookingWidget({ workshopId, price, title, sessions }) {
                       <div
                         className={`flex-shrink-0 w-14 h-14 rounded-lg flex flex-col items-center justify-center transition-all duration-200 ${
                           formatted.isBooked
-                            ? "bg-gradient-to-br from-green-500 to-green-600 text-white"
+                            ? 'bg-gradient-to-br from-green-500 to-green-600 text-white'
                             : formatted.isFull
-                            ? "bg-gradient-to-br from-stone-400 to-stone-500 text-white"
+                            ? 'bg-gradient-to-br from-stone-400 to-stone-500 text-white'
                             : isSelected
-                            ? "bg-gradient-to-br from-[#C85428] to-[#8E5022] text-white"
-                            : "bg-gradient-to-br from-stone-100 to-stone-50 text-stone-700"
+                            ? 'bg-gradient-to-br from-[#C85428] to-[#8E5022] text-white'
+                            : 'bg-gradient-to-br from-stone-100 to-stone-50 text-stone-700'
                         }`}
                       >
                         <div className="text-xs font-bold tracking-wider leading-none">
@@ -152,12 +170,12 @@ export default function BookingWidget({ workshopId, price, title, sessions }) {
                             <h5
                               className={`font-serif text-base font-medium mb-0.5 ${
                                 formatted.isBooked
-                                  ? "text-green-800"
+                                  ? 'text-green-800'
                                   : formatted.isFull
-                                  ? "text-stone-600"
+                                  ? 'text-stone-600'
                                   : isSelected
-                                  ? "text-[#442D1C]"
-                                  : "text-stone-800"
+                                  ? 'text-[#442D1C]'
+                                  : 'text-stone-800'
                               }`}
                             >
                               {formatted.weekday}
@@ -188,10 +206,10 @@ export default function BookingWidget({ workshopId, price, title, sessions }) {
                             <span
                               className={`flex items-center gap-1 text-xs ${
                                 formatted.isBooked
-                                  ? "text-green-600"
+                                  ? 'text-green-600'
                                   : formatted.isFull
-                                  ? "text-stone-500"
-                                  : "text-stone-600"
+                                  ? 'text-stone-500'
+                                  : 'text-stone-600'
                               }`}
                             >
                               <Clock className="w-3 h-3 flex-shrink-0" />
@@ -200,15 +218,15 @@ export default function BookingWidget({ workshopId, price, title, sessions }) {
                             <span
                               className={`flex items-center gap-1 text-xs ${
                                 formatted.isBooked
-                                  ? "text-green-600"
+                                  ? 'text-green-600'
                                   : formatted.isFull
-                                  ? "text-stone-500"
-                                  : "text-stone-600"
+                                  ? 'text-stone-500'
+                                  : 'text-stone-600'
                               }`}
                             >
                               <Users className="w-3 h-3 flex-shrink-0" />
                               {formatted.isFull
-                                ? "No spots"
+                                ? 'No spots'
                                 : `${formatted.availableSpots} spots left`}
                             </span>
                           </div>
@@ -239,11 +257,11 @@ export default function BookingWidget({ workshopId, price, title, sessions }) {
                               }}
                               className={`w-full py-2 rounded-lg font-medium text-sm transition-all duration-200 ${
                                 isSelected
-                                  ? "bg-gradient-to-r from-[#C85428] to-[#8E5022] text-white shadow-md hover:shadow-lg"
-                                  : "bg-gradient-to-r from-stone-100 to-stone-50 text-stone-700 hover:from-stone-200 hover:to-stone-100"
+                                  ? 'bg-gradient-to-r from-[#C85428] to-[#8E5022] text-white shadow-md hover:shadow-lg'
+                                  : 'bg-gradient-to-r from-stone-100 to-stone-50 text-stone-700 hover:from-stone-200 hover:to-stone-100'
                               }`}
                             >
-                              {isSelected ? "Book Now" : "Select"}
+                              {isSelected ? 'Book Now' : 'Select'}
                             </button>
                           )}
                         </div>
@@ -271,13 +289,13 @@ export default function BookingWidget({ workshopId, price, title, sessions }) {
           disabled={!selectedSession}
           className={`w-full py-3.5 rounded-xl font-bold text-sm transition-all duration-200 flex items-center justify-center gap-2 ${
             selectedSession
-              ? "bg-gradient-to-r from-[#8E5022] to-[#C85428] text-white hover:shadow-xl hover:scale-[1.02] active:scale-95"
-              : "bg-stone-100 text-stone-400 cursor-not-allowed"
+              ? 'bg-gradient-to-r from-[#8E5022] to-[#C85428] text-white hover:shadow-xl hover:scale-[1.02] active:scale-95'
+              : 'bg-stone-100 text-stone-400 cursor-not-allowed'
           }`}
         >
           {selectedSession
-            ? "Continue to Booking"
-            : "Select a Session to Continue"}
+            ? 'Continue to Booking'
+            : 'Select a Session to Continue'}
         </button>
 
         {/* Selected Session Info */}
@@ -292,9 +310,9 @@ export default function BookingWidget({ workshopId, price, title, sessions }) {
               <span className="font-medium text-[#442D1C] text-right">
                 {(() => {
                   const session = sessions.find(
-                    (s) => s.id === selectedSession
+                    (s) => s.id === selectedSession,
                   );
-                  if (!session) return "";
+                  if (!session) return '';
                   const formatted = formatSessionDate(session);
                   return `${formatted.weekday}, ${formatted.month} ${formatted.day} at ${formatted.time}`;
                 })()}
@@ -325,13 +343,13 @@ export default function BookingWidget({ workshopId, price, title, sessions }) {
                   {selectedSession
                     ? (() => {
                         const session = sessions.find(
-                          (s) => s.id === selectedSession
+                          (s) => s.id === selectedSession,
                         );
                         return session
                           ? `${session.spotsTotal - session.spotsBooked} left`
-                          : "Select date";
+                          : 'Select date';
                       })()
-                    : "Select date"}
+                    : 'Select date'}
                 </p>
               </div>
             </div>

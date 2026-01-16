@@ -229,14 +229,18 @@ export default function CartPage() {
     return (
       <main className="min-h-screen bg-[#FDFBF7]">
         {/* Back Button */}
-        <div className="fixed top-26 left-6 z-50">
+        <div className="fixed top-20 left-4 md:top-28 md:left-8 z-30">
           <Link href="/products">
             <motion.button
               whileHover={{ x: -4 }}
-              className="flex items-center gap-2 bg-white/90 backdrop-blur-sm px-4 py-3 rounded-full shadow-lg hover:shadow-xl transition-all"
+              className="flex items-center justify-center bg-white/90 backdrop-blur-sm p-2.5 md:px-4 md:py-3 rounded-full shadow-md border border-stone-200"
             >
-              <ArrowLeft className="w-5 h-5" />
-              <span className="font-medium">Back to Products</span>
+              <ArrowLeft className="w-5 h-5 text-[#442D1C]" />
+
+              {/* Text is HIDDEN on mobile, visible on desktop (md) */}
+              <span className="font-medium hidden md:inline ml-2 text-[#442D1C]">
+                Back to Products
+              </span>
             </motion.button>
           </Link>
         </div>

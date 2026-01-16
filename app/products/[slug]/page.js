@@ -415,15 +415,15 @@ export default function ProductDetailPage() {
       try {
         // 👇 FIX: Added timestamp and headers to bypass browser cache
         const response = await fetch(
-          `/api/products/${productId}/review?_t=${new Date().getTime()}`, 
+          `/api/products/${productId}/review?_t=${new Date().getTime()}`,
           {
             credentials: 'include',
             headers: {
               'Cache-Control': 'no-store, no-cache, must-revalidate',
-              'Pragma': 'no-cache',
-              'Expires': '0',
-            }
-          }
+              Pragma: 'no-cache',
+              Expires: '0',
+            },
+          },
         );
 
         if (response.ok) {
@@ -605,21 +605,28 @@ export default function ProductDetailPage() {
 
   return (
     <main className="min-h-screen bg-[#FDFBF7] text-stone-800 font-sans">
-      {/* Back Button */}
-      <div className="fixed top-26 left-6 z-50">
-        <Link href="/products">
-          <motion.button
-            whileHover={{ x: -4 }}
-            className="flex items-center gap-2 bg-white/90 backdrop-blur-sm px-4 py-3 rounded-full shadow-lg hover:shadow-xl transition-all"
-          >
-            <ArrowLeft className="w-5 h-5" />
-            <span className="font-medium">Back to Products</span>
-          </motion.button>
-        </Link>
-      </div>
+      {/* 1. DELETE THE FIXED BUTTON BLOCK THAT WAS HERE */}
 
-      {/* Product Content */}
-      <div className="max-w-7xl mx-auto px-4 py-24">
+      {/* Product Content Wrapper */}
+      {/* Changed py-24 to pt-24 pb-24 for explicit control */}
+      <div className="max-w-7xl mx-auto px-4 pt-24 pb-24">
+        {/* 👇 NEW BACK BUTTON PLACEMENT 👇 */}
+        <div className="mb-6">
+          <Link href="/products" className="inline-block">
+            <motion.button
+              whileHover={{ x: -4 }}
+              className="flex items-center justify-center gap-2 bg-white p-3 md:px-4 md:py-2.5 rounded-full shadow-sm hover:shadow-md text-[#442D1C] transition-all"
+            >
+              <ArrowLeft size={20} />
+              {/* Text hidden on mobile, visible on desktop */}
+              <span className="hidden md:block font-serif font-medium text-sm">
+                Back to Products
+              </span>
+            </motion.button>
+          </Link>
+        </div>
+        {/* 👆 END NEW BUTTON 👆 */}
+
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-16">
           {/* Left Column - Images */}
           <div className="relative">
@@ -1055,21 +1062,20 @@ export default function ProductDetailPage() {
                 </div>
               )}
 
-              {/* 👇👇👇 PASTE YOUR NEW CODE HERE 👇👇👇 */}
-              
-              {/* Show message if purchased but not delivered */}
-              {user && reviewEligibility?.hasPurchased && !reviewEligibility?.isDelivered && !reviewEligibility?.hasReviewed && (
-                <div className="bg-blue-50 border-2 border-blue-200 rounded-2xl p-6 mb-8">
-                  <div className="flex items-center gap-3">
-                    <Truck className="w-5 h-5 text-blue-600" />
-                    <p className="text-blue-800 font-medium">
-                      Your order is on the way! You can review this product once it is delivered.
-                    </p>
+              {user &&
+                reviewEligibility?.hasPurchased &&
+                !reviewEligibility?.isDelivered &&
+                !reviewEligibility?.hasReviewed && (
+                  <div className="bg-blue-50 border-2 border-blue-200 rounded-2xl p-6 mb-8">
+                    <div className="flex items-center gap-3">
+                      <Truck className="w-5 h-5 text-blue-600" />
+                      <p className="text-blue-800 font-medium">
+                        Your order is on the way! You can review this product
+                        once it is delivered.
+                      </p>
+                    </div>
                   </div>
-                </div>
-              )}
-
-              {/* 👆👆👆 END PASTE 👆👆👆 */}
+                )}
 
               {user && reviewEligibility && !reviewEligibility.hasPurchased && (
                 <div className="bg-amber-50 border-2 border-amber-200 rounded-2xl p-6 mb-8">

@@ -1,24 +1,26 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import Link from "next/link";
-import { Eye, EyeOff, Loader2, ArrowRight, ArrowLeft } from "lucide-react";
+import { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import Link from 'next/link';
+import { Eye, EyeOff, Loader2, ArrowRight, ArrowLeft } from 'lucide-react';
 import {
   signInWithEmailAndPassword,
   signInWithPopup,
   GoogleAuthProvider,
-  sendPasswordResetEmail, // 1. Import this
-} from "firebase/auth";
-import { auth } from "@/lib/firebase";
-import { useToast } from "@/components/ToastProvider";
-import { useAuth } from "@/components/AuthProvider";
+  sendPasswordResetEmail,
+  setPersistence, // 👈 1. Import this
+  browserLocalPersistence, // 👈 2. Import this
+  browserSessionPersistence, // 👈 3. Import this
+} from 'firebase/auth';
+import { auth } from '@/lib/firebase';
+import { useToast } from '@/components/ToastProvider';
+import { useAuth } from '@/components/AuthProvider';
 
 export default function LoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { addToast } = useToast();
- 
 
   // 👇 FIX 1: Destructure 'loading' from useAuth
   const { user, loading: authLoading, refreshAuth } = useAuth();
@@ -26,14 +28,14 @@ export default function LoginPage() {
   // 👇 FIX 2: Only redirect if NOT loading and user exists
   useEffect(() => {
     if (!authLoading && user) {
-      const redirect = searchParams.get("redirect") || "/";
+      const redirect = searchParams.get('redirect') || '/';
       router.push(redirect);
     }
   }, [user, authLoading, router, searchParams]);
 
   // Redirect if already logged in
   useEffect(() => {
-    if (user) router.push("/");
+    if (user) router.push('/');
   }, [user, router]);
 
   // States
@@ -42,9 +44,9 @@ export default function LoginPage() {
   const [rememberMe, setRememberMe] = useState(false);
 
   // 2. View State: 'login' or 'forgot'
-  const [view, setView] = useState("login");
+  const [view, setView] = useState('login');
 
-  const [formData, setFormData] = useState({ email: "", password: "" });
+  const [formData, setFormData] = useState({ email: '', password: '' });
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -53,9 +55,9 @@ export default function LoginPage() {
   // --- Session Sync Logic (From previous step) ---
   const createBackendSession = async (firebaseUser) => {
     try {
-      const res = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           uid: firebaseUser.uid,
           email: firebaseUser.email,
@@ -65,15 +67,15 @@ export default function LoginPage() {
         }),
       });
 
-      if (!res.ok) throw new Error("Session creation failed");
+      if (!res.ok) throw new Error('Session creation failed');
 
       await refreshAuth();
-      addToast("Welcome back!", "success");
-      const nextUrl = searchParams.get("redirect") || "/";
+      addToast('Welcome back!', 'success');
+      const nextUrl = searchParams.get('redirect') || '/';
       router.push(nextUrl);
     } catch (error) {
       console.error(error);
-      addToast("Failed to start session", "error");
+      addToast('Failed to start session', 'error');
     }
   };
 
@@ -82,18 +84,26 @@ export default function LoginPage() {
     e.preventDefault();
     setLoading(true);
     try {
+      // 4. Set persistence based on "Remember Me" checkbox
+      const persistenceType = rememberMe
+        ? browserLocalPersistence // Keep logged in
+        : browserSessionPersistence; // Clear on close
+
+      await setPersistence(auth, persistenceType);
+
+      // 5. Proceed with sign in
       const userCredential = await signInWithEmailAndPassword(
         auth,
         formData.email,
-        formData.password
+        formData.password,
       );
       await createBackendSession(userCredential.user);
     } catch (error) {
       const msg =
-        error.code === "auth/invalid-credential"
-          ? "Invalid email or password"
+        error.code === 'auth/invalid-credential'
+          ? 'Invalid email or password'
           : error.message;
-      addToast(msg, "error");
+      addToast(msg, 'error');
       setLoading(false);
     }
   };
@@ -105,7 +115,7 @@ export default function LoginPage() {
       const result = await signInWithPopup(auth, provider);
       await createBackendSession(result.user);
     } catch (error) {
-      addToast(error.message, "error");
+      addToast(error.message, 'error');
       setLoading(false);
     }
   };
@@ -116,7 +126,7 @@ export default function LoginPage() {
   const handleForgotPassword = async (e) => {
     e.preventDefault();
     if (!formData.email) {
-      return addToast("Please enter your email address", "error");
+      return addToast('Please enter your email address', 'error');
     }
 
     setLoading(true);
@@ -125,18 +135,18 @@ export default function LoginPage() {
 
       // 👇 UPDATED: Added explicit instruction to check spam
       addToast(
-        "Link sent! Please check your inbox and spam folder.",
-        "success"
+        'Link sent! Please check your inbox and spam folder.',
+        'success',
       );
 
-      setView("login"); // Return to login view
+      setView('login'); // Return to login view
     } catch (error) {
-      if (error.code === "auth/user-not-found") {
+      if (error.code === 'auth/user-not-found') {
         // Optional: You can confusingly return success here for security,
         // but for this stage, keeping it explicit is fine.
-        addToast("No account found with this email", "error");
+        addToast('No account found with this email', 'error');
       } else {
-        addToast(error.message, "error");
+        addToast(error.message, 'error');
       }
     } finally {
       setLoading(false);
@@ -147,10 +157,10 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-[#FDFBF7] px-4 py-10">
       <div className="bg-white p-8 rounded-3xl shadow-xl w-full max-w-[420px] border border-[#EDD8B4]">
         {/* --- VIEW 1: FORGOT PASSWORD FORM --- */}
-        {view === "forgot" ? (
+        {view === 'forgot' ? (
           <div className="animate-in fade-in slide-in-from-right duration-300">
             <button
-              onClick={() => setView("login")}
+              onClick={() => setView('login')}
               className="flex items-center gap-1 text-sm text-[#8E5022] hover:text-[#442D1C] mb-6 transition-colors"
             >
               <ArrowLeft size={16} /> Back to Login
@@ -190,7 +200,7 @@ export default function LoginPage() {
                 {loading ? (
                   <Loader2 className="animate-spin" />
                 ) : (
-                  "Send Reset Link"
+                  'Send Reset Link'
                 )}
               </button>
             </form>
@@ -229,7 +239,7 @@ export default function LoginPage() {
                 </label>
                 <div className="relative">
                   <input
-                    type={showPassword ? "text" : "password"}
+                    type={showPassword ? 'text' : 'password'}
                     name="password"
                     value={formData.password}
                     onChange={handleChange}
@@ -283,7 +293,7 @@ export default function LoginPage() {
                 {/* TOGGLE TO FORGOT PASSWORD VIEW */}
                 <button
                   type="button"
-                  onClick={() => setView("forgot")}
+                  onClick={() => setView('forgot')}
                   className="text-[#C85428] font-medium hover:text-[#A0401C] transition-colors text-sm"
                 >
                   Forgot Password?
@@ -295,7 +305,7 @@ export default function LoginPage() {
                 disabled={loading}
                 className="w-full bg-[#442D1C] text-white py-3.5 rounded-xl hover:bg-[#652810] transition-all font-medium text-lg flex justify-center items-center gap-2 shadow-md hover:shadow-xl translate-y-0 hover:-translate-y-0.5"
               >
-                {loading ? <Loader2 className="animate-spin" /> : "Sign In"}
+                {loading ? <Loader2 className="animate-spin" /> : 'Sign In'}
                 {!loading && <ArrowRight size={20} />}
               </button>
             </form>
@@ -325,7 +335,7 @@ export default function LoginPage() {
             </button>
 
             <div className="text-center mt-8 text-sm text-stone-500">
-              New to Basho?{" "}
+              New to Basho?{' '}
               <Link
                 href="/signup"
                 className="text-[#C85428] font-bold hover:underline"
