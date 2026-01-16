@@ -79,9 +79,10 @@ export async function POST(req) {
     const newOrder = await prisma.order.create({
       data: {
         orderNumber: `ORD-${Date.now()}`,
-        userId: userId,
+        userId: userId || null,
         customerEmail: userEmail,
         customerName: customerName, // <--- 2. Save it here!
+        customerGst: body.customerGst || null,
         address: address,
         subtotal: subtotal,
         tax: tax,

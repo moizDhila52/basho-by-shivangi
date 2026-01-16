@@ -26,6 +26,7 @@ export async function GET(request) {
                 images: true,
                 inStock: true,
                 stock: true,
+                weight: true,
                 Category: {
                   select: {
                     name: true,
@@ -58,6 +59,7 @@ export async function GET(request) {
                   images: true,
                   inStock: true,
                   stock: true,
+                  weight: true,
                   Category: {
                     select: {
                       name: true,
@@ -90,7 +92,10 @@ export async function GET(request) {
         cartItemId: item.id,
         // New flags for frontend
         isOutOfStock: isOutOfStock,
-        maxAvailable: item.Product.stock
+        maxAvailable: item.Product.stock,
+        weight: item.Product.weight,
+      
+
       };
     });
 

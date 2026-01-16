@@ -159,24 +159,24 @@ export default function CartPage() {
   // --- Dynamic Calculation Logic ---
   const subtotal = getTotalPrice();
 
-  // Calculate Total Weight of Cart (Product Weight * Quantity)
+  console.log("--- DEBUG SHIPPING ---");
+  cartItems.forEach(item => {
+      console.log(`Item: ${item.name}, Weight from DB: ${item.weight}, Fallback used? ${!item.weight}`);
+  });
+
   const totalWeight = cartItems.reduce((acc, item) => {
-    // Default to 0.5kg if product weight is not defined
     return acc + (item.weight || 0.5) * item.quantity;
   }, 0);
 
-  // Calculate Shipping Cost based on Settings
+  console.log("Total Calculated Weight:", totalWeight);
   let shippingCost = 0;
-  if (subtotal >= settings.freeShippingThreshold) {
-    shippingCost = 0;
+
+  if (totalWeight <= 1) {
+    shippingCost = settings.shippingBaseRate;
   } else {
-    if (totalWeight <= 1) {
-      shippingCost = settings.shippingBaseRate;
-    } else {
-      const extraWeight = Math.ceil(totalWeight - 1);
-      shippingCost =
-        settings.shippingBaseRate + extraWeight * settings.shippingPerKgRate;
-    }
+    const extraWeight = Math.ceil(totalWeight - 1);
+    shippingCost =
+      settings.shippingBaseRate + extraWeight * settings.shippingPerKgRate;
   }
 
   const tax = subtotal * (settings.gstPercent / 100);

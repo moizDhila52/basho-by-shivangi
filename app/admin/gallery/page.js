@@ -1,31 +1,26 @@
-// app/admin/gallery/page.js
 "use client";
 
 import React, { useState, useEffect } from "react";
 import {
-  Plus,
   Edit,
   Trash2,
-  Eye,
-  Filter,
   Search,
   Upload,
   Grid,
   List,
   Star,
   X,
-  CheckCircle,
   Image as ImageIcon,
+  Loader2, // Added Loader2
+  Plus, // Added Plus
+  Check, // Added Check
 } from "lucide-react";
+import toast from "react-hot-toast";
+import { AnimatePresence, motion } from "framer-motion";
 
-const COLORS = {
-  dark: "#442D1C",
-  brown: "#652810",
-  clay: "#8E5022",
-  terracotta: "#C85428",
-  cream: "#EDD8B4",
-  background: "#FDFBF7",
-};
+// --- Configuration ---
+const CLOUDINARY_PRESET = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
+const CLOUDINARY_CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
 
 const GALLERY_CATEGORIES = [
   "PRODUCT",
@@ -54,16 +49,20 @@ export default function AdminGalleryPage() {
     try {
       setLoading(true);
       const params = new URLSearchParams();
+      params.append("limit", "100");
       if (categoryFilter !== "all") params.append("category", categoryFilter);
 
       const response = await fetch(`/api/gallery?${params.toString()}`);
       const data = await response.json();
 
-      if (data.success) {
-        setGalleryItems(data.data);
+      if (data.items) {
+        setGalleryItems(data.items);
+      } else {
+        setGalleryItems([]);
       }
     } catch (error) {
       console.error("Error fetching gallery:", error);
+      toast.error("Failed to load gallery");
     } finally {
       setLoading(false);
     }
@@ -79,54 +78,61 @@ export default function AdminGalleryPage() {
       const data = await response.json();
 
       if (data.success) {
+        toast.success("Item deleted successfully");
         fetchGallery();
-        alert("Gallery item deleted successfully");
+      } else {
+        toast.error(data.error || "Failed to delete");
       }
     } catch (error) {
       console.error("Error deleting gallery item:", error);
-      alert("Failed to delete gallery item");
+      toast.error("Network error");
     }
   };
 
   const toggleFeatured = async (itemId, currentlyFeatured) => {
+    // Optimistic UI Update
+    setGalleryItems((prev) =>
+      prev.map((item) =>
+        item.id === itemId ? { ...item, featured: !currentlyFeatured } : item
+      )
+    );
+
     try {
       const response = await fetch(`/api/gallery/${itemId}`, {
         method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ featured: !currentlyFeatured }),
       });
 
       const data = await response.json();
 
       if (data.success) {
-        fetchGallery();
-        alert(
-          `Gallery item ${
-            !currentlyFeatured ? "featured" : "unfeatured"
-          } successfully`
+        toast.success(
+          currentlyFeatured ? "Removed from featured" : "Added to featured"
         );
+      } else {
+        fetchGallery(); // Revert
+        toast.error("Failed to update status");
       }
     } catch (error) {
-      console.error("Error updating gallery item:", error);
-      alert("Failed to update gallery item");
+      fetchGallery(); // Revert
+      toast.error("Network error");
     }
   };
 
   const filteredItems = galleryItems.filter(
     (item) =>
-      item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       item.description?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
+    <div className="p-6 bg-gray-50 min-h-screen font-sans">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">
+            <h1 className="text-3xl font-bold text-[#442D1C]">
               Gallery Management
             </h1>
             <p className="text-gray-600 mt-1">
@@ -137,7 +143,7 @@ export default function AdminGalleryPage() {
           <div className="flex gap-3">
             <button
               onClick={() => setViewMode(viewMode === "grid" ? "list" : "grid")}
-              className="px-4 py-3 bg-white border border-gray-300 rounded-xl font-medium hover:bg-gray-50 transition-colors flex items-center gap-2"
+              className="px-4 py-3 bg-white border border-gray-300 rounded-xl font-medium hover:bg-gray-50 transition-colors flex items-center gap-2 text-stone-700"
             >
               {viewMode === "grid" ? (
                 <List className="w-5 h-5" />
@@ -149,7 +155,7 @@ export default function AdminGalleryPage() {
 
             <button
               onClick={() => setShowUploadModal(true)}
-              className="bg-[#8E5022] text-white px-6 py-3 rounded-xl font-medium hover:bg-[#652810] transition-colors flex items-center gap-2"
+              className="bg-[#8E5022] text-white px-6 py-3 rounded-xl font-medium hover:bg-[#652810] transition-colors flex items-center gap-2 shadow-md"
             >
               <Upload className="w-5 h-5" />
               Upload Images
@@ -158,15 +164,14 @@ export default function AdminGalleryPage() {
         </div>
 
         {/* Filters & Search */}
-        <div className="bg-white rounded-2xl p-6 shadow-sm mb-8">
+        <div className="bg-white rounded-2xl p-6 shadow-sm mb-8 border border-stone-100">
           <div className="flex flex-col md:flex-row gap-4">
-            {/* Search */}
             <div className="flex-1">
               <div className="relative">
                 <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                 <input
                   type="text"
-                  placeholder="Search gallery by title or description..."
+                  placeholder="Search gallery..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full pl-12 pr-4 py-3 bg-gray-50 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#8E5022]/20 focus:border-[#8E5022]"
@@ -174,12 +179,11 @@ export default function AdminGalleryPage() {
               </div>
             </div>
 
-            {/* Category Filter */}
             <div className="flex gap-4">
               <select
                 value={categoryFilter}
                 onChange={(e) => setCategoryFilter(e.target.value)}
-                className="px-4 py-3 bg-gray-50 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#8E5022]/20 focus:border-[#8E5022]"
+                className="px-4 py-3 bg-gray-50 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#8E5022]/20 focus:border-[#8E5022] min-w-[200px]"
               >
                 <option value="all">All Categories</option>
                 {GALLERY_CATEGORIES.map((category) => (
@@ -201,8 +205,8 @@ export default function AdminGalleryPage() {
 
         {/* Gallery Content */}
         {loading ? (
-          <div className="bg-white rounded-2xl p-8 text-center">
-            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-[#8E5022]"></div>
+          <div className="bg-white rounded-2xl p-12 text-center shadow-sm">
+            <Loader2 className="inline-block animate-spin text-[#8E5022] w-8 h-8" />
             <p className="mt-4 text-gray-600">Loading gallery items...</p>
           </div>
         ) : (
@@ -210,40 +214,39 @@ export default function AdminGalleryPage() {
             {viewMode === "grid" ? (
               <GalleryGridView
                 items={filteredItems}
-                onEdit={setSelectedItem}
+                onEdit={(item) => {
+                  setSelectedItem(item);
+                  setShowUploadModal(true);
+                }}
                 onDelete={handleDelete}
                 onToggleFeatured={toggleFeatured}
               />
             ) : (
               <GalleryListView
                 items={filteredItems}
-                onEdit={setSelectedItem}
+                onEdit={(item) => {
+                  setSelectedItem(item);
+                  setShowUploadModal(true);
+                }}
                 onDelete={handleDelete}
                 onToggleFeatured={toggleFeatured}
               />
             )}
 
             {filteredItems.length === 0 && (
-              <div className="bg-white rounded-2xl p-12 text-center">
+              <div className="bg-white rounded-2xl p-12 text-center shadow-sm">
                 <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-gray-100 flex items-center justify-center">
                   <ImageIcon className="w-12 h-12 text-gray-400" />
                 </div>
                 <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                  No gallery items found
+                  No items found
                 </h3>
-                <p className="text-gray-600 mb-8 max-w-md mx-auto">
-                  {searchQuery
-                    ? "No items match your search criteria."
-                    : "No gallery items have been added yet."}
-                </p>
-                {!searchQuery && (
-                  <button
-                    onClick={() => setShowUploadModal(true)}
-                    className="bg-[#8E5022] text-white px-8 py-3 rounded-xl font-medium hover:bg-[#652810] transition-colors"
-                  >
-                    Add Your First Image
-                  </button>
-                )}
+                <button
+                  onClick={() => setShowUploadModal(true)}
+                  className="bg-[#8E5022] text-white px-8 py-3 rounded-xl font-medium hover:bg-[#652810] transition-colors mt-4"
+                >
+                  Add Your First Image
+                </button>
               </div>
             )}
           </>
@@ -251,23 +254,27 @@ export default function AdminGalleryPage() {
       </div>
 
       {/* Upload/Edit Modal */}
-      {(showUploadModal || selectedItem) && (
-        <GalleryModal
-          item={selectedItem}
-          onClose={() => {
-            setShowUploadModal(false);
-            setSelectedItem(null);
-          }}
-          onSuccess={() => {
-            fetchGallery();
-            setShowUploadModal(false);
-            setSelectedItem(null);
-          }}
-        />
-      )}
+      <AnimatePresence>
+        {showUploadModal && (
+          <GalleryModal
+            item={selectedItem}
+            onClose={() => {
+              setShowUploadModal(false);
+              setSelectedItem(null);
+            }}
+            onSuccess={() => {
+              fetchGallery();
+              setShowUploadModal(false);
+              setSelectedItem(null);
+            }}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }
+
+// --- Sub Components ---
 
 function GalleryGridView({ items, onEdit, onDelete, onToggleFeatured }) {
   return (
@@ -275,40 +282,40 @@ function GalleryGridView({ items, onEdit, onDelete, onToggleFeatured }) {
       {items.map((item) => (
         <div
           key={item.id}
-          className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow"
+          className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition-all border border-stone-100 group"
         >
           <div className="relative aspect-square">
             <img
               src={item.image}
               alt={item.title}
-              className="w-full h-full object-cover"
+              className="w-full h-full object-cover transition-transform group-hover:scale-105"
             />
 
-            {/* Featured Badge */}
-            {item.featured && (
-              <div className="absolute top-2 left-2">
-                <div className="bg-[#C85428] text-white px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1">
+            {/* Badges */}
+            <div className="absolute top-2 left-2 flex gap-2">
+              {item.featured && (
+                <div className="bg-[#C85428] text-white px-2 py-1 rounded-md text-xs font-bold flex items-center gap-1 shadow-sm">
                   <Star className="w-3 h-3 fill-white" />
-                  Featured
+                  FEATURED
                 </div>
-              </div>
-            )}
+              )}
+            </div>
 
-            {/* Category Badge */}
+            {/* Category */}
             <div className="absolute top-2 right-2">
-              <span className="px-2 py-1 bg-black/60 text-white rounded-full text-xs">
+              <span className="px-2 py-1 bg-black/60 backdrop-blur-md text-white rounded-md text-xs font-medium">
                 {item.category}
               </span>
             </div>
 
             {/* Action Overlay */}
-            <div className="absolute inset-0 bg-black/60 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
               <button
                 onClick={() => onToggleFeatured(item.id, item.featured)}
-                className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                className={`w-10 h-10 rounded-full flex items-center justify-center transition-transform hover:scale-110 ${
                   item.featured
-                    ? "bg-amber-100 text-amber-600 hover:bg-amber-200"
-                    : "bg-white/20 text-white hover:bg-white/30"
+                    ? "bg-amber-400 text-white"
+                    : "bg-white text-stone-600"
                 }`}
                 title={item.featured ? "Unfeature" : "Feature"}
               >
@@ -319,16 +326,14 @@ function GalleryGridView({ items, onEdit, onDelete, onToggleFeatured }) {
 
               <button
                 onClick={() => onEdit(item)}
-                className="w-10 h-10 rounded-full bg-white/20 text-white hover:bg-white/30 flex items-center justify-center"
-                title="Edit"
+                className="w-10 h-10 rounded-full bg-white text-stone-700 hover:text-[#8E5022] flex items-center justify-center transition-transform hover:scale-110"
               >
                 <Edit className="w-5 h-5" />
               </button>
 
               <button
                 onClick={() => onDelete(item.id)}
-                className="w-10 h-10 rounded-full bg-red-500/80 text-white hover:bg-red-600 flex items-center justify-center"
-                title="Delete"
+                className="w-10 h-10 rounded-full bg-red-500 text-white hover:bg-red-600 flex items-center justify-center transition-transform hover:scale-110"
               >
                 <Trash2 className="w-5 h-5" />
               </button>
@@ -338,13 +343,8 @@ function GalleryGridView({ items, onEdit, onDelete, onToggleFeatured }) {
           <div className="p-4">
             <h4 className="font-medium text-gray-900 truncate">{item.title}</h4>
             {item.description && (
-              <p className="text-sm text-gray-500 mt-1 line-clamp-2">
+              <p className="text-sm text-gray-500 mt-1 line-clamp-1">
                 {item.description}
-              </p>
-            )}
-            {item.Event && (
-              <p className="text-xs text-gray-400 mt-2">
-                From: {item.Event.title}
               </p>
             )}
           </div>
@@ -356,7 +356,7 @@ function GalleryGridView({ items, onEdit, onDelete, onToggleFeatured }) {
 
 function GalleryListView({ items, onEdit, onDelete, onToggleFeatured }) {
   return (
-    <div className="bg-white rounded-2xl overflow-hidden">
+    <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-stone-100">
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead>
@@ -382,40 +382,33 @@ function GalleryListView({ items, onEdit, onDelete, onToggleFeatured }) {
             {items.map((item) => (
               <tr
                 key={item.id}
-                className="border-b border-gray-100 hover:bg-gray-50"
+                className="border-b border-gray-100 hover:bg-stone-50 transition-colors"
               >
                 <td className="py-4 px-6">
                   <img
                     src={item.image}
                     alt={item.title}
-                    className="w-20 h-20 rounded-lg object-cover"
+                    className="w-16 h-16 rounded-lg object-cover bg-stone-200"
                   />
                 </td>
                 <td className="py-4 px-6">
                   <h4 className="font-medium text-gray-900">{item.title}</h4>
-                  {item.description && (
-                    <p className="text-sm text-gray-500 mt-1 line-clamp-2">
-                      {item.description}
-                    </p>
-                  )}
-                  {item.Event && (
-                    <p className="text-xs text-gray-400 mt-2">
-                      Event: {item.Event.title}
-                    </p>
-                  )}
+                  <p className="text-sm text-gray-500 line-clamp-1">
+                    {item.description || "No description"}
+                  </p>
                 </td>
                 <td className="py-4 px-6">
-                  <span className="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-sm">
+                  <span className="px-3 py-1 bg-stone-100 text-stone-600 rounded-full text-xs font-medium border border-stone-200">
                     {item.category}
                   </span>
                 </td>
                 <td className="py-4 px-6">
                   <button
                     onClick={() => onToggleFeatured(item.id, item.featured)}
-                    className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                    className={`p-2 rounded-full transition-colors ${
                       item.featured
-                        ? "bg-amber-100 text-amber-600 hover:bg-amber-200"
-                        : "bg-gray-100 text-gray-400 hover:bg-gray-200"
+                        ? "text-amber-500 bg-amber-50"
+                        : "text-gray-300 hover:text-gray-400"
                     }`}
                   >
                     <Star
@@ -429,15 +422,15 @@ function GalleryListView({ items, onEdit, onDelete, onToggleFeatured }) {
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => onEdit(item)}
-                      className="w-10 h-10 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center hover:bg-blue-200"
+                      className="p-2 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors"
                     >
-                      <Edit className="w-5 h-5" />
+                      <Edit className="w-4 h-4" />
                     </button>
                     <button
                       onClick={() => onDelete(item.id)}
-                      className="w-10 h-10 rounded-lg bg-red-100 text-red-600 flex items-center justify-center hover:bg-red-200"
+                      className="p-2 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition-colors"
                     >
-                      <Trash2 className="w-5 h-5" />
+                      <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
                 </td>
@@ -459,123 +452,220 @@ function GalleryModal({ item, onClose, onSuccess }) {
     featured: item?.featured || false,
     eventId: item?.eventId || "",
   });
-  const [loading, setLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Upload States
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+
+  const handleFileChange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/") || file.size > 5 * 1024 * 1024) {
+      alert("Please upload an image under 5MB.");
+      return;
+    }
+
+    try {
+      setUploadingImage(true);
+      setUploadProgress(10); // Start progress
+
+      const data = new FormData();
+      data.append("file", file);
+      data.append("upload_preset", CLOUDINARY_PRESET);
+      data.append("folder", "basho-gallery"); // Specific folder for gallery
+
+      const res = await fetch(
+        `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
+        {
+          method: "POST",
+          body: data,
+        }
+      );
+
+      const json = await res.json();
+      setUploadProgress(100);
+
+      if (json.secure_url) {
+        setFormData((prev) => ({
+          ...prev,
+          image: json.secure_url,
+        }));
+      }
+    } catch (error) {
+      console.error("Upload error:", error);
+      toast.error("Upload failed.");
+    } finally {
+      setUploadingImage(false);
+      setTimeout(() => setUploadProgress(0), 1000);
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
+    setIsSubmitting(true);
 
     try {
       const url = item ? `/api/gallery/${item.id}` : "/api/gallery";
-
       const method = item ? "PUT" : "POST";
 
       const response = await fetch(url, {
         method,
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
       });
 
       const data = await response.json();
 
       if (data.success) {
-        alert(item ? "Gallery item updated!" : "Gallery item created!");
+        toast.success(item ? "Updated successfully" : "Created successfully");
         onSuccess();
       } else {
-        alert(data.error || "Something went wrong");
+        toast.error(data.error || "Something went wrong");
       }
     } catch (error) {
-      console.error("Error saving gallery item:", error);
-      alert("Failed to save gallery item");
+      console.error("Error saving:", error);
+      toast.error("Network error");
     } finally {
-      setLoading(false);
+      setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="p-6 border-b border-gray-200">
-          <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-bold text-gray-900">
-              {item ? "Edit Gallery Item" : "Upload New Image"}
-            </h2>
-            <button
-              onClick={onClose}
-              className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors"
-            >
-              <X className="w-5 h-5 text-gray-600" />
-            </button>
-          </div>
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#442D1C]/50 backdrop-blur-sm"
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+    >
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.95 }}
+        className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col border border-[#EDD8B4]"
+      >
+        <div className="p-5 border-b border-[#EDD8B4] flex items-center justify-between bg-[#FDFBF7] rounded-t-xl">
+          <h2 className="font-serif text-xl font-bold text-[#442D1C]">
+            {item ? "Edit Photo" : "Upload New Photo"}
+          </h2>
+          <button
+            onClick={onClose}
+            className="text-[#8E5022] hover:text-[#442D1C]"
+          >
+            <X className="w-6 h-6" />
+          </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6">
-          <div className="space-y-6">
-            {/* Image Preview & URL */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Image URL *
-              </label>
-              <input
-                type="url"
-                required
-                value={formData.image}
-                onChange={(e) =>
-                  setFormData({ ...formData, image: e.target.value })
-                }
-                className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#8E5022]/20 focus:border-[#8E5022]"
-                placeholder="https://example.com/image.jpg"
-              />
-              {formData.image && (
-                <div className="mt-3">
+        <form
+          onSubmit={handleSubmit}
+          className="overflow-y-auto p-6 space-y-6 custom-scrollbar"
+        >
+          {/* Cloudinary Image Upload Section */}
+          <section>
+            <h3 className="font-serif font-bold text-[#442D1C] border-b border-[#EDD8B4] pb-2 mb-4">
+              Image File
+            </h3>
+            <div className="relative aspect-video rounded-lg border border-[#EDD8B4] bg-[#FDFBF7] flex flex-col items-center justify-center overflow-hidden group">
+              {formData.image ? (
+                <>
                   <img
                     src={formData.image}
                     alt="Preview"
-                    className="w-48 h-48 rounded-xl object-cover border border-gray-200"
+                    className="w-full h-full object-contain"
                   />
-                </div>
+                  <div className="absolute top-2 right-2 flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        document.getElementById("replace-upload").click()
+                      }
+                      className="p-1.5 bg-white rounded-full text-[#8E5022] shadow-sm hover:bg-gray-100"
+                      title="Replace Image"
+                    >
+                      <Edit className="w-4 h-4" />
+                      <input
+                        id="replace-upload"
+                        type="file"
+                        className="hidden"
+                        accept="image/*"
+                        onChange={handleFileChange}
+                        disabled={uploadingImage}
+                      />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          image: "",
+                        }))
+                      }
+                      className="p-1.5 bg-white rounded-full text-red-500 shadow-sm hover:bg-gray-100"
+                      title="Remove Image"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <label className="cursor-pointer flex flex-col items-center justify-center w-full h-full hover:bg-[#EDD8B4]/20 transition-colors">
+                  {uploadProgress > 0 ? (
+                    <div className="text-center">
+                      <Loader2 className="w-8 h-8 text-[#C85428] animate-spin mb-2 mx-auto" />
+                      <div className="text-xs font-bold text-[#C85428]">
+                        Uploading {uploadProgress}%
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <Upload className="w-8 h-8 text-[#8E5022] mb-2" />
+                      <span className="text-sm font-medium text-[#8E5022]">
+                        Click to Upload Image
+                      </span>
+                      <span className="text-xs text-[#8E5022]/60 mt-1">
+                        Max 5MB
+                      </span>
+                    </>
+                  )}
+                  <input
+                    type="file"
+                    className="hidden"
+                    accept="image/*"
+                    onChange={handleFileChange}
+                    disabled={uploadingImage}
+                  />
+                </label>
               )}
             </div>
+            {!formData.image && (
+              <p className="text-xs text-red-500 mt-2">* Image is required</p>
+            )}
+          </section>
 
-            {/* Title & Description */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Title *
-              </label>
-              <input
-                type="text"
-                required
-                value={formData.title}
-                onChange={(e) =>
-                  setFormData({ ...formData, title: e.target.value })
-                }
-                className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#8E5022]/20 focus:border-[#8E5022]"
-                placeholder="Image title"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Description
-              </label>
-              <textarea
-                value={formData.description}
-                onChange={(e) =>
-                  setFormData({ ...formData, description: e.target.value })
-                }
-                className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#8E5022]/20 focus:border-[#8E5022]"
-                rows="3"
-                placeholder="Optional description"
-              />
-            </div>
-
-            {/* Category & Event */}
-            <div className="grid grid-cols-2 gap-6">
+          {/* Basic Info */}
+          <section className="space-y-4">
+            <h3 className="font-serif font-bold text-[#442D1C] border-b border-[#EDD8B4] pb-2">
+              Details
+            </h3>
+            <div className="grid md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Category *
+                <label className="block text-xs font-bold text-[#8E5022] uppercase mb-1">
+                  Title <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={formData.title}
+                  onChange={(e) =>
+                    setFormData({ ...formData, title: e.target.value })
+                  }
+                  className="w-full p-2.5 bg-[#FDFBF7] border border-[#EDD8B4] rounded-lg focus:ring-1 focus:ring-[#C85428] outline-none"
+                  placeholder="e.g. Morning Light"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-[#8E5022] uppercase mb-1">
+                  Category <span className="text-red-500">*</span>
                 </label>
                 <select
                   required
@@ -583,7 +673,7 @@ function GalleryModal({ item, onClose, onSuccess }) {
                   onChange={(e) =>
                     setFormData({ ...formData, category: e.target.value })
                   }
-                  className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#8E5022]/20 focus:border-[#8E5022]"
+                  className="w-full p-2.5 bg-[#FDFBF7] border border-[#EDD8B4] rounded-lg focus:ring-1 focus:ring-[#C85428] outline-none"
                 >
                   {GALLERY_CATEGORIES.map((category) => (
                     <option key={category} value={category}>
@@ -593,9 +683,24 @@ function GalleryModal({ item, onClose, onSuccess }) {
                 </select>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Associated Event (Optional)
+              <div className="md:col-span-2">
+                <label className="block text-xs font-bold text-[#8E5022] uppercase mb-1">
+                  Description
+                </label>
+                <textarea
+                  value={formData.description}
+                  onChange={(e) =>
+                    setFormData({ ...formData, description: e.target.value })
+                  }
+                  className="w-full p-2.5 bg-[#FDFBF7] border border-[#EDD8B4] rounded-lg focus:ring-1 focus:ring-[#C85428] outline-none"
+                  rows="3"
+                  placeholder="Tell the story..."
+                />
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="block text-xs font-bold text-[#8E5022] uppercase mb-1">
+                  Associated Event ID (Optional)
                 </label>
                 <input
                   type="text"
@@ -603,52 +708,66 @@ function GalleryModal({ item, onClose, onSuccess }) {
                   onChange={(e) =>
                     setFormData({ ...formData, eventId: e.target.value })
                   }
-                  className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#8E5022]/20 focus:border-[#8E5022]"
-                  placeholder="Event ID"
+                  className="w-full p-2.5 bg-[#FDFBF7] border border-[#EDD8B4] rounded-lg focus:ring-1 focus:ring-[#C85428] outline-none"
+                  placeholder="UUID of related event"
                 />
               </div>
             </div>
+          </section>
 
-            {/* Featured Toggle */}
-            <div className="flex items-center gap-3">
+          {/* Flags */}
+          <section className="pt-2">
+            <label className="flex items-center gap-2 cursor-pointer select-none">
+              <div
+                className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${
+                  formData.featured
+                    ? "bg-[#C85428] border-[#C85428]"
+                    : "border-[#EDD8B4] bg-[#FDFBF7]"
+                }`}
+              >
+                {formData.featured && (
+                  <Check className="w-3.5 h-3.5 text-white" />
+                )}
+              </div>
               <input
                 type="checkbox"
-                id="featured"
+                className="hidden"
                 checked={formData.featured}
                 onChange={(e) =>
                   setFormData({ ...formData, featured: e.target.checked })
                 }
-                className="w-5 h-5 rounded border-gray-300 text-[#8E5022] focus:ring-[#8E5022]"
               />
-              <label
-                htmlFor="featured"
-                className="text-sm font-medium text-gray-700"
-              >
-                Feature this image on gallery page
-              </label>
-            </div>
-
-            {/* Form Actions */}
-            <div className="flex gap-4 pt-6 border-t border-gray-200">
-              <button
-                type="button"
-                onClick={onClose}
-                className="flex-1 px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition-colors"
-                disabled={loading}
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                className="flex-1 px-6 py-3 bg-[#8E5022] text-white rounded-xl font-medium hover:bg-[#652810] transition-colors disabled:opacity-50"
-                disabled={loading}
-              >
-                {loading ? "Saving..." : item ? "Update Item" : "Upload Image"}
-              </button>
-            </div>
-          </div>
+              <span className="text-sm font-medium text-[#442D1C]">
+                Feature this photo in highlights
+              </span>
+            </label>
+          </section>
         </form>
-      </div>
+
+        <div className="p-5 border-t border-[#EDD8B4] bg-[#FDFBF7] rounded-b-xl flex justify-end gap-3">
+          <button
+            onClick={onClose}
+            className="px-5 py-2.5 text-[#8E5022] hover:bg-[#EDD8B4]/20 rounded-lg font-medium transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSubmit}
+            disabled={isSubmitting || !formData.image}
+            className="px-5 py-2.5 bg-[#442D1C] text-[#EDD8B4] rounded-lg font-bold hover:bg-[#652810] shadow-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isSubmitting ? (
+              <div className="flex items-center gap-2">
+                <Loader2 className="w-4 h-4 animate-spin" /> Saving...
+              </div>
+            ) : item ? (
+              "Save Changes"
+            ) : (
+              "Upload to Gallery"
+            )}
+          </button>
+        </div>
+      </motion.div>
     </div>
   );
 }

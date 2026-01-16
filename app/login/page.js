@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import { useState, useEffect, Suspense } from "react"; // Added Suspense
 import { useRouter, useSearchParams } from "next/navigation";
@@ -9,9 +9,21 @@ import {
   signInWithPopup,
   GoogleAuthProvider,
   sendPasswordResetEmail,
+<<<<<<< HEAD
   setPersistence,            // 👈 ADD THIS
   browserLocalPersistence,   // 👈 ADD THIS
   browserSessionPersistence, // 👈 ADD THIS
+=======
+<<<<<<< HEAD
+  setPersistence,            // 👈 ADD THIS
+  browserLocalPersistence,   // 👈 ADD THIS
+  browserSessionPersistence, // 👈 ADD THIS
+=======
+  browserLocalPersistence,
+  browserSessionPersistence,
+  setPersistence,
+>>>>>>> 367198913f54382e26ddab0b932e64bb940fa0b6
+>>>>>>> b688f7671b712cbd3de3565b9cfffa575b055746
 } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { useToast } from "@/components/ToastProvider";
@@ -28,13 +40,13 @@ function LoginContent() {
 
   useEffect(() => {
     if (!authLoading && user) {
-      const redirect = searchParams.get('redirect') || '/';
+      const redirect = searchParams.get("redirect") || "/";
       router.push(redirect);
     }
   }, [user, authLoading, router, searchParams]);
 
   useEffect(() => {
-    if (user) router.push('/');
+    if (user) router.push("/");
   }, [user, router]);
 
   const [loading, setLoading] = useState(false);
@@ -49,9 +61,9 @@ function LoginContent() {
 
   const createBackendSession = async (firebaseUser) => {
     try {
-      const res = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           uid: firebaseUser.uid,
           email: firebaseUser.email,
@@ -61,15 +73,15 @@ function LoginContent() {
         }),
       });
 
-      if (!res.ok) throw new Error('Session creation failed');
+      if (!res.ok) throw new Error("Session creation failed");
 
       await refreshAuth();
-      addToast('Welcome back!', 'success');
-      const nextUrl = searchParams.get('redirect') || '/';
+      addToast("Welcome back!", "success");
+      const nextUrl = searchParams.get("redirect") || "/";
       router.push(nextUrl);
     } catch (error) {
       console.error(error);
-      addToast('Failed to start session', 'error');
+      addToast("Failed to start session", "error");
     }
   };
 
@@ -88,15 +100,15 @@ function LoginContent() {
       const userCredential = await signInWithEmailAndPassword(
         auth,
         formData.email,
-        formData.password,
+        formData.password
       );
       await createBackendSession(userCredential.user);
     } catch (error) {
       const msg =
-        error.code === 'auth/invalid-credential'
-          ? 'Invalid email or password'
+        error.code === "auth/invalid-credential"
+          ? "Invalid email or password"
           : error.message;
-      addToast(msg, 'error');
+      addToast(msg, "error");
       setLoading(false);
     }
   };
@@ -108,7 +120,7 @@ function LoginContent() {
       const result = await signInWithPopup(auth, provider);
       await createBackendSession(result.user);
     } catch (error) {
-      addToast(error.message, 'error');
+      addToast(error.message, "error");
       setLoading(false);
     }
   };
@@ -116,22 +128,22 @@ function LoginContent() {
   const handleForgotPassword = async (e) => {
     e.preventDefault();
     if (!formData.email) {
-      return addToast('Please enter your email address', 'error');
+      return addToast("Please enter your email address", "error");
     }
 
     setLoading(true);
     try {
       await sendPasswordResetEmail(auth, formData.email);
       addToast(
-        'Link sent! Please check your inbox and spam folder.',
-        'success',
+        "Link sent! Please check your inbox and spam folder.",
+        "success"
       );
       setView("login");
     } catch (error) {
       if (error.code === "auth/user-not-found") {
         addToast("No account found with this email", "error");
       } else {
-        addToast(error.message, 'error');
+        addToast(error.message, "error");
       }
     } finally {
       setLoading(false);
