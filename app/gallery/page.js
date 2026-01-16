@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback, Suspense } from "react"; // Added Suspense
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -21,11 +21,10 @@ import {
   Loader2,
   Camera,
 } from "lucide-react";
-import { useAuth } from "@/components/AuthProvider"; // Assuming you have this
+import { useAuth } from "@/components/AuthProvider";
 import toast from "react-hot-toast";
 
 // --- Constants ---
-// MUST MATCH PRISMA ENUM 'GalleryCategory' EXACTLY
 const GALLERY_CATEGORIES = [
   { value: "all", label: "All Photos" },
   { value: "PRODUCT", label: "Products" },
@@ -143,10 +142,11 @@ const CustomDropdown = ({ value, options, onChange }) => {
   );
 };
 
-export default function GalleryPage() {
+// 1. Rename your main component to "GalleryContent"
+function GalleryContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { user } = useAuth(); // Hook to get current user status
+  const { user } = useAuth(); 
 
   // --- State ---
   const [galleryItems, setGalleryItems] = useState([]);
@@ -233,7 +233,7 @@ export default function GalleryPage() {
   useEffect(() => {
     const timer = setTimeout(() => {
       fetchGallery(false);
-    }, 300); // Small debounce for search/filter rapid changes
+    }, 300); 
     return () => clearTimeout(timer);
   }, [selectedCategory, sortBy, searchQuery]);
 
@@ -410,7 +410,6 @@ export default function GalleryPage() {
             <div className="flex-1 overflow-x-auto pt-2 pb-4 no-scrollbar">
               <div className="flex gap-2">
                 {GALLERY_CATEGORIES.map((category) => {
-                  // --- NEW: Calculate Count Logic ---
                   const count =
                     category.value === "all"
                       ? categoryCounts.total
@@ -708,5 +707,23 @@ function GalleryItem({ item, index, onOpen, onLike, gridMode }) {
         </div>
       </div>
     </motion.div>
+  );
+}
+
+// 2. Default export wraps content in Suspense
+export default function GalleryPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-[#FDFBF7] flex items-center justify-center">
+          <div className="flex flex-col items-center gap-4">
+            <Loader2 className="h-10 w-10 animate-spin text-[#8E5022]" />
+            <p className="text-[#8E5022] font-serif">Loading Gallery...</p>
+          </div>
+        </div>
+      }
+    >
+      <GalleryContent />
+    </Suspense>
   );
 }
