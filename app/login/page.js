@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react"; // Added Suspense
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Eye, EyeOff, Loader2, ArrowRight, ArrowLeft } from "lucide-react";
@@ -9,24 +9,19 @@ import {
   signInWithPopup,
   GoogleAuthProvider,
   sendPasswordResetEmail,
-  setPersistence,            // 👈 ADD THIS
-  browserLocalPersistence,   // 👈 ADD THIS
-  browserSessionPersistence, // 👈 ADD THIS
+  setPersistence,
   browserLocalPersistence,
   browserSessionPersistence,
-  setPersistence,
 } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { useToast } from "@/components/ToastProvider";
 import { useAuth } from "@/components/AuthProvider";
 
-// 1. We rename the main logic component to "LoginContent"
-// This component reads the URL (searchParams), so it MUST be inside Suspense.
+// 1. Logic Component (MUST be inside Suspense)
 function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { addToast } = useToast();
-
   const { user, loading: authLoading, refreshAuth } = useAuth();
 
   useEffect(() => {
@@ -35,10 +30,6 @@ function LoginContent() {
       router.push(redirect);
     }
   }, [user, authLoading, router, searchParams]);
-
-  useEffect(() => {
-    if (user) router.push("/");
-  }, [user, router]);
 
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -80,14 +71,13 @@ function LoginContent() {
     e.preventDefault();
     setLoading(true);
     try {
-      // 4. Set persistence based on "Remember Me" checkbox
+      // Set persistence based on checkbox
       const persistenceType = rememberMe
-        ? browserLocalPersistence // Keep logged in
-        : browserSessionPersistence; // Clear on close
+        ? browserLocalPersistence
+        : browserSessionPersistence;
 
       await setPersistence(auth, persistenceType);
 
-      // 5. Proceed with sign in
       const userCredential = await signInWithEmailAndPassword(
         auth,
         formData.email,
@@ -333,7 +323,7 @@ function LoginContent() {
   );
 }
 
-// 2. This is the New Main Component that wraps everything in Suspense
+// 2. Main Page Component with Suspense
 export default function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#FDFBF7] px-4 py-10">
