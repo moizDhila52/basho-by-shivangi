@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { usePathname } from "next/navigation";
-import Link from "next/link";
-import { motion } from "framer-motion";
-import { useToast } from "@/components/ToastProvider";
+import { useState } from 'react';
+import { usePathname } from 'next/navigation';
+import Link from 'next/link';
+import { motion } from 'framer-motion';
+import { useToast } from '@/components/ToastProvider';
 import {
   Instagram,
   Facebook,
@@ -17,16 +17,16 @@ import {
   ArrowUpRight,
   Copyright,
   Loader2,
-} from "lucide-react";
+} from 'lucide-react';
 
 export default function Footer() {
   const pathname = usePathname();
   const { addToast } = useToast();
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
 
   // Hide on Admin pages
-  if (pathname && pathname.startsWith("/admin")) {
+  if (pathname && pathname.startsWith('/admin')) {
     return null;
   }
 
@@ -36,22 +36,22 @@ export default function Footer() {
 
     setLoading(true);
     try {
-      const res = await fetch("/api/newsletter/subscribe", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const res = await fetch('/api/newsletter/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),
       });
 
       const data = await res.json();
 
       if (res.ok) {
-        addToast("Welcome to the family! Check your inbox.", "success");
-        setEmail("");
+        addToast('Welcome to the family! Check your inbox.', 'success');
+        setEmail('');
       } else {
-        addToast(data.error || "Something went wrong", "error");
+        addToast(data.error || 'Something went wrong', 'error');
       }
     } catch (error) {
-      addToast("Failed to connect. Please try again.", "error");
+      addToast('Failed to connect. Please try again.', 'error');
     } finally {
       setLoading(false);
     }
@@ -62,7 +62,7 @@ export default function Footer() {
     visible: {
       opacity: 1,
       y: 0,
-      transition: { duration: 0.6, ease: "easeOut" },
+      transition: { duration: 0.6, ease: 'easeOut' },
     },
   };
 
@@ -107,7 +107,7 @@ export default function Footer() {
                       alt="Basho Logo"
                       className="h-10 md:h-12 w-auto object-contain"
                       onError={(e) => {
-                        e.target.style.display = "none";
+                        e.target.style.display = 'none';
                         e.target.parentElement.innerHTML = `
                           <div class="w-12 h-12 rounded-full bg-gradient-to-br from-[#8E5022] to-[#C85428] flex items-center justify-center shadow-md">
                             <span class="font-serif text-white text-xl font-bold">B.</span>
@@ -123,9 +123,9 @@ export default function Footer() {
                 </p>
                 <div className="flex items-center gap-3">
                   {[
-                    { Icon: Instagram, href: "https://instagram.com" },
-                    { Icon: Facebook, href: "https://facebook.com" },
-                    { Icon: Mail, href: "mailto:hello@bashoceramics.com" },
+                    { Icon: Instagram, href: 'https://www.instagram.com/bashobyyshivangi/' },
+                    { Icon: Facebook, href: 'https://facebook.com' },
+                    { Icon: Mail, href: 'mailto:hello@bashoceramics.com' },
                   ].map(({ Icon, href }, idx) => (
                     <motion.a
                       key={idx}
@@ -150,11 +150,11 @@ export default function Footer() {
               </h3>
               <ul className="space-y-3 md:space-y-2">
                 {[
-                  { href: "/products", label: "Shop Collection" },
-                  { href: "/workshops", label: "Pottery Workshops" },
-                  { href: "/custom-order", label: "Custom Orders" },
-                  { href: "/gallery", label: "Gallery" },
-                  { href: "/events", label: "Events" },
+                  { href: '/products', label: 'Shop Collection' },
+                  { href: '/workshops', label: 'Pottery Workshops' },
+                  { href: '/custom-order', label: 'Custom Orders' },
+                  { href: '/gallery', label: 'Gallery' },
+                  { href: '/events', label: 'Events' },
                 ].map((item) => (
                   <li key={item.href}>
                     <Link
@@ -177,9 +177,9 @@ export default function Footer() {
               </h3>
               <ul className="space-y-3 md:space-y-2">
                 {[
-                  { href: "/about", label: "Our Story" },
-                  { href: "/artisans", label: "Meet the Artisans" },
-                  { href: "/contact", label: "Contact Us" },
+                  { href: '/about', label: 'Our Story' },
+                  { href: '/artisans', label: 'Meet the Artisans' },
+                  { href: '/contact', label: 'Contact Us' },
                 ].map((item) => (
                   <li key={item.href}>
                     <Link
@@ -248,7 +248,7 @@ export default function Footer() {
                       {loading ? (
                         <Loader2 className="animate-spin w-4 h-4" />
                       ) : (
-                        "Join"
+                        'Join'
                       )}
                     </button>
                   </form>
@@ -290,15 +290,16 @@ export default function Footer() {
         </motion.div>
       </div>
 
-      {!pathname?.startsWith("/products") && (
+      {!pathname?.startsWith('/products') && (
         <motion.button
-          onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
           whileHover={{ y: -3 }}
           whileTap={{ scale: 0.9 }}
-          className="fixed bottom-6 right-6 md:bottom-8 md:right-8 w-10 h-10 md:w-12 md:h-12 rounded-full bg-[#442D1C] text-[#EDD8B4] shadow-lg flex items-center justify-center z-[60] hover:shadow-2xl hover:bg-[#652810] transition-all border border-[#EDD8B4]/20"
+          // 👇 CHANGED: Added 'hidden md:flex' so it vanishes on mobile
+          className="hidden md:flex fixed bottom-8 right-8 w-12 h-12 rounded-full bg-[#442D1C] text-[#EDD8B4] shadow-lg items-center justify-center z-[60] hover:shadow-2xl hover:bg-[#652810] transition-all border border-[#EDD8B4]/20"
           aria-label="Scroll to top"
         >
-          <ArrowUp className="w-5 h-5 md:w-6 md:h-6" />
+          <ArrowUp className="w-6 h-6" />
         </motion.button>
       )}
     </footer>

@@ -60,8 +60,6 @@ export default function WorkshopCheckout() {
   const [touched, setTouched] = useState({});
   const [errors, setErrors] = useState({});
 
-  // ... inside WorkshopCheckout component ...
-
   // 1. GATEKEEPER: Check Auth & Existing Booking
   useEffect(() => {
     const checkAuthAndBooking = async () => {
@@ -115,33 +113,7 @@ export default function WorkshopCheckout() {
     if (sessionId) checkAuthAndBooking();
   }, [sessionId, router, addToast]);
 
-  // 2. GATEKEEPER: Check if user already booked this session
-  useEffect(() => {
-    const checkExistingBooking = async () => {
-      try {
-        const res = await fetch('/api/user/workshops');
-        if (res.ok) {
-          const bookings = await res.json();
-          const alreadyBooked = bookings.some(
-            (booking) => booking.sessionId === sessionId,
-          );
-
-          if (alreadyBooked) {
-            addToast('You are already enrolled in this workshop!', 'success');
-            router.replace('/profile/workshops');
-            return;
-          }
-        }
-      } catch (error) {
-        console.error('Auth check failed', error);
-      } finally {
-        setCheckingAuth(false);
-      }
-    };
-    checkExistingBooking();
-  }, [sessionId, router, addToast]);
-
-  // 3. Fetch Session Details
+  // 2. Fetch Session Details
   useEffect(() => {
     if (checkingAuth) return;
 
@@ -337,19 +309,19 @@ export default function WorkshopCheckout() {
     formData.phone;
 
   return (
-    <div className="min-h-screen bg-[#FDFBF7] flex items-center justify-center py-12 px-4">
+    <div className="min-h-screen bg-[#FDFBF7] flex items-center justify-center py-20 px-4 pb-24 md:py-12">
       <Script
         id="razorpay-checkout-js"
         src="https://checkout.razorpay.com/v1/checkout.js"
         strategy="lazyOnload"
       />
 
-      <div className="max-w-5xl w-full grid md:grid-cols-2 gap-8 md:gap-12 items-center">
-        {/* Left: Form */}
-        <div className="order-2 md:order-1">
+      <div className="max-w-5xl w-full grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 items-start">
+        {/* Left: Form (Now appears first on Mobile because it is first in source order) */}
+        <div>
           <button
             onClick={() => router.back()}
-            className="flex items-center gap-2 text-[#8E5022] mb-6 hover:underline"
+            className="flex items-center gap-2 text-[#8E5022] mb-6 hover:underline text-sm md:text-base"
           >
             <ArrowLeft size={16} /> Back
           </button>
@@ -357,7 +329,7 @@ export default function WorkshopCheckout() {
           <h1 className="font-serif text-3xl md:text-4xl text-[#442D1C] mb-2">
             Secure Your Spot
           </h1>
-          <p className="text-[#8E5022] mb-8">
+          <p className="text-[#8E5022] text-sm md:text-base mb-8">
             Enter your details to confirm your booking.
           </p>
 
@@ -372,7 +344,7 @@ export default function WorkshopCheckout() {
                   type="text"
                   name="name"
                   placeholder="e.g. Aditi Sharma"
-                  className={`w-full p-4 bg-white border rounded-xl outline-none transition-colors ${
+                  className={`w-full p-4 bg-white border rounded-xl outline-none transition-colors text-sm md:text-base ${
                     touched.name && errors.name
                       ? 'border-red-400 focus:border-red-500'
                       : touched.name && !errors.name
@@ -405,7 +377,7 @@ export default function WorkshopCheckout() {
                   type="email"
                   name="email"
                   placeholder="e.g. aditi@example.com"
-                  className={`w-full p-4 bg-white border rounded-xl outline-none transition-colors ${
+                  className={`w-full p-4 bg-white border rounded-xl outline-none transition-colors text-sm md:text-base ${
                     touched.email && errors.email
                       ? 'border-red-400 focus:border-red-500'
                       : touched.email && !errors.email
@@ -438,9 +410,8 @@ export default function WorkshopCheckout() {
                   type="tel"
                   name="phone"
                   placeholder="e.g. 9876543210"
-                  // Prevents user from typing strictly more than 10 via keyboard
                   maxLength={10}
-                  className={`w-full p-4 bg-white border rounded-xl outline-none transition-colors ${
+                  className={`w-full p-4 bg-white border rounded-xl outline-none transition-colors text-sm md:text-base ${
                     touched.phone && errors.phone
                       ? 'border-red-400 focus:border-red-500'
                       : touched.phone &&
@@ -469,15 +440,15 @@ export default function WorkshopCheckout() {
           </div>
         </div>
 
-        {/* Right: Summary Card */}
-        <div className="order-1 md:order-2 bg-white p-8 rounded-3xl border border-[#EDD8B4] shadow-xl relative">
+        {/* Right: Summary Card (Now appears second on Mobile) */}
+        <div className="bg-white p-6 md:p-8 rounded-3xl border border-[#EDD8B4] shadow-xl relative">
           <h3 className="font-serif text-xl text-[#442D1C] mb-6 border-b border-[#EDD8B4] pb-4">
             Workshop Summary
           </h3>
 
           <div className="space-y-6 mb-8">
             <div>
-              <p className="font-medium text-[#442D1C] text-xl leading-tight mb-2">
+              <p className="font-medium text-[#442D1C] text-lg md:text-xl leading-tight mb-2">
                 {sessionData.Workshop.title}
               </p>
               <p className="text-sm text-[#8E5022] flex items-center gap-2">
@@ -487,23 +458,23 @@ export default function WorkshopCheckout() {
 
             <div className="bg-[#FDFBF7] p-4 rounded-xl border border-[#EDD8B4]/50 flex gap-4 items-center">
               <div className="text-center px-4 border-r border-[#EDD8B4] min-w-[80px]">
-                <p className="text-xs font-bold text-[#8E5022] uppercase">
+                <p className="text-[10px] md:text-xs font-bold text-[#8E5022] uppercase">
                   Date
                 </p>
-                <p className="font-serif text-2xl text-[#442D1C]">
+                <p className="font-serif text-xl md:text-2xl text-[#442D1C]">
                   {new Date(sessionData.date).getDate()}
                 </p>
-                <p className="text-xs text-[#8E5022] font-bold uppercase">
+                <p className="text-[10px] md:text-xs text-[#8E5022] font-bold uppercase">
                   {new Date(sessionData.date).toLocaleString('default', {
                     month: 'short',
                   })}
                 </p>
               </div>
               <div className="flex-1">
-                <p className="text-xs font-bold text-[#8E5022] uppercase mb-1">
+                <p className="text-[10px] md:text-xs font-bold text-[#8E5022] uppercase mb-1">
                   Time
                 </p>
-                <p className="text-[#442D1C] flex items-center gap-2 font-medium">
+                <p className="text-[#442D1C] flex items-center gap-2 font-medium text-sm md:text-base">
                   <Clock size={16} className="text-[#C85428]" />{' '}
                   {sessionData.time}
                 </p>
@@ -512,7 +483,9 @@ export default function WorkshopCheckout() {
           </div>
 
           <div className="flex justify-between items-center mb-6 pt-4 border-t border-dashed border-[#EDD8B4]">
-            <span className="text-[#8E5022] font-medium">Total Amount</span>
+            <span className="text-[#8E5022] font-medium text-sm md:text-base">
+              Total Amount
+            </span>
             <span className="text-2xl font-serif text-[#442D1C]">
               ₹{sessionData.Workshop.price}
             </span>
@@ -520,10 +493,8 @@ export default function WorkshopCheckout() {
 
           <button
             onClick={handlePayment}
-            // Button is disabled only if processing
-            // We allow click to trigger validation messages even if form is invalid
             disabled={processing}
-            className={`w-full py-4 rounded-xl font-bold transition-all flex items-center justify-center gap-2 shadow-lg ${
+            className={`w-full py-4 rounded-xl font-bold transition-all flex items-center justify-center gap-2 shadow-lg text-sm md:text-base ${
               processing
                 ? 'bg-stone-200 text-stone-500 cursor-not-allowed'
                 : isFormValid

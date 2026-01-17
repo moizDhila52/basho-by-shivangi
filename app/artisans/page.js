@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import React from "react";
-import { motion } from "framer-motion";
-import { Instagram, ArrowRight, Hammer, Flame, Palette } from "lucide-react";
+import React from 'react';
+import { motion } from 'framer-motion';
+import { Instagram, ArrowRight, Hammer, Flame, Palette } from 'lucide-react';
 
 // --- ANIMATIONS ---
 const container = {
@@ -22,29 +22,29 @@ export default function MeetTheArtisansPage() {
   // Mock Data for Team
   const team = [
     {
-      name: "Shivangi",
-      role: "Founder & Head Potter",
-      bio: "The soul of Basho. Specializes in wheel-thrown forms and experimental glazing techniques.",
-      image: "brand/founder.jpg", // Placeholder
-      specialty: "Wheel Throwing",
+      name: 'Shivangi',
+      role: 'Founder & Head Potter',
+      bio: 'The soul of Basho. Specializes in wheel-thrown forms and experimental glazing techniques.',
+      image: 'brand/founder.jpg', // Placeholder
+      specialty: 'Wheel Throwing',
       icon: <Hammer className="w-4 h-4" />,
     },
     {
-      name: "Arjun",
-      role: "Kiln Master",
-      bio: "The guardian of fire. Arjun manages the complex firing schedules that give our Raku pieces their unique finish.",
+      name: 'Arjun',
+      role: 'Kiln Master',
+      bio: 'The guardian of fire. Arjun manages the complex firing schedules that give our Raku pieces their unique finish.',
       image:
-        "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?q=80&w=800&auto=format&fit=crop", // Placeholder
-      specialty: "Firing & Glazing",
+        'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?q=80&w=800&auto=format&fit=crop', // Placeholder
+      specialty: 'Firing & Glazing',
       icon: <Flame className="w-4 h-4" />,
     },
     {
-      name: "Meera",
-      role: "Hand-building Artist",
-      bio: "Bringing organic shapes to life. Meera crafts our slab-built platters and pinch-pot mugs.",
+      name: 'Meera',
+      role: 'Hand-building Artist',
+      bio: 'Bringing organic shapes to life. Meera crafts our slab-built platters and pinch-pot mugs.',
       image:
-        "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=800&auto=format&fit=crop", // Placeholder
-      specialty: "Hand Building",
+        'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=800&auto=format&fit=crop', // Placeholder
+      specialty: 'Hand Building',
       icon: <Palette className="w-4 h-4" />,
     },
   ];
@@ -59,11 +59,11 @@ export default function MeetTheArtisansPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
           >
-            <span className="text-[#8E5022] uppercase tracking-[0.3em] text-sm font-bold mb-4 block">
+            <span className="text-[#8E5022] uppercase tracking-[0.3em] text-sm font-medium mb-4 inline-block">
               The Makers
             </span>
             <h1 className="font-serif text-5xl md:text-7xl text-[#442D1C] mb-6">
-              Hands Behind <br />{" "}
+              Hands Behind <br />{' '}
               <span className="text-[#C85428]">The Art</span>
             </h1>
             <p className="text-xl text-stone-600 max-w-2xl mx-auto leading-relaxed">

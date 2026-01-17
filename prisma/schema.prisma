@@ -236,13 +236,13 @@ model User {
   Address              Address[]
   Cart                 Cart?
   CustomOrder          CustomOrder[]
+  galleryLikes         GalleryLike[]
   Notification         Notification[]
   Order                Order[]
   ProductWaitlist      ProductWaitlist[]
   Review               Review[]
   WishlistItem         WishlistItem[]
   WorkshopRegistration WorkshopRegistration[]
-  galleryLikes GalleryLike[]
 }
 
 model WishlistItem {
@@ -334,11 +334,10 @@ model GalleryLike {
   userId        String
   galleryItemId String
   createdAt     DateTime    @default(now())
-  
-  User          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   GalleryItem   GalleryItem @relation(fields: [galleryItemId], references: [id], onDelete: Cascade)
+  User          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@unique([userId, galleryItemId]) // A user can only like an item once
+  @@unique([userId, galleryItemId])
   @@index([galleryItemId])
   @@index([userId])
 }
@@ -355,12 +354,10 @@ model GalleryItem {
   isActive    Boolean         @default(true)
   createdAt   DateTime        @default(now())
   updatedAt   DateTime        @updatedAt
-  Event       Event?          @relation(fields: [eventId], references: [id])
-  
-  // New fields
   likesCount  Int             @default(0)
+  Event       Event?          @relation(fields: [eventId], references: [id])
   likes       GalleryLike[]
-  
+
   @@index([category])
   @@index([featured])
   @@index([order])
@@ -474,7 +471,7 @@ model Notification {
 }
 
 model ProductWaitlist {
-  id        String   @id
+  id        String   @id @default(uuid())
   productId String
   userId    String?
   email     String

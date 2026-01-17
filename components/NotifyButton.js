@@ -1,22 +1,64 @@
 'use client';
 
-import { useState } from 'react';
-import { Bell } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Bell, Loader2 } from 'lucide-react';
 import { useAuth } from '@/components/AuthProvider';
-import { useToast } from '@/components/ToastProvider';
+import toast from 'react-hot-toast';
 
 export default function NotifyButton({ productId, stock }) {
   const [loading, setLoading] = useState(false);
+  const [isChecking, setIsChecking] = useState(true);
   const [notified, setNotified] = useState(false);
-  const { user } = useAuth();
-  const { addToast } = useToast();
+  const { user, loading: authLoading } = useAuth(); // Added authLoading
 
-  // If in stock, don't show anything (or show Add to Cart)
+  useEffect(() => {
+    const checkWaitlistStatus = async () => {
+      // Don't check until authentication status is finished loading
+      if (authLoading) return;
+
+      // If user is clearly not logged in, stop checking
+      if (!user) {
+        setIsChecking(false);
+        return;
+      }
+
+      try {
+        // Force no-cache on the request
+        const res = await fetch(
+          `/api/products/waitlist/check?productId=${productId}`,
+          {
+            cache: 'no-store',
+            headers: { Pragma: 'no-cache' },
+          },
+        );
+
+        const data = await res.json();
+        if (data.isSubscribed) {
+          setNotified(true);
+        }
+      } catch (err) {
+        console.error('Waitlist status check failed:', err);
+      } finally {
+        setIsChecking(false);
+      }
+    };
+
+    checkWaitlistStatus();
+  }, [user, authLoading, productId]); // Added authLoading to dependencies
+
   if (stock > 0) return null;
+
+  if (isChecking || authLoading) {
+    return (
+      <div className="w-full py-3 flex justify-center border border-stone-200 rounded-xl">
+        <Loader2 className="w-5 h-5 animate-spin text-stone-400" />
+      </div>
+    );
+  }
 
   const handleNotify = async () => {
     if (!user) {
-      addToast('Please login to get notified', 'error');
+      toast.error('Please login to get notified');
       return;
     }
 
@@ -25,17 +67,18 @@ export default function NotifyButton({ productId, stock }) {
       const res = await fetch('/api/products/waitlist', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ productId }),
+        body: JSON.stringify({ productId, email: user.email }),
       });
 
       if (res.ok) {
         setNotified(true);
-        addToast("We will email you when it's back!", 'success');
+        toast.success("We'll email you when it's back!");
       } else {
-        addToast('Something went wrong', 'error');
+        const data = await res.json();
+        toast.error(data.error || 'Something went wrong');
       }
     } catch (err) {
-      addToast('Failed to connect', 'error');
+      toast.error('Failed to connect');
     } finally {
       setLoading(false);
     }
@@ -45,7 +88,7 @@ export default function NotifyButton({ productId, stock }) {
     return (
       <button
         disabled
-        className="w-full bg-green-50 text-green-700 py-3 rounded-xl font-medium border border-green-200 flex items-center justify-center gap-2 cursor-default"
+        className="w-full bg-green-50 text-green-700 py-3 rounded-xl font-medium border border-green-200 flex items-center justify-center gap-2 cursor-default shadow-sm"
       >
         <Bell className="w-4 h-4 fill-current" />
         You're on the list!
@@ -60,11 +103,10 @@ export default function NotifyButton({ productId, stock }) {
       className="w-full bg-[#FDFBF7] text-[#8E5022] border border-[#8E5022] py-3 rounded-xl font-medium hover:bg-[#8E5022] hover:text-white transition-all flex items-center justify-center gap-2"
     >
       {loading ? (
-        'Saving...'
+        <Loader2 className="w-4 h-4 animate-spin" />
       ) : (
         <>
-          <Bell className="w-4 h-4" />
-          Notify Me
+          <Bell className="w-4 h-4" /> Notify Me
         </>
       )}
     </button>

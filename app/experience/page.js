@@ -62,11 +62,11 @@ export default function ExperiencesPage() {
       
       {/* --- HEADER SECTION --- */}
       <div className="text-center max-w-3xl mx-auto mb-20">
-        <span className="text-[#8E5022] text-sm font-bold uppercase tracking-widest mb-3 block">
+        <span className="text-[#8E5022] uppercase tracking-[0.3em] text-sm font-medium mb-4 inline-block">
           Basho Lifestyle
         </span>
         <h1 className="font-serif text-4xl md:text-6xl text-[#442D1C] mb-6 leading-tight">
-          Curated <span className="italic text-[#8E5022]">Experiences</span>
+          Curated <span className="text-[#C85428]">Experiences</span>
         </h1>
         <p className="text-[#8E5022]/80 text-lg leading-relaxed max-w-2xl mx-auto">
           Beyond products, Basho offers moments. From intimate dates to lively parties, 

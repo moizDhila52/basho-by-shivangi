@@ -44,7 +44,6 @@ const validators = {
     if (cleaned.length > 10) return 'Phone number is too long';
     return '';
   },
-  // We can add Pincode here since it is specific to checkout
   pincode: (value) => {
     if (!value) return 'Pincode is required';
     if (!/^\d{6}$/.test(value)) return 'Pincode must be exactly 6 digits';
@@ -58,9 +57,9 @@ const PaymentOverlay = ({ status }) => {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-white/80 backdrop-blur-md"
+      className="fixed inset-0 z-[60] flex items-center justify-center bg-white/80 backdrop-blur-md px-4"
     >
-      <div className="bg-white p-8 rounded-3xl shadow-2xl border border-stone-100 max-w-sm w-full text-center relative overflow-hidden">
+      <div className="bg-white p-6 md:p-8 rounded-3xl shadow-2xl border border-stone-100 max-w-sm w-full text-center relative overflow-hidden">
         <div className="flex flex-col items-center gap-6 py-4">
           {status === 'processing' && (
             <>
@@ -70,15 +69,15 @@ const PaymentOverlay = ({ status }) => {
                   transition={{ repeat: Infinity, duration: 1.5 }}
                   className="absolute inset-0 bg-[#EDD8B4] rounded-full"
                 />
-                <div className="relative z-10 w-20 h-20 bg-white rounded-full flex items-center justify-center border-4 border-stone-100">
-                  <Loader2 className="w-8 h-8 text-[#8E5022] animate-spin" />
+                <div className="relative z-10 w-16 h-16 md:w-20 md:h-20 bg-white rounded-full flex items-center justify-center border-4 border-stone-100">
+                  <Loader2 className="w-6 h-6 md:w-8 md:h-8 text-[#8E5022] animate-spin" />
                 </div>
               </div>
               <div className="space-y-2">
-                <h3 className="font-serif text-2xl text-[#442D1C]">
+                <h3 className="font-serif text-xl md:text-2xl text-[#442D1C]">
                   Verifying Payment
                 </h3>
-                <p className="text-stone-500 text-sm">
+                <p className="text-stone-500 text-xs md:text-sm">
                   Please wait while we secure your order...
                 </p>
               </div>
@@ -92,15 +91,15 @@ const PaymentOverlay = ({ status }) => {
                 animate={{ scale: 1 }}
                 type="spring"
                 stiffness={200}
-                className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center"
+                className="w-16 h-16 md:w-20 md:h-20 bg-green-100 rounded-full flex items-center justify-center"
               >
-                <Check className="w-10 h-10 text-green-600" />
+                <Check className="w-8 h-8 md:w-10 md:h-10 text-green-600" />
               </motion.div>
               <div className="space-y-2">
-                <h3 className="font-serif text-2xl text-[#442D1C]">
+                <h3 className="font-serif text-xl md:text-2xl text-[#442D1C]">
                   Payment Successful!
                 </h3>
-                <p className="text-stone-500 text-sm">
+                <p className="text-stone-500 text-xs md:text-sm">
                   Redirecting to your order details...
                 </p>
               </div>
@@ -126,9 +125,9 @@ export default function CheckoutPage() {
   } = useCart();
 
   const [formData, setFormData] = useState({
-    name: '', // Will be filled from DB
-    email: '', // Will be filled from DB
-    phone: '', // Will be filled from DB
+    name: '',
+    email: '',
+    phone: '',
     gst: '',
     street: '',
     city: '',
@@ -137,13 +136,12 @@ export default function CheckoutPage() {
   });
 
   const [settings, setSettings] = useState({
-    shippingBaseRate: 50, // Default fallback
+    shippingBaseRate: 50,
     shippingPerKgRate: 40,
     freeShippingThreshold: 5000,
     gstPercent: 12,
   });
 
-  // --- Address Management States ---
   const [savedAddresses, setSavedAddresses] = useState([]);
   const [selectedAddressId, setSelectedAddressId] = useState(null);
   const [showAddressForm, setShowAddressForm] = useState(false);
@@ -157,19 +155,16 @@ export default function CheckoutPage() {
 
   const [subscribeNewsletter, setSubscribeNewsletter] = useState(true);
   const [alreadySubscribed, setAlreadySubscribed] = useState(false);
-  // --- 2. Dynamic Cost Calculation ---
+
+  // --- Dynamic Cost Calculation ---
   const subtotal = getTotalPrice();
 
- // Calculate Total Weight of Cart
   const totalWeight = cartItems.reduce((acc, item) => {
-    // Default to 0.5kg if weight is missing
     return acc + (item.weight || 0.5) * item.quantity;
   }, 0);
 
-  // 👇 ADD THIS LINE (This is what was missing)
-  let shippingCost = 0; 
+  let shippingCost = 0;
 
-  // 👇 UPDATED: Removed Free Shipping Check
   if (totalWeight <= 1) {
     shippingCost = settings.shippingBaseRate;
   } else {
@@ -180,13 +175,10 @@ export default function CheckoutPage() {
 
   const gstAmount = subtotal * (settings.gstPercent / 100);
   const totalAmount = subtotal + gstAmount + shippingCost;
-  // --- 1. Basic Checks & Auth Redirect ---
+
   useEffect(() => {
     if (!user) return;
-
-    // FIX: If cart is empty and we aren't currently paying, kick them out
     if (cartItems.length === 0 && !cartLoading && !isPaymentSuccess) {
-      // Use replace so this page doesn't stay in browser history
       router.replace('/cart');
     }
   }, [user, cartItems.length, router, cartLoading, isPaymentSuccess]);
@@ -206,59 +198,47 @@ export default function CheckoutPage() {
     fetchSettings();
   }, []);
 
-  // --- 2. NEW FEATURE: Fetch User Profile ---
+  // --- Fetch User Profile Logic ---
   useEffect(() => {
     const fetchUserProfile = async () => {
       if (!user) return;
-
       try {
         const res = await fetch('/api/user/me');
         if (res.ok) {
           const profile = await res.json();
+          setFormData((prev) => ({
+            ...prev,
+            name: profile.name || user.displayName || '',
+            email: profile.email || user.email || '',
+            phone: profile.phone || '',
+          }));
+          if (profile.isSubscribed) {
+            setAlreadySubscribed(true);
+            setSubscribeNewsletter(false);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching profile:', error);
+      }
+    };
+    fetchUserProfile();
+  }, [user]);
 
+  // --- Duplicate Logic kept for strict compliance (though technically redundant) ---
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      if (!user) return;
+      try {
+        const res = await fetch('/api/user/me');
+        if (res.ok) {
+          const profile = await res.json();
           setFormData((prev) => ({
             ...prev,
             name: profile.name || user.displayName || '',
             email: profile.email || user.email || '',
             phone: profile.phone || '',
           }));
-
-          // 👇 ADD THIS BLOCK 👇
-          // If user is already subscribed in DB, set flag and disable checkbox default
-          if (profile.isSubscribed) {
-            setAlreadySubscribed(true);
-            setSubscribeNewsletter(false); // Uncheck it internally so we don't accidentally send it
-          }
-          // 👆 END ADDITION 👆
         } else {
-          // ... fallback logic ...
-        }
-      } catch (error) {
-        console.error('Error fetching profile:', error);
-      }
-    };
-
-    fetchUserProfile();
-  }, [user]);
-
-  // --- 2. NEW FEATURE: Fetch User Profile (Pre-fill Contact Info) ---
-  useEffect(() => {
-    const fetchUserProfile = async () => {
-      if (!user) return;
-
-      try {
-        // Fetch from our new API to get the Phone Number stored in DB
-        const res = await fetch('/api/user/me');
-        if (res.ok) {
-          const profile = await res.json();
-          setFormData((prev) => ({
-            ...prev,
-            name: profile.name || user.displayName || '',
-            email: profile.email || user.email || '',
-            phone: profile.phone || '', // <--- This pre-fills the phone!
-          }));
-        } else {
-          // Fallback to Auth Provider data if API fails
           setFormData((prev) => ({
             ...prev,
             name: user.displayName || '',
@@ -269,11 +249,10 @@ export default function CheckoutPage() {
         console.error('Error fetching profile:', error);
       }
     };
-
     fetchUserProfile();
   }, [user]);
 
-  // --- 3. Fetch Saved Addresses ---
+  // --- Fetch Addresses ---
   useEffect(() => {
     const fetchAddresses = async () => {
       if (!user) return;
@@ -282,7 +261,6 @@ export default function CheckoutPage() {
         if (res.ok) {
           const data = await res.json();
           setSavedAddresses(data);
-
           if (data.length > 0) {
             const defaultAddr = data.find((a) => a.isDefault) || data[0];
             setSelectedAddressId(defaultAddr.id);
@@ -306,21 +284,15 @@ export default function CheckoutPage() {
     fetchAddresses();
   }, [user]);
 
-  // --- Handlers ---
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     let processedValue = value;
-
-    // Apply specific formatting logic
     if (name === 'phone' || name === 'pincode') {
       processedValue = value
         .replace(/\D/g, '')
         .slice(0, name === 'pincode' ? 6 : 15);
     }
-
     setFormData((prev) => ({ ...prev, [name]: processedValue }));
-
-    // Real-time validation
     if (touched[name] && validators[name]) {
       const error = validators[name](processedValue);
       setErrors((prev) => ({ ...prev, [name]: error }));
@@ -329,27 +301,21 @@ export default function CheckoutPage() {
 
   const handleBlur = (field) => {
     setTouched({ ...touched, [field]: true });
-    // Only validate if a validator exists for this field
     if (validators[field]) {
       const error = validators[field](formData[field]);
       setErrors({ ...errors, [field]: error });
     }
   };
 
-  // A. Handle changes specifically for the Address Form Pincode
   const handleAddressPincodeChange = (e) => {
-    // Enforce number only & max 6 digits directly on the input
     const value = e.target.value.replace(/\D/g, '').slice(0, 6);
     e.target.value = value;
-
-    // Real-time validation if already touched
     if (touched.addressPincode) {
       const error = validators.pincode(value);
       setErrors((prev) => ({ ...prev, addressPincode: error }));
     }
   };
 
-  // B. Handle Blur for Address Form Pincode
   const handleAddressPincodeBlur = (e) => {
     setTouched((prev) => ({ ...prev, addressPincode: true }));
     const error = validators.pincode(e.target.value);
@@ -358,11 +324,8 @@ export default function CheckoutPage() {
 
   const handleAddressSubmit = async (e) => {
     e.preventDefault();
-
-    // 👇 FIX 1: Find the parent form element (e.target is just the button)
     const formEl = e.target.closest('form');
     const formDataObj = new FormData(formEl);
-
     const pincodeVal = formDataObj.get('pincode');
     const pincodeError = validators.pincode(pincodeVal);
 
@@ -373,8 +336,6 @@ export default function CheckoutPage() {
       return;
     }
 
-    // 👇 FIX 2: Manually pick only address fields
-    // (We do this so we don't accidentally send 'name' or 'email' to the Address API)
     const payload = {
       street: formDataObj.get('street'),
       city: formDataObj.get('city'),
@@ -392,12 +353,9 @@ export default function CheckoutPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
-
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to save');
-
       toast.success(editingAddress ? 'Address updated' : 'Address saved');
-
       let updatedList;
       if (editingAddress) {
         updatedList = savedAddresses.map((addr) =>
@@ -407,7 +365,6 @@ export default function CheckoutPage() {
         updatedList = [...savedAddresses, data];
       }
       setSavedAddresses(updatedList);
-
       setSelectedAddressId(data.id);
       setFormData((prev) => ({
         ...prev,
@@ -416,7 +373,6 @@ export default function CheckoutPage() {
         state: data.state,
         pincode: data.pincode,
       }));
-
       setShowAddressForm(false);
       setEditingAddress(null);
     } catch (error) {
@@ -424,16 +380,12 @@ export default function CheckoutPage() {
     }
   };
 
-  // 1. The Actual Delete Logic (Helper function)
   const executeDelete = async (id) => {
     try {
       const res = await fetch(`/api/address?id=${id}`, { method: 'DELETE' });
-
       if (res.ok) {
         toast.success('Address removed');
         setSavedAddresses((prev) => prev.filter((addr) => addr.id !== id));
-
-        // Reset selection if the deleted one was selected
         if (selectedAddressId === id) {
           setSelectedAddressId(null);
           setFormData((prev) => ({
@@ -453,11 +405,8 @@ export default function CheckoutPage() {
     }
   };
 
-  // 2. The Toast Confirmation Trigger
   const handleDeleteAddress = (id, e) => {
     e.stopPropagation();
-
-    // Custom Toast UI
     toast(
       (t) => (
         <div className="flex items-center gap-3">
@@ -484,7 +433,7 @@ export default function CheckoutPage() {
         </div>
       ),
       {
-        duration: 5000, // Stays for 5 seconds
+        duration: 5000,
         position: 'top-center',
         style: {
           background: '#fff',
@@ -495,6 +444,7 @@ export default function CheckoutPage() {
       },
     );
   };
+
   const handleSelectAddress = (addr) => {
     setSelectedAddressId(addr.id);
     setFormData((prev) => ({
@@ -509,46 +459,34 @@ export default function CheckoutPage() {
   const validateStep = (step) => {
     const newErrors = {};
     let isValid = true;
-
     if (step === 1) {
-      // Validate Name
       const nameError = validators.name(formData.name);
       if (nameError) {
         newErrors.name = nameError;
         isValid = false;
       }
-
-      // Validate Phone
       const phoneError = validators.phone(formData.phone);
       if (phoneError) {
         newErrors.phone = phoneError;
         isValid = false;
       }
-
-      // Mark fields as touched so errors show up
       setTouched((prev) => ({ ...prev, name: true, phone: true }));
     }
-
     if (step === 2) {
-      // Validate Pincode specifically
       const pinError = validators.pincode(formData.pincode);
       if (pinError) {
         newErrors.pincode = pinError;
         isValid = false;
       }
-
       if (!formData.street || !formData.city || !formData.state) {
         toast.error('Please complete all address fields');
         return false;
       }
     }
-
     setErrors((prev) => ({ ...prev, ...newErrors }));
-
     if (!isValid) {
       toast.error('Please fix the errors before proceeding');
     }
-
     return isValid;
   };
 
@@ -564,23 +502,17 @@ export default function CheckoutPage() {
 
   const handlePayment = async (e) => {
     e.preventDefault();
-
     if (!validateStep(1) || !validateStep(2)) {
       setCurrentStep(1);
       return;
     }
-
     if (!user) {
       toast.error('Please login to continue');
       return;
     }
-
-    console.log("DEBUG USER OBJECT:", user);
-
+    console.log('DEBUG USER OBJECT:', user);
     setLoading(true);
-
     try {
-      // 1. Sync User Info (Optional, but good for keeping address up to date)
       await fetch('/api/user/sync', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -598,7 +530,6 @@ export default function CheckoutPage() {
         }),
       });
 
-      // 2. Newsletter Subscription
       if (!alreadySubscribed && subscribeNewsletter) {
         await fetch('/api/newsletter/subscribe', {
           method: 'POST',
@@ -610,12 +541,9 @@ export default function CheckoutPage() {
         });
       }
 
-      // 3. Load Razorpay SDK
       const isLoaded = await loadRazorpayScript();
       if (!isLoaded) throw new Error('Razorpay SDK failed to load');
 
-      // 4. Create Order in Database & Get Razorpay Order ID
-      // This step saves the 'PENDING' order with all details (shipping, tax, address)
       const orderRes = await fetch('/api/orders/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -629,7 +557,7 @@ export default function CheckoutPage() {
           },
           userEmail: user.email,
           userId: user.id || user.uid || user.sub || user.userId || null,
-          customerName: formData.name, // <--- ADDED THIS LINE
+          customerName: formData.name,
           customerGst: formData.gst,
         }),
       });
@@ -638,16 +566,14 @@ export default function CheckoutPage() {
       if (!orderRes.ok)
         throw new Error(orderData.error || 'Order creation failed');
 
-      // 5. Open Payment Modal
       const options = {
         key: orderData.key,
-        amount: orderData.amount * 100, // Razorpay expects amount in paise
+        amount: orderData.amount * 100,
         currency: orderData.currency,
         name: 'Bashō Ceramics',
         description: 'Artisan Pottery Checkout',
         image: '/brand/logo-basho.png',
         order_id: orderData.razorpayOrderId,
-
         handler: async function (response) {
           setPaymentStatus('processing');
           try {
@@ -660,15 +586,11 @@ export default function CheckoutPage() {
                 razorpay_signature: response.razorpay_signature,
               }),
             });
-
             const verifyData = await verifyRes.json();
             if (verifyData.success) {
               setIsPaymentSuccess(true);
-
               setPaymentStatus('success');
-
               clearCart();
-
               setTimeout(() => {
                 router.push(`/success?orderId=${verifyData.orderId}`);
               }, 2000);
@@ -693,7 +615,6 @@ export default function CheckoutPage() {
           },
         },
       };
-
       const paymentObject = new window.Razorpay(options);
       paymentObject.open();
     } catch (error) {
@@ -702,10 +623,23 @@ export default function CheckoutPage() {
       setLoading(false);
     }
   };
+
   const steps = [
-    { number: 1, title: 'Contact', icon: <ShieldCheck className="w-5 h-5" /> },
-    { number: 2, title: 'Shipping', icon: <MapPin className="w-5 h-5" /> },
-    { number: 3, title: 'Payment', icon: <CreditCard className="w-5 h-5" /> },
+    {
+      number: 1,
+      title: 'Contact',
+      icon: <ShieldCheck className="w-4 h-4 md:w-5 md:h-5" />,
+    },
+    {
+      number: 2,
+      title: 'Shipping',
+      icon: <MapPin className="w-4 h-4 md:w-5 md:h-5" />,
+    },
+    {
+      number: 3,
+      title: 'Payment',
+      icon: <CreditCard className="w-4 h-4 md:w-5 md:h-5" />,
+    },
   ];
 
   if (cartLoading) {
@@ -720,23 +654,21 @@ export default function CheckoutPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#FDFBF7] to-[#EDD8B4]/10 pt-24 pb-16 px-4 md:px-8">
-      {/* ADD THIS SECTION 👇 */}
+    <div className="min-h-screen bg-gradient-to-b from-[#FDFBF7] to-[#EDD8B4]/10 pt-24 pb-24 md:pb-16 px-4">
       <AnimatePresence>
         {paymentStatus !== 'idle' && <PaymentOverlay status={paymentStatus} />}
       </AnimatePresence>
-      {/* ------------------- */}
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-8"
+          className="mb-6 md:mb-8"
         >
-          <h1 className="font-serif text-4xl md:text-5xl text-[#442D1C] mb-2">
+          <h1 className="font-serif text-3xl md:text-5xl text-[#442D1C] mb-2">
             Secure Checkout
           </h1>
-          <p className="text-stone-600">
+          <p className="text-stone-600 text-sm md:text-base">
             Complete your order in a few simple steps
           </p>
         </motion.div>
@@ -746,27 +678,27 @@ export default function CheckoutPage() {
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="mb-12"
+          className="mb-8 md:mb-12"
         >
           <div className="flex items-center max-w-3xl mx-auto">
             {steps.map((step, idx) => (
               <React.Fragment key={step.number}>
                 <div className="flex flex-col items-center">
                   <div
-                    className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 ${
+                    className={`w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center transition-all duration-300 ${
                       currentStep >= step.number
                         ? 'bg-[#8E5022] text-white shadow-lg scale-110'
                         : 'bg-white text-stone-400 border-2 border-stone-200'
                     }`}
                   >
                     {currentStep > step.number ? (
-                      <CheckCircle className="w-6 h-6" />
+                      <CheckCircle className="w-5 h-5 md:w-6 md:h-6" />
                     ) : (
                       step.icon
                     )}
                   </div>
                   <span
-                    className={`text-sm mt-2 font-medium whitespace-nowrap ${
+                    className={`text-[10px] md:text-sm mt-2 font-medium whitespace-nowrap ${
                       currentStep >= step.number
                         ? 'text-[#442D1C]'
                         : 'text-stone-400'
@@ -777,7 +709,7 @@ export default function CheckoutPage() {
                 </div>
                 {idx < steps.length - 1 && (
                   <div
-                    className={`h-0.5 flex-1 mx-4 mb-6 transition-all duration-300 ${
+                    className={`h-0.5 flex-1 mx-2 md:mx-4 mb-6 transition-all duration-300 ${
                       currentStep > step.number
                         ? 'bg-[#8E5022]'
                         : 'bg-stone-200'
@@ -800,20 +732,19 @@ export default function CheckoutPage() {
             <form onSubmit={handlePayment} className="space-y-6">
               <AnimatePresence mode="wait">
                 {/* Step 1: Contact Info */}
-
                 {currentStep === 1 && (
                   <motion.div
                     key="step1"
                     initial={{ opacity: 0, x: 20 }}
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: -20 }}
-                    className="bg-white rounded-3xl p-8 shadow-lg border border-stone-100"
+                    className="bg-white rounded-3xl p-5 md:p-8 shadow-lg border border-stone-100"
                   >
                     <div className="flex items-center gap-3 mb-6">
                       <div className="w-10 h-10 rounded-full bg-[#EDD8B4] flex items-center justify-center">
                         <ShieldCheck className="w-5 h-5 text-[#8E5022]" />
                       </div>
-                      <h2 className="font-serif text-2xl text-[#442D1C]">
+                      <h2 className="font-serif text-xl md:text-2xl text-[#442D1C]">
                         Contact Information
                       </h2>
                     </div>
@@ -824,8 +755,8 @@ export default function CheckoutPage() {
                           <label className="block text-sm font-medium text-stone-700">
                             Email Address
                           </label>
-                          {/* FEATURE #3: Not You? Link */}
                           <button
+                            type="button"
                             onClick={() => logout()}
                             className="text-xs text-stone-500 hover:text-red-600 flex items-center gap-1 transition-colors"
                           >
@@ -839,14 +770,11 @@ export default function CheckoutPage() {
                           name="email"
                           value={formData.email}
                           disabled
-                          className="w-full px-4 py-3 bg-stone-50 border border-stone-200 rounded-xl text-stone-500 cursor-not-allowed"
+                          className="w-full px-4 py-3 bg-stone-50 border border-stone-200 rounded-xl text-stone-500 cursor-not-allowed text-sm md:text-base"
                         />
                       </div>
 
-                      {/* ... inside currentStep === 1 ... */}
-
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {/* NAME INPUT */}
                         <div className="relative">
                           <label className="block text-sm font-medium text-stone-700 mb-2">
                             Full Name *
@@ -857,8 +785,8 @@ export default function CheckoutPage() {
                             name="name"
                             value={formData.name}
                             onChange={handleInputChange}
-                            onBlur={() => handleBlur('name')} // <--- Added
-                            className={`w-full px-4 py-3 bg-white border rounded-xl focus:outline-none transition-all ${
+                            onBlur={() => handleBlur('name')}
+                            className={`w-full px-4 py-3 bg-white border rounded-xl focus:outline-none transition-all text-sm md:text-base ${
                               touched.name && errors.name
                                 ? 'border-red-400 focus:border-red-500'
                                 : touched.name && !errors.name
@@ -867,7 +795,6 @@ export default function CheckoutPage() {
                             }`}
                             placeholder="John Doe"
                           />
-                          {/* Error Message */}
                           {touched.name && errors.name && (
                             <div className="flex items-center gap-1 mt-1 text-red-600 text-xs animate-in slide-in-from-top-1">
                               <XCircle size={12} />
@@ -876,7 +803,6 @@ export default function CheckoutPage() {
                           )}
                         </div>
 
-                        {/* PHONE INPUT */}
                         <div className="relative">
                           <label className="block text-sm font-medium text-stone-700 mb-2">
                             Phone Number *
@@ -887,8 +813,8 @@ export default function CheckoutPage() {
                             name="phone"
                             value={formData.phone}
                             onChange={handleInputChange}
-                            onBlur={() => handleBlur('phone')} // <--- Added
-                            className={`w-full px-4 py-3 bg-white border rounded-xl focus:outline-none transition-all ${
+                            onBlur={() => handleBlur('phone')}
+                            className={`w-full px-4 py-3 bg-white border rounded-xl focus:outline-none transition-all text-sm md:text-base ${
                               touched.phone && errors.phone
                                 ? 'border-red-400 focus:border-red-500'
                                 : touched.phone &&
@@ -899,17 +825,14 @@ export default function CheckoutPage() {
                             }`}
                             placeholder="9876543210"
                           />
-                          {/* Error Message */}
                           {touched.phone && errors.phone && (
                             <div className="flex items-center gap-1 mt-1 text-red-600 text-xs animate-in slide-in-from-top-1">
                               <XCircle size={12} />
                               <span>{errors.phone}</span>
                             </div>
                           )}
-
-                          {/* Info Text (keep existing) */}
                           {!errors.phone && (
-                            <div className="flex items-center gap-1.5 mt-1.5 text-xs text-stone-400">
+                            <div className="flex items-center gap-1.5 mt-1.5 text-[10px] md:text-xs text-stone-400">
                               <Info className="w-3 h-3" />
                               <span>
                                 Used only for delivery updates. No spam calls.
@@ -919,32 +842,27 @@ export default function CheckoutPage() {
                         </div>
                       </div>
 
-                      {/* 👇 NEW GST INPUT FIELD 👇 */}
-                        <div className="relative mt-4"> {/* Added mt-4 for spacing */}
-                          <label className="block text-sm font-medium text-stone-700 mb-2">
-                            GSTIN (Optional)
-                          </label>
-                          <input
-                            type="text"
-                            name="gst"
-                            value={formData.gst}
-                            onChange={(e) => {
-                              // Auto-uppercase the GST number
-                              const val = e.target.value.toUpperCase();
-                              setFormData(prev => ({ ...prev, gst: val }));
-                            }}
-                            className="w-full px-4 py-3 bg-white border border-stone-200 rounded-xl focus:outline-none focus:border-[#8E5022] transition-colors placeholder:text-stone-300"
-                            placeholder="22AAAAA0000A1Z5"
-                            maxLength={15}
-                          />
-                          <div className="flex items-center gap-1.5 mt-1.5 text-xs text-stone-400">
-                            <Info className="w-3 h-3" />
-                            <span>Enter to claim Input Tax Credit (ITC)</span>
-                          </div>
+                      <div className="relative mt-4">
+                        <label className="block text-sm font-medium text-stone-700 mb-2">
+                          GSTIN (Optional)
+                        </label>
+                        <input
+                          type="text"
+                          name="gst"
+                          value={formData.gst}
+                          onChange={(e) => {
+                            const val = e.target.value.toUpperCase();
+                            setFormData((prev) => ({ ...prev, gst: val }));
+                          }}
+                          className="w-full px-4 py-3 bg-white border border-stone-200 rounded-xl focus:outline-none focus:border-[#8E5022] transition-colors placeholder:text-stone-300 text-sm md:text-base"
+                          placeholder="22AAAAA0000A1Z5"
+                          maxLength={15}
+                        />
+                        <div className="flex items-center gap-1.5 mt-1.5 text-[10px] md:text-xs text-stone-400">
+                          <Info className="w-3 h-3" />
+                          <span>Enter to claim Input Tax Credit (ITC)</span>
                         </div>
-                        {/* 👆 END NEW GST INPUT 👆 */}
-
-                      {/* 👇👇👇 REPLACE THE EXISTING NEWSLETTER DIV WITH THIS 👇👇👇 */}
+                      </div>
 
                       {!alreadySubscribed && (
                         <div className="pt-2">
@@ -962,15 +880,13 @@ export default function CheckoutPage() {
                                 <CheckCircle className="h-3.5 w-3.5" />
                               </div>
                             </div>
-                            <span className="text-sm text-stone-600 group-hover:text-[#442D1C] transition-colors">
+                            <span className="text-xs md:text-sm text-stone-600 group-hover:text-[#442D1C] transition-colors">
                               Keep me updated on new collections and exclusive
                               offers from Bashō.
                             </span>
                           </label>
                         </div>
                       )}
-
-                      {/* 👆👆👆 END REPLACEMENT 👆👆👆 */}
                     </div>
 
                     <button
@@ -984,20 +900,20 @@ export default function CheckoutPage() {
                   </motion.div>
                 )}
 
-                {/* Step 2: Shipping (Select / Add Logic) */}
+                {/* Step 2: Shipping */}
                 {currentStep === 2 && (
                   <motion.div
                     key="step2"
                     initial={{ opacity: 0, x: 20 }}
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: -20 }}
-                    className="bg-white rounded-3xl p-8 shadow-lg border border-stone-100"
+                    className="bg-white rounded-3xl p-5 md:p-8 shadow-lg border border-stone-100"
                   >
                     <div className="flex items-center gap-3 mb-6">
                       <div className="w-10 h-10 rounded-full bg-[#EDD8B4] flex items-center justify-center">
                         <MapPin className="w-5 h-5 text-[#8E5022]" />
                       </div>
-                      <h2 className="font-serif text-2xl text-[#442D1C]">
+                      <h2 className="font-serif text-xl md:text-2xl text-[#442D1C]">
                         Shipping Address
                       </h2>
                     </div>
@@ -1008,23 +924,21 @@ export default function CheckoutPage() {
                       </div>
                     ) : (
                       <div className="space-y-4">
-                        {/* Saved Addresses List */}
                         {!showAddressForm &&
                           savedAddresses.map((addr) => (
                             <div
                               key={addr.id}
                               onClick={() => handleSelectAddress(addr)}
-                              className={`relative p-5 rounded-2xl border-2 transition-all cursor-pointer group ${
+                              className={`relative p-4 md:p-5 rounded-2xl border-2 transition-all cursor-pointer group ${
                                 selectedAddressId === addr.id
                                   ? 'border-[#8E5022] bg-[#FDFBF7]'
                                   : 'border-stone-100 hover:border-[#EDD8B4]'
                               }`}
                             >
                               <div className="flex justify-between items-start">
-                                {/* Left Side: Radio + Text */}
-                                <div className="flex items-start gap-3">
+                                <div className="flex items-start gap-3 flex-1 min-w-0 pr-2">
                                   <div
-                                    className={`mt-1 w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                                    className={`mt-1 w-5 h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${
                                       selectedAddressId === addr.id
                                         ? 'border-[#8E5022]'
                                         : 'border-stone-300'
@@ -1034,11 +948,11 @@ export default function CheckoutPage() {
                                       <div className="w-2.5 h-2.5 rounded-full bg-[#8E5022]" />
                                     )}
                                   </div>
-                                  <div>
-                                    <p className="font-serif text-[#442D1C] text-lg">
+                                  <div className="overflow-hidden">
+                                    <p className="font-serif text-[#442D1C] text-base md:text-lg break-words">
                                       {addr.street}
                                     </p>
-                                    <p className="text-stone-600">
+                                    <p className="text-stone-600 text-xs md:text-sm break-words">
                                       {addr.city}, {addr.state} - {addr.pincode}
                                     </p>
                                     {addr.isDefault && (
@@ -1049,8 +963,7 @@ export default function CheckoutPage() {
                                   </div>
                                 </div>
 
-                                {/* Right Side: Buttons Grouped Together (Fixes the gap issue) */}
-                                <div className="flex items-center gap-1">
+                                <div className="flex items-center gap-1 flex-shrink-0">
                                   <button
                                     type="button"
                                     onClick={(e) => {
@@ -1062,7 +975,6 @@ export default function CheckoutPage() {
                                   >
                                     <Edit2 className="w-4 h-4" />
                                   </button>
-
                                   <button
                                     type="button"
                                     onClick={(e) =>
@@ -1077,7 +989,6 @@ export default function CheckoutPage() {
                             </div>
                           ))}
 
-                        {/* Add New Button */}
                         {!showAddressForm && savedAddresses.length < 2 && (
                           <button
                             type="button"
@@ -1100,17 +1011,15 @@ export default function CheckoutPage() {
                           </button>
                         )}
 
-                        {/* Limit Message */}
                         {!showAddressForm && savedAddresses.length >= 2 && (
-                          <div className="text-center p-3 bg-stone-50 rounded-xl text-stone-500 text-sm">
+                          <div className="text-center p-3 bg-stone-50 rounded-xl text-stone-500 text-xs md:text-sm">
                             Maximum of 2 addresses allowed. Edit an existing one
                             to change details.
                           </div>
                         )}
 
-                        {/* Address Form */}
                         {showAddressForm && (
-                          <div className="mt-4 p-6 bg-stone-50 rounded-2xl border border-stone-200 animate-in fade-in slide-in-from-top-4">
+                          <div className="mt-4 p-4 md:p-6 bg-stone-50 rounded-2xl border border-stone-200 animate-in fade-in slide-in-from-top-4">
                             <div className="flex justify-between items-center mb-4">
                               <h3 className="font-serif text-lg text-[#442D1C]">
                                 {editingAddress
@@ -1140,7 +1049,7 @@ export default function CheckoutPage() {
                                   name="street"
                                   required
                                   defaultValue={editingAddress?.street}
-                                  className="w-full p-3 rounded-xl border border-stone-200 focus:outline-none focus:border-[#8E5022]"
+                                  className="w-full p-3 rounded-xl border border-stone-200 focus:outline-none focus:border-[#8E5022] text-sm md:text-base"
                                   placeholder="123 Zen Lane"
                                 />
                               </div>
@@ -1154,7 +1063,7 @@ export default function CheckoutPage() {
                                     name="city"
                                     required
                                     defaultValue={editingAddress?.city}
-                                    className="w-full p-3 rounded-xl border border-stone-200 focus:outline-none focus:border-[#8E5022]"
+                                    className="w-full p-3 rounded-xl border border-stone-200 focus:outline-none focus:border-[#8E5022] text-sm md:text-base"
                                   />
                                 </div>
                                 <div>
@@ -1165,12 +1074,11 @@ export default function CheckoutPage() {
                                     name="state"
                                     required
                                     defaultValue={editingAddress?.state}
-                                    className="w-full p-3 rounded-xl border border-stone-200 focus:outline-none focus:border-[#8E5022]"
+                                    className="w-full p-3 rounded-xl border border-stone-200 focus:outline-none focus:border-[#8E5022] text-sm md:text-base"
                                   />
                                 </div>
                               </div>
 
-                              {/* REPLACE YOUR EXISTING PINCODE INPUT WITH THIS BLOCK */}
                               <div>
                                 <label className="block text-xs font-bold uppercase text-[#8E5022] mb-1">
                                   Pincode *
@@ -1179,10 +1087,9 @@ export default function CheckoutPage() {
                                   name="pincode"
                                   required
                                   defaultValue={editingAddress?.pincode}
-                                  // 👇 Attach the new handlers here
                                   onChange={handleAddressPincodeChange}
                                   onBlur={handleAddressPincodeBlur}
-                                  className={`w-full p-3 rounded-xl border focus:outline-none transition-all ${
+                                  className={`w-full p-3 rounded-xl border focus:outline-none transition-all text-sm md:text-base ${
                                     touched.addressPincode &&
                                     errors.addressPincode
                                       ? 'border-red-400 focus:border-red-500 bg-red-50/50'
@@ -1193,7 +1100,6 @@ export default function CheckoutPage() {
                                   }`}
                                   placeholder="123456"
                                 />
-                                {/* Error Message Display */}
                                 {touched.addressPincode &&
                                   errors.addressPincode && (
                                     <div className="flex items-center gap-1 mt-1 text-red-600 text-xs animate-in slide-in-from-top-1">
@@ -1264,13 +1170,13 @@ export default function CheckoutPage() {
                     initial={{ opacity: 0, x: 20 }}
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: -20 }}
-                    className="bg-white rounded-3xl p-8 shadow-lg border border-stone-100"
+                    className="bg-white rounded-3xl p-5 md:p-8 shadow-lg border border-stone-100"
                   >
                     <div className="flex items-center gap-3 mb-6">
                       <div className="w-10 h-10 rounded-full bg-[#EDD8B4] flex items-center justify-center">
                         <CreditCard className="w-5 h-5 text-[#8E5022]" />
                       </div>
-                      <h2 className="font-serif text-2xl text-[#442D1C]">
+                      <h2 className="font-serif text-xl md:text-2xl text-[#442D1C]">
                         Payment Method
                       </h2>
                     </div>
@@ -1295,13 +1201,13 @@ export default function CheckoutPage() {
                       <div className="space-y-2 text-sm">
                         <div className="flex justify-between text-stone-600">
                           <span>Contact:</span>
-                          <span className="font-medium text-stone-800">
+                          <span className="font-medium text-stone-800 break-all pl-4 text-right">
                             {formData.email}
                           </span>
                         </div>
                         <div className="flex justify-between text-stone-600">
                           <span>Ship to:</span>
-                          <span className="font-medium text-stone-800 text-right">
+                          <span className="font-medium text-stone-800 text-right pl-4">
                             {formData.street}, {formData.city}, {formData.state}{' '}
                             - {formData.pincode}
                           </span>
@@ -1349,13 +1255,13 @@ export default function CheckoutPage() {
             transition={{ delay: 0.3 }}
             className="lg:col-span-5"
           >
-            <div className="sticky top-24 space-y-6">
-              <div className="bg-white rounded-3xl p-6 shadow-lg border border-stone-100">
+            <div className="lg:sticky lg:top-24 space-y-6">
+              <div className="bg-white rounded-3xl p-5 md:p-6 shadow-lg border border-stone-100">
                 <div className="flex items-center justify-between mb-6">
-                  <h3 className="font-serif text-2xl text-[#442D1C]">
+                  <h3 className="font-serif text-xl md:text-2xl text-[#442D1C]">
                     Your Order
                   </h3>
-                  <span className="bg-[#EDD8B4] text-[#8E5022] text-sm px-3 py-1 rounded-full font-medium">
+                  <span className="bg-[#EDD8B4] text-[#8E5022] text-xs md:text-sm px-3 py-1 rounded-full font-medium">
                     {getTotalItems()} items
                   </span>
                 </div>
@@ -1379,7 +1285,6 @@ export default function CheckoutPage() {
                           </div>
                         )}
                       </div>
-
                       <div className="flex-1 min-w-0">
                         <h4 className="font-medium text-stone-800 text-sm truncate">
                           {item.name}
@@ -1401,15 +1306,15 @@ export default function CheckoutPage() {
                 </div>
 
                 <div className="border-t border-stone-200 pt-4 space-y-3">
-                  <div className="flex justify-between text-stone-600">
+                  <div className="flex justify-between text-stone-600 text-sm md:text-base">
                     <span>Subtotal</span>
                     <span className="font-medium">₹{subtotal.toFixed(2)}</span>
                   </div>
-                  <div className="flex justify-between text-stone-600">
+                  <div className="flex justify-between text-stone-600 text-sm md:text-base">
                     <span>GST (12%)</span>
                     <span className="font-medium">₹{gstAmount.toFixed(2)}</span>
                   </div>
-                  <div className="flex justify-between text-stone-600">
+                  <div className="flex justify-between text-stone-600 text-sm md:text-base">
                     <span className="flex items-center gap-2">
                       <Truck className="w-4 h-4" />
                       Shipping
@@ -1420,28 +1325,27 @@ export default function CheckoutPage() {
                         : `₹${shippingCost.toFixed(2)}`}
                     </span>
                   </div>
-
                   <div className="border-t border-stone-200 pt-3 flex justify-between items-center">
                     <span className="font-serif text-lg text-[#442D1C]">
                       Total
                     </span>
-                    <span className="font-serif text-2xl text-[#442D1C]">
+                    <span className="font-serif text-xl md:text-2xl text-[#442D1C]">
                       ₹{totalAmount.toFixed(2)}
                     </span>
                   </div>
                 </div>
               </div>
 
-              <div className="bg-gradient-to-br from-stone-50 to-stone-100 rounded-2xl p-6 border border-stone-200">
+              <div className="bg-gradient-to-br from-stone-50 to-stone-100 rounded-2xl p-5 md:p-6 border border-stone-200">
                 <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center flex-shrink-0">
-                    <ShieldCheck className="w-6 h-6 text-[#8E5022]" />
+                  <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-white flex items-center justify-center flex-shrink-0">
+                    <ShieldCheck className="w-5 h-5 md:w-6 md:h-6 text-[#8E5022]" />
                   </div>
                   <div>
-                    <h4 className="font-medium text-stone-800 mb-1">
+                    <h4 className="font-medium text-stone-800 mb-1 text-sm md:text-base">
                       Secure Payment
                     </h4>
-                    <p className="text-sm text-stone-600">
+                    <p className="text-xs md:text-sm text-stone-600">
                       Your payment information is encrypted and processed
                       securely through Razorpay.
                     </p>

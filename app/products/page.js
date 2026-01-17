@@ -257,26 +257,26 @@ const ProductCard = memo(
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
         whileHover={product.inStock ? { y: -8 } : {}} // Disable hover lift if OOS
-        className={`group relative bg-white rounded-3xl overflow-hidden transition-all duration-300 ${
+        className={`group relative bg-white rounded-2xl md:rounded-3xl overflow-hidden transition-all duration-300 ${
           !product.inStock
             ? 'opacity-75 border-2 border-orange-100 shadow-none' // Cart-like OOS style
-            : 'shadow-lg hover:shadow-2xl'
+            : 'shadow-md md:shadow-lg hover:shadow-xl md:hover:shadow-2xl'
         }`}
       >
         {/* Badges */}
-        <div className="absolute top-4 left-4 z-10 flex flex-col gap-2">
+        <div className="absolute top-3 md:top-4 left-3 md:left-4 z-10 flex flex-col gap-1 md:gap-2">
           {product.isNew && (
-            <span className="bg-[#C85428] text-white text-xs font-medium px-3 py-1 rounded-full">
+            <span className="bg-[#C85428] text-white text-[10px] md:text-xs font-medium px-2 md:px-3 py-1 rounded-full whitespace-nowrap">
               New
             </span>
           )}
           {product.isBestseller && (
-            <span className="bg-[#442D1C] text-white text-xs font-medium px-3 py-1 rounded-full">
+            <span className="bg-[#442D1C] text-white text-[10px] md:text-xs font-medium px-2 md:px-3 py-1 rounded-full whitespace-nowrap">
               Bestseller
             </span>
           )}
           {!product.inStock && (
-            <span className="bg-stone-600 text-white text-xs font-medium px-3 py-1 rounded-full">
+            <span className="bg-stone-600 text-white text-[10px] md:text-xs font-medium px-2 md:px-3 py-1 rounded-full whitespace-nowrap">
               Out of Stock
             </span>
           )}
@@ -302,13 +302,13 @@ const ProductCard = memo(
             }
           }}
           disabled={isWishlistLoading || authLoading}
-          className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center shadow-md hover:shadow-lg transition-all hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="absolute top-3 md:top-4 right-3 md:right-4 z-10 w-8 h-8 md:w-10 md:h-10 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center shadow-md hover:shadow-lg transition-all hover:scale-105 md:hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isWishlistLoading || authLoading ? (
-            <Loader2 className="w-5 h-5 text-[#C85428] animate-spin" />
+            <Loader2 className="w-4 h-4 md:w-5 md:h-5 text-[#C85428] animate-spin" />
           ) : (
             <Heart
-              className={`w-5 h-5 transition-colors ${
+              className={`w-4 h-4 md:w-5 md:h-5 transition-colors ${
                 isInWishlist
                   ? 'fill-[#C85428] text-[#C85428]'
                   : 'text-stone-400 hover:text-[#C85428]'
@@ -319,7 +319,7 @@ const ProductCard = memo(
 
         {/* Product Image */}
         <Link href={`/products/${product.slug}`}>
-          <div className="relative h-80 overflow-hidden bg-gradient-to-b from-stone-100 to-stone-50 cursor-pointer">
+          <div className="relative h-56 sm:h-64 md:h-80 overflow-hidden bg-gradient-to-b from-stone-100 to-stone-50 cursor-pointer">
             {product.images?.[0] ? (
               <img
                 src={product.images[0]}
@@ -328,8 +328,8 @@ const ProductCard = memo(
               />
             ) : (
               <div className="w-full h-full flex items-center justify-center bg-stone-100">
-                <div className="w-20 h-20 rounded-full bg-stone-200 flex items-center justify-center">
-                  <ShoppingBag className="w-10 h-10 text-stone-400" />
+                <div className="w-12 h-12 md:w-20 md:h-20 rounded-full bg-stone-200 flex items-center justify-center">
+                  <ShoppingBag className="w-6 h-6 md:w-10 md:h-10 text-stone-400" />
                 </div>
               </div>
             )}
@@ -338,30 +338,30 @@ const ProductCard = memo(
         </Link>
 
         {/* Product Info */}
-        <div className="p-6">
+        <div className="p-4 md:p-6">
           <Link href={`/products/${product.slug}`}>
             <div className="cursor-pointer">
-              <span className="text-sm text-[#8E5022] font-medium uppercase tracking-wider">
+              <span className="text-xs md:text-sm text-[#8E5022] font-medium uppercase tracking-wider">
                 {product.Category?.name}
               </span>
-              <h3 className="font-serif text-2xl text-[#442D1C] mt-1 mb-2 group-hover:text-[#C85428] transition-colors">
+              <h3 className="font-serif text-lg md:text-2xl text-[#442D1C] mt-1 mb-2 group-hover:text-[#C85428] transition-colors line-clamp-1">
                 {product.name}
               </h3>
             </div>
           </Link>
 
-          <p className="text-stone-600 text-sm mb-4 line-clamp-2">
+          <p className="text-stone-600 text-xs md:text-sm mb-3 md:mb-4 line-clamp-2">
             {product.description}
           </p>
 
           {/* Rating */}
           {reviewCount > 0 && (
-            <div className="flex items-center gap-2 mb-4">
+            <div className="flex items-center gap-1 md:gap-2 mb-3 md:mb-4">
               <div className="flex items-center">
                 {[...Array(5)].map((_, i) => (
                   <Star
                     key={i}
-                    className={`w-4 h-4 ${
+                    className={`w-3 h-3 md:w-4 md:h-4 ${
                       i < Math.floor(rating)
                         ? 'fill-[#C85428] text-[#C85428]'
                         : 'text-stone-300'
@@ -369,21 +369,21 @@ const ProductCard = memo(
                   />
                 ))}
               </div>
-              <span className="text-sm text-stone-500">
+              <span className="text-xs md:text-sm text-stone-500">
                 {rating.toFixed(1)} ({reviewCount})
               </span>
             </div>
           )}
 
           {/* Price */}
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-baseline gap-2">
-              <span className="font-serif text-3xl text-[#442D1C]">
+          <div className="flex items-center justify-between mb-4 md:mb-6">
+            <div className="flex items-baseline gap-1 md:gap-2">
+              <span className="font-serif text-xl md:text-3xl text-[#442D1C]">
                 ₹{product.price.toFixed(2)}
               </span>
               {product.originalPrice &&
                 product.originalPrice > product.price && (
-                  <span className="text-stone-400 line-through">
+                  <span className="text-stone-400 line-through text-sm md:text-base">
                     ₹{product.originalPrice.toFixed(2)}
                   </span>
                 )}
@@ -392,23 +392,23 @@ const ProductCard = memo(
 
           {/* Quick Features */}
           {product.features && product.features.length > 0 && (
-            <div className="grid grid-cols-2 gap-2 mb-6">
+            <div className="grid grid-cols-2 gap-1 md:gap-2 mb-4 md:mb-6">
               {product.features.slice(0, 2).map((feature, idx) => (
                 <div
                   key={idx}
                   className="flex items-center gap-1 text-xs text-stone-600"
                 >
-                  <div className="w-2 h-2 rounded-full bg-[#8E5022]" />
-                  {feature}
+                  <div className="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-[#8E5022] flex-shrink-0" />
+                  <span className="truncate">{feature}</span>
                 </div>
               ))}
             </div>
           )}
 
           {/* Action Buttons */}
-          <div className="flex gap-3">
+          <div className="flex gap-2 md:gap-3">
             <Link href={`/products/${product.slug}`} className="flex-1">
-              <button className="w-full bg-transparent border-2 border-[#442D1C] text-[#442D1C] py-3 rounded-xl font-medium hover:bg-[#442D1C] hover:text-white transition-all text-center">
+              <button className="w-full bg-transparent border border-[#442D1C] md:border-2 text-[#442D1C] py-2 md:py-3 rounded-lg md:rounded-xl font-medium hover:bg-[#442D1C] hover:text-white transition-all text-center text-sm md:text-base">
                 View Details
               </button>
             </Link>
@@ -416,20 +416,20 @@ const ProductCard = memo(
             {/* Cart Button */}
             {quantityInCart > 0 ? (
               <div className="flex-1">
-                <div className="flex items-center justify-between bg-[#EDD8B4] rounded-xl p-1">
+                <div className="flex items-center justify-between bg-[#EDD8B4] rounded-lg md:rounded-xl p-1">
                   <button
                     onClick={() =>
                       onUpdateQuantity(product.id, quantityInCart - 1)
                     }
                     disabled={isUpdating}
-                    className="w-10 h-10 flex items-center justify-center rounded-lg hover:bg-[#E8D0A0] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-8 h-8 md:w-10 md:h-10 flex items-center justify-center rounded md:rounded-lg hover:bg-[#E8D0A0] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <Minus className="w-4 h-4 text-[#442D1C]" />
+                    <Minus className="w-3 h-3 md:w-4 md:h-4 text-[#442D1C]" />
                   </button>
 
-                  <div className="flex items-center gap-2">
-                    <ShoppingBag className="w-4 h-4 text-[#442D1C]" />
-                    <span className="font-medium text-[#442D1C]">
+                  <div className="flex items-center gap-1 md:gap-2">
+                    <ShoppingBag className="w-3 h-3 md:w-4 md:h-4 text-[#442D1C]" />
+                    <span className="font-medium text-[#442D1C] text-sm md:text-base">
                       {quantityInCart}
                     </span>
                   </div>
@@ -437,9 +437,9 @@ const ProductCard = memo(
                   <button
                     onClick={() => onAddToCart(product)}
                     disabled={isUpdating}
-                    className="w-10 h-10 flex items-center justify-center rounded-lg hover:bg-[#E8D0A0] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-8 h-8 md:w-10 md:h-10 flex items-center justify-center rounded md:rounded-lg hover:bg-[#E8D0A0] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <Plus className="w-4 h-4 text-[#442D1C]" />
+                    <Plus className="w-3 h-3 md:w-4 md:h-4 text-[#442D1C]" />
                   </button>
                 </div>
               </div>
@@ -453,13 +453,14 @@ const ProductCard = memo(
               <button
                 onClick={() => onAddToCart(product)}
                 disabled={isUpdating}
-                className={`flex-1 py-3 rounded-xl font-medium transition-all flex items-center justify-center gap-2 bg-[#8E5022] text-white hover:bg-[#652810] ${
+                className={`flex-1 py-2 md:py-3 rounded-lg md:rounded-xl font-medium transition-all flex items-center justify-center gap-1 md:gap-2 bg-[#8E5022] text-white hover:bg-[#652810] text-sm md:text-base ${
                   isUpdating ? 'opacity-75' : ''
                 }`}
               >
                 <>
-                  <ShoppingBag className="w-5 h-5" />
-                  Add to Cart
+                  <ShoppingBag className="w-4 h-4 md:w-5 md:h-5" />
+                  <span className="hidden xs:inline">Add to Cart</span>
+                  <span className="xs:hidden">Add</span>
                 </>
               </button>
             )}
@@ -508,17 +509,21 @@ const CustomDropdown = ({ value, options, onChange }) => {
   }, []);
 
   return (
-    <div className="relative" ref={dropdownRef}>
+    <div className="relative w-full md:w-auto" ref={dropdownRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center justify-between bg-white border-2 border-stone-200 rounded-xl px-6 py-3 hover:border-[#8E5022] transition-colors w-full md:w-auto min-w-[220px]"
+        className="flex items-center justify-between bg-white border border-stone-200 md:border-2 rounded-xl px-4 md:px-6 py-2.5 md:py-3 hover:border-[#8E5022] transition-colors w-full md:min-w-[220px]"
       >
-        <div className="flex items-center gap-3">
-          <span className="text-stone-600">{selectedOption.icon}</span>
-          <span className="font-medium">{selectedOption.label}</span>
+        <div className="flex items-center gap-2 md:gap-3">
+          <span className="text-stone-600 hidden xs:block">
+            {selectedOption.icon}
+          </span>
+          <span className="font-medium text-sm md:text-base">
+            {selectedOption.label}
+          </span>
         </div>
         <ChevronDown
-          className={`w-5 h-5 text-stone-400 transition-transform ${
+          className={`w-4 h-4 md:w-5 md:h-5 text-stone-400 transition-transform ${
             isOpen ? 'rotate-180' : ''
           }`}
         />
@@ -540,14 +545,14 @@ const CustomDropdown = ({ value, options, onChange }) => {
                     onChange(option.value);
                     setIsOpen(false);
                   }}
-                  className={`flex items-center gap-3 w-full px-6 py-3 hover:bg-stone-50 transition-colors ${
+                  className={`flex items-center gap-2 md:gap-3 w-full px-4 md:px-6 py-2.5 md:py-3 hover:bg-stone-50 transition-colors ${
                     value === option.value
                       ? 'bg-[#FDFBF7] text-[#8E5022]'
                       : 'text-stone-600'
                   }`}
                 >
                   <span
-                    className={`${
+                    className={`hidden xs:block ${
                       value === option.value
                         ? 'text-[#8E5022]'
                         : 'text-stone-400'
@@ -555,9 +560,11 @@ const CustomDropdown = ({ value, options, onChange }) => {
                   >
                     {option.icon}
                   </span>
-                  <span className="font-medium">{option.label}</span>
+                  <span className="font-medium text-sm md:text-base">
+                    {option.label}
+                  </span>
                   {value === option.value && (
-                    <div className="ml-auto w-2 h-2 rounded-full bg-[#8E5022]" />
+                    <div className="ml-auto w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-[#8E5022]" />
                   )}
                 </button>
               ))}
@@ -892,9 +899,11 @@ function ProductsPageContent() {
   if (error && !productsLoading) {
     return (
       <main className="min-h-screen bg-[#FDFBF7] flex items-center justify-center">
-        <div className="text-center max-w-md mx-auto">
-          <AlertCircle className="w-16 h-16 text-[#C85428] mx-auto mb-4" />
-          <h2 className="font-serif text-3xl text-[#442D1C] mb-2">Oops!</h2>
+        <div className="text-center max-w-md mx-auto px-4">
+          <AlertCircle className="w-12 h-12 md:w-16 md:h-16 text-[#C85428] mx-auto mb-4" />
+          <h2 className="font-serif text-2xl md:text-3xl text-[#442D1C] mb-2">
+            Oops!
+          </h2>
           <p className="text-stone-600 mb-6">{error}</p>
           <button
             onClick={() => window.location.reload()}
@@ -910,7 +919,7 @@ function ProductsPageContent() {
   return (
     <main className="min-h-screen bg-[#FDFBF7] text-stone-800 font-sans">
       {/* Hero Section */}
-      <section className="relative bg-gradient-to-b from-white to-[#EDD8B4]/20 pt-32 pb-20 px-4 overflow-hidden">
+      <section className="relative bg-gradient-to-b from-white to-[#EDD8B4]/20 pt-20 md:pt-32 pb-12 md:pb-20 px-4 overflow-hidden">
         <div className="absolute inset-0 overflow-hidden opacity-10">
           {[...Array(15)].map((_, i) => (
             <div
@@ -932,17 +941,17 @@ function ProductsPageContent() {
             initial="hidden"
             animate="visible"
             variants={staggerContainer}
-            className="text-center mb-12"
+            className="text-center mb-8 md:mb-12"
           >
             <motion.div variants={fadeInUp}>
-              <span className="text-[#8E5022] uppercase tracking-[0.3em] text-sm font-medium mb-4 inline-block">
+              <span className="text-[#8E5022] uppercase tracking-[0.2em] md:tracking-[0.3em] text-xs md:text-sm font-medium mb-3 md:mb-4 inline-block">
                 Bashō Collections
               </span>
-              <h1 className="font-serif text-5xl md:text-7xl text-[#442D1C] mb-6 leading-tight">
+              <h1 className="font-serif text-3xl sm:text-4xl md:text-5xl lg:text-7xl text-[#442D1C] mb-4 md:mb-6 leading-tight">
                 Handcrafted <br />
                 <span className="text-[#C85428]">Ceramics</span> for Life
               </h1>
-              <p className="text-xl text-stone-600 max-w-2xl mx-auto">
+              <p className="text-base md:text-xl text-stone-600 max-w-2xl mx-auto px-4">
                 Each piece tells a story—of earth transformed by fire, of
                 moments captured in clay.
               </p>
@@ -954,23 +963,23 @@ function ProductsPageContent() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
-            className="max-w-2xl mx-auto mb-12"
+            className="max-w-2xl mx-auto mb-8 md:mb-12"
           >
             <div className="relative">
-              <Search className="absolute left-6 top-1/2 transform -translate-y-1/2 w-5 h-5 text-stone-400" />
+              <Search className="absolute left-4 md:left-6 top-1/2 transform -translate-y-1/2 w-4 h-4 md:w-5 md:h-5 text-stone-400" />
               <input
                 type="text"
                 placeholder="Search for tea bowls, dinner sets, vases..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-14 pr-12 py-4 bg-white rounded-2xl border-2 border-stone-200 focus:border-[#8E5022] focus:outline-none shadow-lg"
+                className="w-full pl-10 md:pl-14 pr-10 md:pr-12 py-3 md:py-4 bg-white rounded-xl md:rounded-2xl border border-stone-200 md:border-2 focus:border-[#8E5022] focus:outline-none shadow-md md:shadow-lg text-sm md:text-base"
               />
               {searchQuery && (
                 <button
                   onClick={clearSearch}
-                  className="absolute right-4 top-1/2 transform -translate-y-1/2 w-8 h-8 rounded-full bg-stone-100 flex items-center justify-center hover:bg-stone-200 transition-colors"
+                  className="absolute right-3 md:right-4 top-1/2 transform -translate-y-1/2 w-6 h-6 md:w-8 md:h-8 rounded-full bg-stone-100 flex items-center justify-center hover:bg-stone-200 transition-colors"
                 >
-                  <X className="w-4 h-4 text-stone-500" />
+                  <X className="w-3 h-3 md:w-4 md:h-4 text-stone-500" />
                 </button>
               )}
             </div>
@@ -982,41 +991,41 @@ function ProductsPageContent() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
-          className="mt-8 flex justify-center"
+          className="mt-6 md:mt-8 flex justify-center px-4"
         >
           <Link href="/custom-order">
-            <button className="group relative bg-gradient-to-r from-[#8E5022] to-[#C85428] text-white px-8 py-4 rounded-2xl font-medium hover:shadow-2xl hover:shadow-[#C85428]/30 transition-all duration-300 hover:scale-105 flex items-center gap-3 overflow-hidden">
+            <button className="group relative bg-gradient-to-r from-[#8E5022] to-[#C85428] text-white px-6 md:px-8 py-3 md:py-4 rounded-xl md:rounded-2xl font-medium hover:shadow-xl md:hover:shadow-2xl hover:shadow-[#C85428]/30 transition-all duration-300 hover:scale-105 flex items-center gap-2 md:gap-3 overflow-hidden text-sm md:text-base">
               <div className="absolute inset-0 bg-gradient-to-r from-[#652810] to-[#8E5022] opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-              <Sparkles className="w-5 h-5 relative z-10" />
+              <Sparkles className="w-4 h-4 md:w-5 md:h-5 relative z-10" />
               <span className="relative z-10">Custom Order</span>
-              <div className="absolute -right-2 -top-2 w-6 h-6 rounded-full bg-white/20" />
-              <div className="absolute -right-4 -bottom-4 w-10 h-10 rounded-full bg-white/10" />
+              <div className="absolute -right-2 -top-2 w-4 h-4 md:w-6 md:h-6 rounded-full bg-white/20" />
+              <div className="absolute -right-3 -bottom-3 w-8 h-8 md:w-10 md:h-10 rounded-full bg-white/10" />
             </button>
           </Link>
         </motion.div>
       </section>
 
       {/* Main Content */}
-      <section className="pb-32 px-4">
+      <section className="pb-20 md:pb-32 px-4">
         <div className="max-w-7xl mx-auto">
           {/* Filters & Controls */}
-          <div className="flex flex-col lg:flex-row gap-6 mb-12 pt-8">
-            {/* Category Filter */}
-            <div className="flex-1 overflow-x-auto pt-2 pb-4">
-              <div className="flex gap-2">
+          <div className="flex flex-col lg:flex-row gap-4 md:gap-6 mb-8 md:mb-12 pt-6 md:pt-8">
+            {/* Category Filter - Mobile Scrollable */}
+            <div className="w-full lg:flex-1 overflow-x-auto pt-2 pb-3 md:pb-4">
+              <div className="flex gap-1 md:gap-2 min-w-max">
                 {displayCategories.map((category) => (
                   <button
                     key={category.slug}
                     onClick={() => setSelectedCategory(category.slug)}
-                    className={`px-6 py-3 rounded-full font-medium whitespace-nowrap transition-all flex-shrink-0 ${
+                    className={`px-4 md:px-6 py-2 md:py-3 rounded-full font-medium whitespace-nowrap transition-all flex-shrink-0 text-sm md:text-base ${
                       selectedCategory === category.slug
-                        ? 'bg-[#442D1C] text-white shadow-md'
+                        ? 'bg-[#442D1C] text-white shadow'
                         : 'bg-white text-stone-600 hover:bg-stone-100 shadow-sm'
                     }`}
                   >
                     {category.name}
                     {category.productCount > 0 && (
-                      <span className="ml-2 text-xs opacity-75">
+                      <span className="ml-1 md:ml-2 text-xs opacity-75">
                         ({category.productCount})
                       </span>
                     )}
@@ -1026,21 +1035,23 @@ function ProductsPageContent() {
             </div>
 
             {/* Sort & Filter Controls */}
-            <div className="flex items-center gap-4">
-              <CustomDropdown
-                value={sortBy}
-                options={SORT_OPTIONS}
-                onChange={setSortBy}
-              />
+            <div className="flex flex-col xs:flex-row items-stretch xs:items-center gap-3 md:gap-4">
+              <div className="w-full xs:w-auto">
+                <CustomDropdown
+                  value={sortBy}
+                  options={SORT_OPTIONS}
+                  onChange={setSortBy}
+                />
+              </div>
 
               <button
                 onClick={() => setShowFilters(!showFilters)}
-                className="flex items-center gap-2 bg-white border-2 border-stone-200 rounded-xl px-6 py-3 hover:border-[#8E5022] transition-colors"
+                className="flex items-center justify-center gap-2 bg-white border border-stone-200 md:border-2 rounded-xl px-4 md:px-6 py-2.5 md:py-3 hover:border-[#8E5022] transition-colors text-sm md:text-base"
               >
-                <Filter className="w-5 h-5" />
-                Filters
+                <Filter className="w-4 h-4 md:w-5 md:h-5" />
+                <span>Filters</span>
                 {Object.values(selectedFilters).flat().length > 0 && (
-                  <span className="bg-[#C85428] text-white text-xs w-6 h-6 rounded-full flex items-center justify-center">
+                  <span className="bg-[#C85428] text-white text-xs w-5 h-5 md:w-6 md:h-6 rounded-full flex items-center justify-center">
                     {Object.values(selectedFilters).flat().length}
                   </span>
                 )}
@@ -1055,38 +1066,40 @@ function ProductsPageContent() {
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: 'auto' }}
                 exit={{ opacity: 0, height: 0 }}
-                className="overflow-hidden mb-8"
+                className="overflow-hidden mb-6 md:mb-8"
               >
-                <div className="bg-white rounded-3xl p-8 shadow-xl">
-                  <div className="flex justify-between items-center mb-8">
-                    <h3 className="font-serif text-2xl text-[#442D1C]">
+                <div className="bg-white rounded-2xl md:rounded-3xl p-4 md:p-8 shadow-xl">
+                  <div className="flex justify-between items-center mb-6 md:mb-8">
+                    <h3 className="font-serif text-xl md:text-2xl text-[#442D1C]">
                       Filters
                     </h3>
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-3 md:gap-4">
                       <button
                         onClick={clearFilters}
-                        className="text-sm text-stone-500 hover:text-[#C85428] transition-colors"
+                        className="text-xs md:text-sm text-stone-500 hover:text-[#C85428] transition-colors"
                       >
                         Clear All
                       </button>
                       <button
                         onClick={() => setShowFilters(false)}
-                        className="w-10 h-10 rounded-full bg-stone-100 flex items-center justify-center hover:bg-stone-200 transition-colors"
+                        className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-stone-100 flex items-center justify-center hover:bg-stone-200 transition-colors"
                       >
-                        <X className="w-5 h-5" />
+                        <X className="w-4 h-4 md:w-5 md:h-5" />
                       </button>
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
                     {/* Price Filter */}
                     <div>
-                      <h4 className="font-medium text-stone-700 mb-4">Price</h4>
+                      <h4 className="font-medium text-stone-700 mb-3 md:mb-4 text-sm md:text-base">
+                        Price
+                      </h4>
                       <div className="space-y-2">
                         {FILTERS.price.map((range) => (
                           <label
                             key={range}
-                            className="flex items-center gap-3 cursor-pointer"
+                            className="flex items-center gap-2 md:gap-3 cursor-pointer"
                           >
                             <input
                               type="checkbox"
@@ -1095,17 +1108,19 @@ function ProductsPageContent() {
                               className="hidden"
                             />
                             <div
-                              className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all ${
+                              className={`w-4 h-4 md:w-5 md:h-5 rounded border flex items-center justify-center transition-all flex-shrink-0 ${
                                 selectedFilters.price.includes(range)
                                   ? 'bg-[#8E5022] border-[#8E5022]'
                                   : 'border-stone-300'
                               }`}
                             >
                               {selectedFilters.price.includes(range) && (
-                                <div className="w-2 h-2 rounded-full bg-white" />
+                                <div className="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-white" />
                               )}
                             </div>
-                            <span className="text-stone-600">{range}</span>
+                            <span className="text-stone-600 text-sm md:text-base">
+                              {range}
+                            </span>
                           </label>
                         ))}
                       </div>
@@ -1113,14 +1128,14 @@ function ProductsPageContent() {
 
                     {/* Material Filter */}
                     <div>
-                      <h4 className="font-medium text-stone-700 mb-4">
+                      <h4 className="font-medium text-stone-700 mb-3 md:mb-4 text-sm md:text-base">
                         Material
                       </h4>
                       <div className="space-y-2">
                         {FILTERS.material.map((material) => (
                           <label
                             key={material}
-                            className="flex items-center gap-3 cursor-pointer"
+                            className="flex items-center gap-2 md:gap-3 cursor-pointer"
                           >
                             <input
                               type="checkbox"
@@ -1133,17 +1148,19 @@ function ProductsPageContent() {
                               className="hidden"
                             />
                             <div
-                              className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all ${
+                              className={`w-4 h-4 md:w-5 md:h-5 rounded border flex items-center justify-center transition-all flex-shrink-0 ${
                                 selectedFilters.material.includes(material)
                                   ? 'bg-[#8E5022] border-[#8E5022]'
                                   : 'border-stone-300'
                               }`}
                             >
                               {selectedFilters.material.includes(material) && (
-                                <div className="w-2 h-2 rounded-full bg-white" />
+                                <div className="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-white" />
                               )}
                             </div>
-                            <span className="text-stone-600">{material}</span>
+                            <span className="text-stone-600 text-sm md:text-base">
+                              {material}
+                            </span>
                           </label>
                         ))}
                       </div>
@@ -1151,14 +1168,14 @@ function ProductsPageContent() {
 
                     {/* Features Filter */}
                     <div>
-                      <h4 className="font-medium text-stone-700 mb-4">
+                      <h4 className="font-medium text-stone-700 mb-3 md:mb-4 text-sm md:text-base">
                         Features
                       </h4>
                       <div className="space-y-2">
                         {FILTERS.features.map((feature) => (
                           <label
                             key={feature}
-                            className="flex items-center gap-3 cursor-pointer"
+                            className="flex items-center gap-2 md:gap-3 cursor-pointer"
                           >
                             <input
                               type="checkbox"
@@ -1169,17 +1186,19 @@ function ProductsPageContent() {
                               className="hidden"
                             />
                             <div
-                              className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all ${
+                              className={`w-4 h-4 md:w-5 md:h-5 rounded border flex items-center justify-center transition-all flex-shrink-0 ${
                                 selectedFilters.features.includes(feature)
                                   ? 'bg-[#8E5022] border-[#8E5022]'
                                   : 'border-stone-300'
                               }`}
                             >
                               {selectedFilters.features.includes(feature) && (
-                                <div className="w-2 h-2 rounded-full bg-white" />
+                                <div className="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-white" />
                               )}
                             </div>
-                            <span className="text-stone-600">{feature}</span>
+                            <span className="text-stone-600 text-sm md:text-base">
+                              {feature}
+                            </span>
                           </label>
                         ))}
                       </div>
@@ -1191,14 +1210,16 @@ function ProductsPageContent() {
           </AnimatePresence>
 
           {/* Results Count & Loading State */}
-          <div className="mb-8">
+          <div className="mb-6 md:mb-8">
             {productsLoading ? (
-              <div className="flex items-center gap-3">
-                <Loader2 className="w-5 h-5 text-[#8E5022] animate-spin" />
-                <p className="text-stone-600">Loading products...</p>
+              <div className="flex items-center gap-2 md:gap-3">
+                <Loader2 className="w-4 h-4 md:w-5 md:h-5 text-[#8E5022] animate-spin" />
+                <p className="text-stone-600 text-sm md:text-base">
+                  Loading products...
+                </p>
               </div>
             ) : (
-              <p className="text-stone-600">
+              <p className="text-stone-600 text-sm md:text-base">
                 Showing{' '}
                 <span className="font-medium text-[#442D1C]">
                   {products.length}
@@ -1216,25 +1237,25 @@ function ProductsPageContent() {
 
           {/* Product Grid */}
           {productsLoading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 lg:gap-8">
               {[...Array(6)].map((_, i) => (
                 <div
                   key={i}
-                  className="bg-white rounded-3xl overflow-hidden shadow-lg animate-pulse"
+                  className="bg-white rounded-2xl md:rounded-3xl overflow-hidden shadow-md md:shadow-lg animate-pulse"
                 >
-                  <div className="h-80 bg-stone-200" />
-                  <div className="p-6 space-y-4">
-                    <div className="h-4 bg-stone-200 rounded w-1/4" />
-                    <div className="h-6 bg-stone-200 rounded w-3/4" />
-                    <div className="h-4 bg-stone-200 rounded w-full" />
-                    <div className="h-4 bg-stone-200 rounded w-2/3" />
-                    <div className="h-10 bg-stone-200 rounded" />
+                  <div className="h-48 sm:h-56 md:h-80 bg-stone-200" />
+                  <div className="p-4 md:p-6 space-y-3 md:space-y-4">
+                    <div className="h-3 md:h-4 bg-stone-200 rounded w-1/4" />
+                    <div className="h-4 md:h-6 bg-stone-200 rounded w-3/4" />
+                    <div className="h-3 md:h-4 bg-stone-200 rounded w-full" />
+                    <div className="h-3 md:h-4 bg-stone-200 rounded w-2/3" />
+                    <div className="h-8 md:h-10 bg-stone-200 rounded" />
                   </div>
                 </div>
               ))}
             </div>
           ) : products.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 lg:gap-8">
               {products.map((product) => (
                 <RealtimeProductCard // 👈 Use the wrapper instead of ProductCard directly
                   key={product.id}
@@ -1253,27 +1274,27 @@ function ProductsPageContent() {
             </div>
           ) : (
             /* Empty State */
-            <div className="text-center py-20">
-              <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-stone-100 flex items-center justify-center">
-                <Search className="w-12 h-12 text-stone-400" />
+            <div className="text-center py-12 md:py-20 px-4">
+              <div className="w-16 h-16 md:w-24 md:h-24 mx-auto mb-4 md:mb-6 rounded-full bg-stone-100 flex items-center justify-center">
+                <Search className="w-8 h-8 md:w-12 md:h-12 text-stone-400" />
               </div>
-              <h3 className="font-serif text-3xl text-[#442D1C] mb-4">
+              <h3 className="font-serif text-2xl md:text-3xl text-[#442D1C] mb-3 md:mb-4">
                 No products found
               </h3>
-              <p className="text-stone-600 mb-8 max-w-md mx-auto">
+              <p className="text-stone-600 mb-6 md:mb-8 max-w-md mx-auto text-sm md:text-base">
                 Try adjusting your filters or search term to find what you're
                 looking for.
               </p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <div className="flex flex-col sm:flex-row gap-3 md:gap-4 justify-center">
                 <button
                   onClick={clearFilters}
-                  className="bg-[#8E5022] text-white px-8 py-3 rounded-xl font-medium hover:bg-[#652810] transition-colors"
+                  className="bg-[#8E5022] text-white px-6 md:px-8 py-2.5 md:py-3 rounded-xl font-medium hover:bg-[#652810] transition-colors text-sm md:text-base"
                 >
                   Clear All Filters
                 </button>
                 <button
                   onClick={clearSearch}
-                  className="bg-transparent border-2 border-[#8E5022] text-[#8E5022] px-8 py-3 rounded-xl font-medium hover:bg-[#8E5022]/10 transition-colors"
+                  className="bg-transparent border border-[#8E5022] md:border-2 text-[#8E5022] px-6 md:px-8 py-2.5 md:py-3 rounded-xl font-medium hover:bg-[#8E5022]/10 transition-colors text-sm md:text-base"
                 >
                   Clear Search
                 </button>
