@@ -69,6 +69,7 @@ export async function POST(req) {
         level: workshopData.level,
         instructorName: workshopData.instructorName,
         instructorRole: workshopData.instructorRole,
+        instructorBio: workshopData.instructorBio || '',
         instructorImage: workshopData.instructorImage || '',
         status: 'ACTIVE',
         WorkshopSession: {
