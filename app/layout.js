@@ -1,4 +1,4 @@
-//import { Inter, Noto_Serif_JP } from 'next/font/google';
+import { Inter, Noto_Serif_JP } from 'next/font/google';
 import { AuthProvider } from '@/components/AuthProvider';
 import { CartProvider } from '@/context/CartContext';
 import { WishlistProvider } from '@/context/WishlistContext'; // <-- Import this
