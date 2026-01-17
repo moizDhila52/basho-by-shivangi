@@ -1,133 +1,226 @@
 'use client'
 
-import { useState } from 'react'
-import { Save, Lock, Globe, AlertTriangle, RefreshCw } from 'lucide-react'
-import { toast } from 'sonner' // or alert()
+import { useState, useEffect } from 'react'
+import { Plus, Trash2, Shield, Mail, User as UserIcon, X, Loader2 } from 'lucide-react'
+import { toast } from 'sonner'
 
 export default function AdminSettingsPage() {
   const [isLoading, setIsLoading] = useState(false)
+  const [showAddForm, setShowAddForm] = useState(false)
+  const [admins, setAdmins] = useState([])
   
-  // Mock State (In a real app, you'd fetch this from DB)
-  const [settings, setSettings] = useState({
-    storeName: 'Basho.',
-    supportEmail: 'hello@basho.com',
-    currency: 'INR',
-    maintenanceMode: false
-  })
+  // Form State (No Password)
+  const [formData, setFormData] = useState({ name: '', email: '' })
 
-  const handleSave = async (e) => {
+  // 1. Fetch Admins on Load
+  useEffect(() => {
+    fetchAdmins()
+  }, [])
+
+  const fetchAdmins = async () => {
+    try {
+      const res = await fetch('/api/admin/team')
+      if (res.ok) {
+        const data = await res.json()
+        setAdmins(data)
+      }
+    } catch (error) {
+      toast.error("Failed to load team members")
+    }
+  }
+
+  // 2. Handle Add Admin
+  const handleAddAdmin = async (e) => {
     e.preventDefault()
     setIsLoading(true)
-    
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    
-    setIsLoading(false)
-    toast.success("Settings updated successfully")
+
+    try {
+      const res = await fetch('/api/admin/team', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) throw new Error(data.error || "Failed")
+
+      // Success Feedback
+      if (data.type === 'UPDATED') {
+        toast.success(`Access granted to existing user: ${formData.email}`)
+      } else {
+        toast.success(`New admin account created: ${formData.email}`)
+      }
+
+      setFormData({ name: '', email: '' })
+      setShowAddForm(false)
+      fetchAdmins() // Refresh list
+    } catch (error) {
+      toast.error(error.message)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  // 3. Handle Revoke Access
+  const handleRemoveAdmin = async (id) => {
+    if (!confirm('Are you sure? This user will be downgraded to a Customer.')) return;
+
+    try {
+      const res = await fetch(`/api/admin/team?id=${id}`, { method: 'DELETE' })
+      if (!res.ok) throw new Error("Failed")
+
+      toast.success("Admin access revoked")
+      // Optimistic update
+      setAdmins(admins.filter(admin => admin.id !== id))
+    } catch (error) {
+      toast.error("Could not revoke access")
+    }
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8">
+    <div className="max-w-5xl mx-auto space-y-8 p-6">
       
-      <div className="flex justify-between items-center">
+      {/* HEADER */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-serif font-bold text-stone-800">Settings</h1>
-          <p className="text-stone-500 text-sm mt-1">Manage your store preferences and configurations.</p>
+          <h1 className="text-3xl font-serif font-bold text-[#442D1C]">Team Management</h1>
+          <p className="text-[#8E5022] mt-1">Control who has access to the admin dashboard.</p>
         </div>
         <button 
-          onClick={handleSave}
-          disabled={isLoading}
-          className="flex items-center gap-2 bg-basho-earth text-white px-6 py-2 rounded-lg hover:bg-stone-800 transition-colors disabled:opacity-50"
+          onClick={() => setShowAddForm(true)}
+          className="flex items-center justify-center gap-2 bg-[#442D1C] text-white px-6 py-3 rounded-lg hover:bg-[#2E1F14] transition-all shadow-sm active:scale-95"
         >
-          {isLoading ? <RefreshCw className="animate-spin" size={18} /> : <Save size={18} />}
-          <span>{isLoading ? 'Saving...' : 'Save Changes'}</span>
+          <Plus size={20} />
+          <span>Add New Admin</span>
         </button>
       </div>
 
-      {/* GENERAL SETTINGS */}
-      <div className="bg-white p-6 rounded-2xl shadow-sm border border-stone-100">
-        <h3 className="font-serif font-bold text-lg text-stone-800 mb-6 flex items-center gap-2">
-          <Globe size={20} className="text-basho-clay" />
-          General Information
-        </h3>
+      {/* ADMIN TABLE */}
+      <div className="bg-white rounded-2xl shadow-sm border border-[#EDD8B4]/50 overflow-hidden">
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="space-y-2">
-            <label className="text-xs font-semibold text-stone-500 uppercase">Store Name</label>
-            <input 
-              value={settings.storeName}
-              onChange={(e) => setSettings({...settings, storeName: e.target.value})}
-              className="w-full p-3 bg-stone-50 border border-stone-200 rounded-lg focus:border-basho-clay outline-none transition-colors"
-            />
-          </div>
-          <div className="space-y-2">
-            <label className="text-xs font-semibold text-stone-500 uppercase">Support Email</label>
-            <input 
-              value={settings.supportEmail}
-              onChange={(e) => setSettings({...settings, supportEmail: e.target.value})}
-              className="w-full p-3 bg-stone-50 border border-stone-200 rounded-lg focus:border-basho-clay outline-none transition-colors"
-            />
-          </div>
-          <div className="space-y-2">
-            <label className="text-xs font-semibold text-stone-500 uppercase">Currency</label>
-            <select 
-              value={settings.currency}
-              onChange={(e) => setSettings({...settings, currency: e.target.value})}
-              className="w-full p-3 bg-stone-50 border border-stone-200 rounded-lg focus:border-basho-clay outline-none transition-colors"
-            >
-              <option value="INR">INR (₹)</option>
-              <option value="USD">USD ($)</option>
-              <option value="EUR">EUR (€)</option>
-            </select>
-          </div>
+        {/* Table Header */}
+        <div className="hidden md:grid grid-cols-12 gap-4 p-4 text-xs font-bold text-[#8E5022] uppercase tracking-wider border-b border-[#F3F0EB] bg-[#FDFBF7]">
+          <div className="col-span-5 pl-4">User</div>
+          <div className="col-span-4">Email</div>
+          <div className="col-span-3 text-right pr-4">Actions</div>
+        </div>
+
+        {/* Table Body */}
+        <div className="divide-y divide-[#F3F0EB]">
+          {admins.length === 0 ? (
+            <div className="p-12 text-center text-stone-400">
+              <Loader2 className="w-8 h-8 animate-spin mx-auto mb-2" />
+              Loading team...
+            </div>
+          ) : (
+            admins.map((admin) => (
+              <div key={admin.id} className="group p-4 hover:bg-[#FDFBF7] transition-colors">
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
+                  
+                  {/* Name Column */}
+                  <div className="col-span-5 flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-[#EDD8B4] text-[#442D1C] flex items-center justify-center font-serif font-bold text-lg uppercase shrink-0">
+                      {admin.name ? admin.name.charAt(0) : 'U'}
+                    </div>
+                    <div>
+                      <div className="font-medium text-[#442D1C]">{admin.name || 'Unknown'}</div>
+                      <div className="text-xs text-[#C85428] font-medium tracking-wide">ADMINISTRATOR</div>
+                    </div>
+                  </div>
+
+                  {/* Email Column */}
+                  <div className="col-span-4 flex items-center text-sm text-stone-600 break-all">
+                    <Mail size={14} className="mr-2 text-[#8E5022] shrink-0" />
+                    {admin.email}
+                  </div>
+
+                  {/* Actions Column */}
+                  <div className="col-span-3 flex justify-end">
+                    <button 
+                      onClick={() => handleRemoveAdmin(admin.id)}
+                      className="p-2 text-stone-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
+                      title="Revoke Admin Access"
+                    >
+                      <Trash2 size={18} />
+                    </button>
+                  </div>
+
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </div>
 
-      {/* SECURITY / MAINTENANCE */}
-      <div className="bg-white p-6 rounded-2xl shadow-sm border border-stone-100">
-        <h3 className="font-serif font-bold text-lg text-stone-800 mb-6 flex items-center gap-2">
-          <Lock size={20} className="text-basho-clay" />
-          Access Control
-        </h3>
-        
-        <div className="flex items-center justify-between p-4 bg-stone-50 rounded-xl border border-stone-200">
-          <div>
-            <h4 className="font-medium text-stone-900">Maintenance Mode</h4>
-            <p className="text-xs text-stone-500 mt-1">Disable the public store temporarily.</p>
+      {/* ADD ADMIN MODAL */}
+      {showAddForm && (
+        <div className="fixed inset-0 bg-stone-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            
+            <div className="bg-[#FDFBF7] px-6 py-4 border-b border-[#EDD8B4]/30 flex justify-between items-center">
+              <h3 className="font-serif font-bold text-xl text-[#442D1C]">New Administrator</h3>
+              <button onClick={() => setShowAddForm(false)} className="text-[#8E5022] hover:text-[#442D1C]">
+                <X size={20} />
+              </button>
+            </div>
+
+            <form onSubmit={handleAddAdmin} className="p-6 space-y-5">
+              
+              {/* Name Input */}
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-[#8E5022] uppercase tracking-wide">Full Name</label>
+                <div className="relative">
+                  <UserIcon size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" />
+                  <input 
+                    required
+                    value={formData.name}
+                    onChange={e => setFormData({...formData, name: e.target.value})}
+                    placeholder="e.g. Shivangi"
+                    className="w-full pl-10 pr-4 py-3 bg-white border border-stone-200 rounded-lg focus:border-[#C85428] focus:ring-1 focus:ring-[#C85428] outline-none transition-all text-sm"
+                  />
+                </div>
+              </div>
+
+              {/* Email Input */}
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-[#8E5022] uppercase tracking-wide">Email Address</label>
+                <div className="relative">
+                  <Mail size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" />
+                  <input 
+                    required
+                    type="email"
+                    value={formData.email}
+                    onChange={e => setFormData({...formData, email: e.target.value})}
+                    placeholder="admin@basho.com"
+                    className="w-full pl-10 pr-4 py-3 bg-white border border-stone-200 rounded-lg focus:border-[#C85428] focus:ring-1 focus:ring-[#C85428] outline-none transition-all text-sm"
+                  />
+                </div>
+                <p className="text-xs text-stone-500">
+                  If this user already exists, they will be upgraded to Admin status immediately.
+                </p>
+              </div>
+
+              <div className="pt-4 flex gap-3">
+                <button 
+                  type="button"
+                  onClick={() => setShowAddForm(false)}
+                  className="flex-1 py-3 text-sm font-semibold text-stone-600 hover:bg-stone-50 rounded-lg border border-transparent hover:border-stone-200 transition-all"
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit"
+                  disabled={isLoading}
+                  className="flex-1 py-3 bg-[#442D1C] text-white text-sm font-semibold rounded-lg hover:bg-[#2E1F14] transition-all disabled:opacity-70 flex items-center justify-center gap-2"
+                >
+                  {isLoading ? <Loader2 className="animate-spin" size={18} /> : 'Grant Access'}
+                </button>
+              </div>
+            </form>
           </div>
-          <button 
-            onClick={() => setSettings({...settings, maintenanceMode: !settings.maintenanceMode})}
-            className={`w-12 h-6 rounded-full p-1 transition-colors duration-300 ${
-              settings.maintenanceMode ? 'bg-basho-earth' : 'bg-stone-300'
-            }`}
-          >
-            <div className={`w-4 h-4 rounded-full bg-white shadow-sm transition-transform duration-300 ${
-              settings.maintenanceMode ? 'translate-x-6' : 'translate-x-0'
-            }`} />
-          </button>
         </div>
-      </div>
-
-      {/* DANGER ZONE */}
-      <div className="bg-red-50 p-6 rounded-2xl border border-red-100">
-        <h3 className="font-serif font-bold text-lg text-red-800 mb-4 flex items-center gap-2">
-          <AlertTriangle size={20} />
-          Danger Zone
-        </h3>
-        <p className="text-sm text-red-600 mb-6">
-          Irreversible actions. Please be careful.
-        </p>
-        
-        <div className="flex gap-4">
-          <button className="px-4 py-2 bg-white border border-red-200 text-red-600 text-sm font-medium rounded-lg hover:bg-red-50 transition-colors">
-            Reset Database
-          </button>
-          <button className="px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 transition-colors">
-            Delete Project
-          </button>
-        </div>
-      </div>
-
+      )}
     </div>
   )
 }
