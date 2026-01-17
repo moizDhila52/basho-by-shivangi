@@ -141,16 +141,16 @@ export default function AdminCategoriesPage() {
   );
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 md:space-y-8 p-4 md:p-0">
       {/* Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="font-serif text-3xl font-bold text-[#442D1C]">Categories</h1>
+          <h1 className="font-serif text-2xl md:text-3xl font-bold text-[#442D1C]">Categories</h1>
           <p className="text-[#8E5022] mt-1 text-sm">Organize your product catalog</p>
         </div>
         <button
           onClick={() => openModal()}
-          className="flex items-center gap-2 bg-[#442D1C] text-[#EDD8B4] px-5 py-2.5 rounded-lg font-medium hover:bg-[#652810] transition-colors shadow-sm"
+          className="w-full sm:w-auto flex items-center justify-center gap-2 bg-[#442D1C] text-[#EDD8B4] px-5 py-2.5 rounded-lg font-medium hover:bg-[#652810] transition-colors shadow-sm active:scale-95"
         >
           <Plus className="w-4 h-4" /> New Category
         </button>
@@ -160,20 +160,20 @@ export default function AdminCategoriesPage() {
       <div className="bg-white rounded-xl border border-[#EDD8B4] shadow-sm overflow-hidden">
         {/* Search Bar */}
         <div className="p-4 border-b border-[#EDD8B4]/30 bg-[#FDFBF7]/50">
-          <div className="relative max-w-md">
+          <div className="relative max-w-md w-full">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8E5022]" />
             <input
               type="text"
               placeholder="Search categories..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 bg-white border border-[#EDD8B4] rounded-lg text-sm text-[#442D1C] focus:ring-1 focus:ring-[#C85428] outline-none"
+              className="w-full pl-9 pr-4 py-2.5 bg-white border border-[#EDD8B4] rounded-lg text-sm text-[#442D1C] focus:ring-1 focus:ring-[#C85428] outline-none transition-shadow"
             />
           </div>
         </div>
 
-        {/* Table */}
-        <div className="overflow-x-auto">
+        {/* DESKTOP TABLE (Hidden on mobile) */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead className="bg-[#FDFBF7] text-[#8E5022] font-semibold border-b border-[#EDD8B4]">
               <tr>
@@ -205,7 +205,6 @@ export default function AdminCategoriesPage() {
                       {category.slug}
                     </td>
                     
-                    {/* PRODUCT COUNT BADGE */}
                     <td className="p-4">
                       <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold ${
                         (category._count?.Product || 0) > 0 
@@ -240,6 +239,58 @@ export default function AdminCategoriesPage() {
             </tbody>
           </table>
         </div>
+
+        {/* MOBILE CARDS (Hidden on desktop) */}
+        <div className="md:hidden divide-y divide-[#EDD8B4]/20">
+            {filteredCategories.length === 0 ? (
+                <div className="p-8 text-center text-[#8E5022]/60">
+                    No categories found.
+                </div>
+            ) : (
+                filteredCategories.map((category) => (
+                    <div key={category.id} className="p-4 flex flex-col gap-3">
+                        <div className="flex justify-between items-start">
+                            <div>
+                                <h3 className="font-medium text-[#442D1C] text-base">{category.name}</h3>
+                                {category.description && (
+                                    <p className="text-xs text-[#8E5022] mt-0.5 line-clamp-2">
+                                        {category.description}
+                                    </p>
+                                )}
+                            </div>
+                            <div className="flex gap-1">
+                                <button 
+                                    onClick={() => openModal(category)}
+                                    className="p-2 text-[#8E5022] bg-[#FDFBF7] rounded-lg border border-[#EDD8B4]/50"
+                                >
+                                    <Edit2 size={16} />
+                                </button>
+                                <button 
+                                    onClick={() => promptDelete(category)}
+                                    className="p-2 text-red-600 bg-red-50 rounded-lg border border-red-100"
+                                >
+                                    <Trash2 size={16} />
+                                </button>
+                            </div>
+                        </div>
+
+                        <div className="flex items-center justify-between text-xs mt-1">
+                            <span className="font-mono text-stone-400 bg-stone-50 px-2 py-0.5 rounded border border-stone-100">
+                                {category.slug}
+                            </span>
+                             <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold ${
+                                (category._count?.Product || 0) > 0 
+                                ? 'bg-[#EDD8B4]/30 text-[#8E5022]' 
+                                : 'bg-stone-100 text-stone-400'
+                            }`}>
+                                <Package size={12} />
+                                {category._count?.Product || 0} Products
+                            </span>
+                        </div>
+                    </div>
+                ))
+            )}
+        </div>
       </div>
 
       {/* CREATE / EDIT MODAL */}
@@ -247,21 +298,21 @@ export default function AdminCategoriesPage() {
         {isModalOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#442D1C]/50 backdrop-blur-sm" onClick={(e) => e.target === e.currentTarget && closeModal()}>
             <motion.div 
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-white rounded-xl shadow-2xl w-full max-w-md border border-[#EDD8B4]"
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="bg-white rounded-xl shadow-2xl w-full max-w-md border border-[#EDD8B4] overflow-hidden max-h-[90vh] flex flex-col"
             >
-              <div className="p-5 border-b border-[#EDD8B4] flex items-center justify-between bg-[#FDFBF7] rounded-t-xl">
+              <div className="p-5 border-b border-[#EDD8B4] flex items-center justify-between bg-[#FDFBF7] shrink-0">
                 <h2 className="font-serif text-xl font-bold text-[#442D1C]">
                   {editingCategory ? 'Edit Category' : 'New Category'}
                 </h2>
-                <button onClick={closeModal} className="text-[#8E5022] hover:text-[#442D1C]">
+                <button onClick={closeModal} className="text-[#8E5022] hover:text-[#442D1C] p-1">
                   <X size={20} />
                 </button>
               </div>
 
-              <form onSubmit={handleSubmit} className="p-6 space-y-4">
+              <form onSubmit={handleSubmit} className="p-6 space-y-4 overflow-y-auto">
                 <div>
                   <label className="block text-xs font-bold text-[#8E5022] uppercase mb-1">Category Name</label>
                   <input
@@ -284,18 +335,18 @@ export default function AdminCategoriesPage() {
                   />
                 </div>
 
-                <div className="pt-2 flex gap-3">
+                <div className="pt-2 flex flex-col sm:flex-row gap-3">
                   <button
                     type="button"
                     onClick={closeModal}
-                    className="flex-1 py-2.5 text-[#8E5022] hover:bg-[#EDD8B4]/20 rounded-lg font-medium transition-colors"
+                    className="w-full sm:flex-1 py-3 sm:py-2.5 text-[#8E5022] hover:bg-[#EDD8B4]/20 rounded-lg font-medium transition-colors order-2 sm:order-1"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="flex-1 py-2.5 bg-[#442D1C] text-[#EDD8B4] rounded-lg font-bold hover:bg-[#652810] shadow-md transition-colors flex items-center justify-center gap-2 disabled:opacity-70"
+                    className="w-full sm:flex-1 py-3 sm:py-2.5 bg-[#442D1C] text-[#EDD8B4] rounded-lg font-bold hover:bg-[#652810] shadow-md transition-colors flex items-center justify-center gap-2 disabled:opacity-70 order-1 sm:order-2"
                   >
                     {isSubmitting ? <Loader2 className="animate-spin w-4 h-4" /> : (editingCategory ? 'Save Changes' : 'Create')}
                   </button>
@@ -336,18 +387,18 @@ export default function AdminCategoriesPage() {
                   </p>
                 </div>
 
-                <div className="flex gap-3">
+                <div className="flex flex-col sm:flex-row gap-3">
                   <button
                     onClick={() => setDeleteTarget(null)}
                     disabled={isDeleting}
-                    className="flex-1 py-2.5 border border-stone-200 text-stone-600 rounded-lg font-medium hover:bg-stone-50 transition-colors"
+                    className="w-full sm:flex-1 py-3 sm:py-2.5 border border-stone-200 text-stone-600 rounded-lg font-medium hover:bg-stone-50 transition-colors order-2 sm:order-1"
                   >
                     Cancel
                   </button>
                   <button
                     onClick={confirmDelete}
                     disabled={isDeleting}
-                    className="flex-1 py-2.5 bg-red-600 text-white rounded-lg font-bold hover:bg-red-700 shadow-md transition-colors flex items-center justify-center gap-2 disabled:opacity-70"
+                    className="w-full sm:flex-1 py-3 sm:py-2.5 bg-red-600 text-white rounded-lg font-bold hover:bg-red-700 shadow-md transition-colors flex items-center justify-center gap-2 disabled:opacity-70 order-1 sm:order-2"
                   >
                     {isDeleting ? <Loader2 className="animate-spin w-4 h-4" /> : 'Yes, Delete'}
                   </button>

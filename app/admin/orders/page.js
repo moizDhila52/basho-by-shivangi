@@ -99,25 +99,26 @@ export default function AdminOrdersPage() {
     }
   }, [refreshTrigger.orders]);
 
-  // 2. Fetch Analytics
+  // 2. Fetch Analytics (Includes Safety Checks to prevent crashes)
   useEffect(() => {
     const fetchAnalytics = async () => {
       try {
         const res = await fetch('/api/admin/analytics');
         if (res.ok) {
           const data = await res.json();
+          // Using (|| []) ensures slicing doesn't crash the app if data is undefined
           setAnalyticsData({
             purchases: {
-              top5: data.topProducts.slice(0, 5),
-              all: data.topProducts,
+              top5: (data.topProducts || []).slice(0, 5),
+              all: data.topProducts || [],
             },
             wishlist: {
-              top5: data.mostWishlisted.slice(0, 5),
-              all: data.mostWishlisted,
+              top5: (data.mostWishlisted || []).slice(0, 5),
+              all: data.mostWishlisted || [],
             },
             cart: {
-              top5: data.mostCarted.slice(0, 5),
-              all: data.mostCarted,
+              top5: (data.mostCarted || []).slice(0, 5),
+              all: data.mostCarted || [],
             },
           });
         }
@@ -359,50 +360,53 @@ export default function AdminOrdersPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="font-serif text-3xl font-bold text-[#442D1C]">
+          <h1 className="font-serif text-2xl md:text-3xl font-bold text-[#442D1C]">
             Orders
           </h1>
           <p className="text-[#8E5022] mt-1 text-sm">
             Track and fulfill customer orders
           </p>
         </div>
-        <div className="flex items-center gap-3">
-          {/* --- ANALYTICS BUTTON --- */}
+        
+        {/* Actions Scrollable Container on Mobile */}
+        <div className="flex items-center gap-2 md:gap-3 w-full md:w-auto overflow-x-auto pb-2 md:pb-0">
           <button
             onClick={() => setIsAnalyticsOpen(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-[#442D1C] text-[#EDD8B4] rounded-lg hover:bg-[#652810] transition-colors text-sm font-medium shadow-md"
+            className="flex items-center gap-2 px-4 py-2 bg-[#442D1C] text-[#EDD8B4] rounded-lg hover:bg-[#652810] transition-colors text-xs md:text-sm font-medium shadow-md whitespace-nowrap"
           >
             <BarChart2 className="w-4 h-4" /> Analytics
           </button>
 
           <button
             onClick={handleCleanup}
-            className="hidden md:flex items-center gap-2 px-4 py-2 border border-red-200 text-red-700 bg-red-50 rounded-lg hover:bg-red-100 transition-colors text-sm font-medium"
+            className="flex items-center gap-2 px-4 py-2 border border-red-200 text-red-700 bg-red-50 rounded-lg hover:bg-red-100 transition-colors text-xs md:text-sm font-medium whitespace-nowrap"
           >
             <Trash2 className="w-4 h-4" /> Release Stock
           </button>
+          
           <button
             onClick={handleExportOrders}
-            className="flex items-center gap-2 px-4 py-2 border border-[#EDD8B4] text-[#8E5022] rounded-lg hover:bg-[#FDFBF7] transition-colors text-sm font-medium"
+            className="flex items-center gap-2 px-4 py-2 border border-[#EDD8B4] text-[#8E5022] rounded-lg hover:bg-[#FDFBF7] transition-colors text-xs md:text-sm font-medium whitespace-nowrap"
           >
             <Download className="w-4 h-4" /> Export CSV
           </button>
+          
           <button
             onClick={fetchOrders}
             className="p-2 border border-[#EDD8B4] rounded-lg hover:bg-[#FDFBF7] text-[#8E5022]"
             title="Refresh"
           >
-            <RefreshCw className="w-5 h-5" />
+            <RefreshCw className="w-4 h-4 md:w-5 md:h-5" />
           </button>
         </div>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Stats Cards - Grid adjusted for mobile (2 columns) */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
         <StatCard
           label="Total Revenue"
           value={stats.totalRevenue}
@@ -416,7 +420,7 @@ export default function AdminOrdersPage() {
           color="bg-[#8E5022]/10"
         />
         <StatCard
-          label="Active (Pending/Conf)"
+          label="Active"
           value={stats.pendingOrders}
           icon={<Clock className="text-[#F59E0B]" />}
           color="bg-[#F59E0B]/10"
@@ -446,7 +450,7 @@ export default function AdminOrdersPage() {
             <select
               value={dateRange}
               onChange={(e) => setDateRange(e.target.value)}
-              className="appearance-none pl-3 pr-8 py-2 bg-[#FDFBF7] border border-[#EDD8B4] rounded-lg text-sm text-[#442D1C] focus:ring-1 focus:ring-[#C85428] outline-none cursor-pointer min-w-[150px]"
+              className="w-full md:w-auto appearance-none pl-3 pr-8 py-2 bg-[#FDFBF7] border border-[#EDD8B4] rounded-lg text-sm text-[#442D1C] focus:ring-1 focus:ring-[#C85428] outline-none cursor-pointer min-w-[150px]"
             >
               <option value="all">All Time</option>
               <option value="1">Today</option>
@@ -469,7 +473,7 @@ export default function AdminOrdersPage() {
             <button
               key={status}
               onClick={() => setSelectedStatus(status)}
-              className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
+              className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all flex-shrink-0 ${
                 selectedStatus === status
                   ? 'bg-[#442D1C] text-[#EDD8B4]'
                   : 'bg-[#FDFBF7] text-[#8E5022] border border-[#EDD8B4] hover:border-[#C85428]'
@@ -481,8 +485,106 @@ export default function AdminOrdersPage() {
         </div>
       </div>
 
-      {/* Orders Table */}
-      <div className="bg-white rounded-xl border border-[#EDD8B4] shadow-sm overflow-hidden">
+      {/* --- MOBILE CARD VIEW (Visible only on mobile) --- */}
+      <div className="block md:hidden space-y-4">
+        {filteredOrders.map((order) => (
+          <div 
+            key={order.id} 
+            className="bg-white border border-[#EDD8B4] rounded-xl p-4 shadow-sm flex flex-col gap-3"
+          >
+            {/* Header */}
+            <div className="flex justify-between items-start">
+               <div>
+                  <div className="flex items-center gap-2">
+                     <span className="font-mono font-bold text-[#442D1C] text-sm">
+                       #{order.orderNumber || order.id.slice(-8).toUpperCase()}
+                     </span>
+                     {order.customerGst && (
+                        <span className="text-[10px] font-bold bg-[#442D1C] text-[#EDD8B4] px-1 rounded border border-[#EDD8B4]">
+                           B2B
+                        </span>
+                     )}
+                  </div>
+                  <div className="text-xs text-[#8E5022] mt-0.5">
+                     {format(new Date(order.createdAt), 'MMM dd, HH:mm')}
+                  </div>
+               </div>
+               <StatusBadge status={order.status} />
+            </div>
+
+            <hr className="border-[#EDD8B4]/30" />
+
+            {/* Content */}
+            <div className="flex gap-3">
+               <div className="w-10 h-10 rounded-full bg-[#EDD8B4] flex items-center justify-center overflow-hidden border border-[#C85428]/30 flex-shrink-0">
+                   {order.User?.image ? (
+                      <img
+                        src={order.User.image}
+                        alt={order.customerName}
+                        className="w-full h-full object-cover"
+                      />
+                   ) : (
+                      <User className="w-5 h-5 text-[#442D1C]" />
+                   )}
+               </div>
+               <div className="flex-1 min-w-0">
+                  <div className="font-bold text-[#442D1C] text-sm truncate">{order.customerName || 'Guest'}</div>
+                  <div className="text-xs text-[#8E5022] truncate">{order.customerEmail}</div>
+                  
+                  <div className="mt-2 text-xs bg-[#FDFBF7] p-2 rounded border border-[#EDD8B4]/50">
+                     {order.OrderItem?.slice(0, 1).map((item, idx) => (
+                        <span key={idx} className="block truncate">
+                           {item.quantity}x {item.productName}
+                        </span>
+                     ))}
+                     {order.OrderItem?.length > 1 && (
+                        <span className="text-[#C85428] font-medium block mt-1">
+                          +{order.OrderItem.length - 1} more items
+                        </span>
+                     )}
+                  </div>
+               </div>
+            </div>
+
+            {/* Footer */}
+            <div className="flex justify-between items-center pt-2 mt-1">
+               <div className="font-bold text-[#442D1C]">
+                  ₹{order.total?.toLocaleString()}
+               </div>
+               <div className="flex items-center gap-2">
+                  <select
+                    value={order.status}
+                    onChange={(e) => updateOrderStatus(order.id, e.target.value)}
+                    disabled={updatingOrder === order.id}
+                    className="bg-white border border-[#EDD8B4] rounded text-xs py-1.5 px-2 focus:ring-1 focus:ring-[#C85428] outline-none max-w-[110px]"
+                  >
+                     <option value="PENDING">Pending</option>
+                     <option value="CONFIRMED">Confirm</option>
+                     <option value="PROCESSING">Process</option>
+                     <option value="SHIPPED">Ship</option>
+                     <option value="DELIVERED">Deliver</option>
+                     <option value="CANCELLED">Cancel</option>
+                  </select>
+                  <button
+                    onClick={() => viewOrderDetails(order)}
+                    className="p-1.5 bg-[#442D1C]/5 text-[#442D1C] rounded hover:bg-[#EDD8B4]/20"
+                  >
+                     <Eye className="w-4 h-4" />
+                  </button>
+               </div>
+            </div>
+          </div>
+        ))}
+        {filteredOrders.length === 0 && (
+          <div className="p-8 text-center text-[#8E5022] bg-white rounded-xl border border-[#EDD8B4]">
+            <Package className="w-10 h-10 mx-auto mb-2 opacity-50" />
+            <p>No orders found.</p>
+          </div>
+        )}
+      </div>
+
+      {/* --- DESKTOP TABLE VIEW (Hidden on Mobile) --- */}
+      <div className="hidden md:block bg-white rounded-xl border border-[#EDD8B4] shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left">
             <thead>
@@ -510,10 +612,8 @@ export default function AdminOrdersPage() {
                     </div>
                   </td>
 
-                  {/* 👇👇👇 REPLACE THIS ENTIRE 2ND <TD> BLOCK WITH YOUR CODE 👇👇👇 */}
                   <td className="p-4">
                     <div className="flex items-center gap-3">
-                      {/* Avatar Logic */}
                       <div className="w-8 h-8 rounded-full bg-[#EDD8B4] flex items-center justify-center overflow-hidden border border-[#C85428]/30">
                         {order.User?.image ? (
                           <img
@@ -525,12 +625,10 @@ export default function AdminOrdersPage() {
                           <User className="w-4 h-4 text-[#442D1C]" />
                         )}
                       </div>
-                      {/* Name & Email */}
                       <div className="flex items-center gap-2">
                         <span className="font-bold text-[#442D1C]">
                           {order.customerName || 'Guest'}
                         </span>
-                        {/* 👇 NEW BADGE: Shows "B2B" if GST exists */}
                         {order.customerGst && (
                           <span className="text-[10px] font-bold bg-[#442D1C] text-[#EDD8B4] px-1.5 py-0.5 rounded border border-[#EDD8B4]">
                             B2B
@@ -543,7 +641,6 @@ export default function AdminOrdersPage() {
                       </div>
                     </div>
                   </td>
-                  {/* 👆👆👆 END REPLACEMENT 👆👆👆 */}
                   <td className="p-4">
                     <div className="text-xs space-y-1">
                       {order.OrderItem?.slice(0, 2).map((item, idx) => (
@@ -573,7 +670,7 @@ export default function AdminOrdersPage() {
                             key={s}
                             className={`flex-1 rounded-full ${
                               order.status === 'CANCELLED'
-                                ? 'bg-red-500' // 👈 CHANGED TO RED
+                                ? 'bg-red-500' 
                                 : STATUS_FLOW.indexOf(order.status) >= i
                                 ? getStatusColor(order.status, true)
                                 : 'bg-[#EDD8B4]/30'
@@ -630,11 +727,11 @@ export default function AdminOrdersPage() {
         )}
       </div>
 
-      {/* --- ANALYTICS MODAL --- */}
+      {/* --- ANALYTICS MODAL (IMPROVED RESPONSIVENESS) --- */}
       <AnimatePresence>
         {isAnalyticsOpen && (
           <div
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#442D1C]/60 backdrop-blur-sm"
+            className="fixed inset-0 z-50 flex items-center justify-center p-0 md:p-4 bg-[#442D1C]/60 backdrop-blur-sm"
             onClick={() => setIsAnalyticsOpen(false)}
           >
             <motion.div
@@ -642,14 +739,15 @@ export default function AdminOrdersPage() {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
               onClick={(e) => e.stopPropagation()}
-              className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl h-[85vh] flex flex-col overflow-hidden relative"
+              // Full height on mobile (h-full), rounded top only or none
+              className="bg-white md:rounded-2xl shadow-2xl w-full max-w-5xl h-full md:h-[85vh] flex flex-col overflow-hidden relative"
             >
-              <div className="p-6 bg-[#FDFBF7] border-b border-[#EDD8B4] flex justify-between items-center">
+              <div className="p-4 md:p-6 bg-[#FDFBF7] border-b border-[#EDD8B4] flex justify-between items-center">
                 <div>
-                  <h2 className="font-serif text-2xl font-bold text-[#442D1C] flex items-center gap-2">
+                  <h2 className="font-serif text-xl md:text-2xl font-bold text-[#442D1C] flex items-center gap-2">
                     <BarChart2 className="text-[#C85428]" /> Product Analytics
                   </h2>
-                  <p className="text-sm text-[#8E5022]">
+                  <p className="text-xs md:text-sm text-[#8E5022]">
                     Real-time insights based on current data.
                   </p>
                 </div>
@@ -661,20 +759,20 @@ export default function AdminOrdersPage() {
                 </button>
               </div>
 
-              <div className="flex-1 overflow-y-auto p-8 grid grid-cols-1 lg:grid-cols-2 gap-8 bg-gray-50/50">
+              <div className="flex-1 overflow-y-auto p-4 md:p-8 grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-8 bg-gray-50/50">
                 {/* 1. TOP SELLING PRODUCTS */}
-                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col">
-                  <h3 className="font-serif text-lg font-bold text-[#442D1C] mb-6 flex items-center gap-2">
+                <div className="bg-white p-4 md:p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col">
+                  <h3 className="font-serif text-lg font-bold text-[#442D1C] mb-4 md:mb-6 flex items-center gap-2">
                     <TrendingUp className="w-5 h-5 text-green-600" /> Most
                     Purchased
                   </h3>
-                  <div className="space-y-4 flex-1">
+                  <div className="space-y-3 md:space-y-4 flex-1">
                     {analyticsData.purchases.top5.map((item, i) => (
                       <div
                         key={i}
-                        className="flex items-center gap-4 p-3 hover:bg-[#FDFBF7] rounded-lg transition-colors border border-transparent hover:border-[#EDD8B4]"
+                        className="flex items-center gap-3 md:gap-4 p-2 md:p-3 hover:bg-[#FDFBF7] rounded-lg transition-colors border border-transparent hover:border-[#EDD8B4]"
                       >
-                        <div className="w-12 h-12 bg-gray-100 rounded-md overflow-hidden flex-shrink-0">
+                        <div className="w-10 h-10 md:w-12 md:h-12 bg-gray-100 rounded-md overflow-hidden flex-shrink-0">
                           {item.image && (
                             <img
                               src={item.image}
@@ -683,8 +781,8 @@ export default function AdminOrdersPage() {
                             />
                           )}
                         </div>
-                        <div className="flex-1">
-                          <p className="font-bold text-sm text-gray-800">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-bold text-sm text-gray-800 truncate">
                             {item.name}
                           </p>
                           <p className="text-xs text-gray-500 font-medium bg-green-50 text-green-700 px-2 py-0.5 rounded-full w-fit mt-1">
@@ -692,13 +790,13 @@ export default function AdminOrdersPage() {
                             {item.qty === 1 ? 'purchase' : 'purchases'}
                           </p>
                         </div>
-                        <div className="text-right">
+                        <div className="text-right hidden sm:block">
                           <p className="font-bold text-[#C85428]">
                             ₹
                             {item.revenue ? item.revenue.toLocaleString() : '-'}
                           </p>
                         </div>
-                        <div className="text-2xl font-bold text-gray-200">
+                        <div className="text-xl md:text-2xl font-bold text-gray-200">
                           #{i + 1}
                         </div>
                       </div>
@@ -721,17 +819,17 @@ export default function AdminOrdersPage() {
                 </div>
 
                 {/* 2. MOST WISHLISTED */}
-                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col">
-                  <h3 className="font-serif text-lg font-bold text-[#442D1C] mb-6 flex items-center gap-2">
+                <div className="bg-white p-4 md:p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col">
+                  <h3 className="font-serif text-lg font-bold text-[#442D1C] mb-4 md:mb-6 flex items-center gap-2">
                     <Heart className="w-5 h-5 text-red-500" /> Most Wishlisted
                   </h3>
-                  <div className="space-y-4 flex-1">
+                  <div className="space-y-3 md:space-y-4 flex-1">
                     {analyticsData.wishlist.top5.map((item, i) => (
                       <div
                         key={i}
-                        className="flex items-center gap-4 p-3 hover:bg-[#FDFBF7] rounded-lg transition-colors border border-transparent hover:border-[#EDD8B4]"
+                        className="flex items-center gap-3 md:gap-4 p-2 md:p-3 hover:bg-[#FDFBF7] rounded-lg transition-colors border border-transparent hover:border-[#EDD8B4]"
                       >
-                        <div className="w-12 h-12 bg-gray-100 rounded-md overflow-hidden flex-shrink-0">
+                        <div className="w-10 h-10 md:w-12 md:h-12 bg-gray-100 rounded-md overflow-hidden flex-shrink-0">
                           {item.image && (
                             <img
                               src={item.image}
@@ -740,15 +838,15 @@ export default function AdminOrdersPage() {
                             />
                           )}
                         </div>
-                        <div className="flex-1">
-                          <p className="font-bold text-sm text-gray-800">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-bold text-sm text-gray-800 truncate">
                             {item.name}
                           </p>
                           <p className="text-xs text-red-500 font-medium bg-red-50 px-2 py-0.5 rounded-full w-fit mt-1">
                             Wishlisted by {item.qty} users
                           </p>
                         </div>
-                        <div className="text-2xl font-bold text-gray-200">
+                        <div className="text-xl md:text-2xl font-bold text-gray-200">
                           #{i + 1}
                         </div>
                       </div>
@@ -771,18 +869,18 @@ export default function AdminOrdersPage() {
                 </div>
 
                 {/* 3. MOST CARTED */}
-                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col lg:col-span-2">
-                  <h3 className="font-serif text-lg font-bold text-[#442D1C] mb-6 flex items-center gap-2">
+                <div className="bg-white p-4 md:p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col lg:col-span-2">
+                  <h3 className="font-serif text-lg font-bold text-[#442D1C] mb-4 md:mb-6 flex items-center gap-2">
                     <ShoppingCart className="w-5 h-5 text-blue-500" /> High Cart
                     Additions
                   </h3>
-                  <div className="space-y-4 flex-1">
+                  <div className="space-y-3 md:space-y-4 flex-1">
                     {analyticsData.cart.top5.map((item, i) => (
                       <div
                         key={i}
-                        className="flex items-center gap-4 p-3 hover:bg-[#FDFBF7] rounded-lg transition-colors border border-transparent hover:border-[#EDD8B4]"
+                        className="flex items-center gap-3 md:gap-4 p-2 md:p-3 hover:bg-[#FDFBF7] rounded-lg transition-colors border border-transparent hover:border-[#EDD8B4]"
                       >
-                        <div className="w-12 h-12 bg-gray-100 rounded-md overflow-hidden flex-shrink-0">
+                        <div className="w-10 h-10 md:w-12 md:h-12 bg-gray-100 rounded-md overflow-hidden flex-shrink-0">
                           {item.image && (
                             <img
                               src={item.image}
@@ -791,15 +889,15 @@ export default function AdminOrdersPage() {
                             />
                           )}
                         </div>
-                        <div className="flex-1">
-                          <p className="font-bold text-sm text-gray-800">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-bold text-sm text-gray-800 truncate">
                             {item.name}
                           </p>
                           <p className="text-xs text-blue-600 font-medium bg-blue-50 px-2 py-0.5 rounded-full w-fit mt-1">
                             In {item.qty} active carts
                           </p>
                         </div>
-                        <div className="text-2xl font-bold text-gray-200">
+                        <div className="text-xl md:text-2xl font-bold text-gray-200">
                           #{i + 1}
                         </div>
                       </div>
@@ -823,7 +921,7 @@ export default function AdminOrdersPage() {
                 </div>
               </div>
 
-              {/* --- NESTED MODAL: DYNAMIC FULL LIST --- */}
+              {/* --- NESTED MODAL: DYNAMIC FULL LIST (Mobile Optimized) --- */}
               <AnimatePresence>
                 {fullListType && (
                   <motion.div
@@ -833,27 +931,27 @@ export default function AdminOrdersPage() {
                     transition={{ type: 'spring', damping: 25, stiffness: 200 }}
                     className="absolute inset-0 bg-white z-10 flex flex-col"
                   >
-                    <div className="p-6 bg-[#FDFBF7] border-b border-[#EDD8B4] flex items-center gap-4">
+                    <div className="p-4 md:p-6 bg-[#FDFBF7] border-b border-[#EDD8B4] flex items-center gap-4">
                       <button
                         onClick={() => setFullListType(null)}
                         className="p-2 hover:bg-[#EDD8B4]/20 rounded-full text-[#442D1C]"
                       >
                         <ArrowLeft className="w-5 h-5" />
                       </button>
-                      <h3 className="font-serif text-xl font-bold text-[#442D1C]">
+                      <h3 className="font-serif text-lg md:text-xl font-bold text-[#442D1C]">
                         {fullListContent.title}
                       </h3>
                     </div>
-                    <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                    <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4">
                       {fullListContent.data.map((item, i) => (
                         <div
                           key={i}
-                          className="flex items-center gap-6 p-4 bg-white border border-gray-100 rounded-xl hover:shadow-md transition-shadow"
+                          className="flex items-start md:items-center gap-4 md:gap-6 p-4 bg-white border border-gray-100 rounded-xl hover:shadow-md transition-shadow"
                         >
-                          <div className="text-3xl font-bold text-[#EDD8B4] w-12 text-center">
+                          <div className="text-2xl md:text-3xl font-bold text-[#EDD8B4] w-8 md:w-12 text-center flex-shrink-0 mt-1 md:mt-0">
                             #{i + 1}
                           </div>
-                          <div className="w-16 h-16 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0 border border-[#EDD8B4]">
+                          <div className="w-12 h-12 md:w-16 md:h-16 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0 border border-[#EDD8B4]">
                             {item.image && (
                               <img
                                 src={item.image}
@@ -862,14 +960,14 @@ export default function AdminOrdersPage() {
                               />
                             )}
                           </div>
-                          <div className="flex-1">
-                            <p className="font-bold text-lg text-[#442D1C]">
+                          <div className="flex-1 min-w-0">
+                            <p className="font-bold text-base md:text-lg text-[#442D1C] truncate">
                               {item.name}
                             </p>
 
                             {fullListContent.type === 'sales' && (
-                              <div className="flex gap-4 mt-1">
-                                <span className="text-sm text-green-700 bg-green-50 px-2 py-0.5 rounded-md font-medium">
+                              <div className="flex flex-col md:flex-row md:gap-4 mt-1">
+                                <span className="text-sm text-green-700 bg-green-50 px-2 py-0.5 rounded-md font-medium w-fit">
                                   {item.qty} Purchases
                                 </span>
                                 <span className="text-sm text-[#8E5022]">
@@ -906,11 +1004,11 @@ export default function AdminOrdersPage() {
         )}
       </AnimatePresence>
 
-      {/* Order Details Modal */}
+      {/* Order Details Modal (Mobile Responsive) */}
       <AnimatePresence>
         {isModalOpen && selectedOrder && (
           <div
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#442D1C]/50 backdrop-blur-sm"
+            className="fixed inset-0 z-50 flex items-center justify-center p-0 md:p-4 bg-[#442D1C]/50 backdrop-blur-sm"
             onClick={() => setIsModalOpen(false)}
           >
             <motion.div
@@ -918,15 +1016,15 @@ export default function AdminOrdersPage() {
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
               onClick={(e) => e.stopPropagation()}
-              className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden"
+              className="bg-white md:rounded-xl shadow-2xl w-full max-w-4xl h-full md:h-auto md:max-h-[90vh] flex flex-col overflow-hidden"
             >
               {/* Modal Header */}
-              <div className="p-6 bg-[#FDFBF7] border-b border-[#EDD8B4] flex justify-between items-start">
+              <div className="p-4 md:p-6 bg-[#FDFBF7] border-b border-[#EDD8B4] flex justify-between items-start">
                 <div>
-                  <h2 className="font-serif text-2xl font-bold text-[#442D1C]">
+                  <h2 className="font-serif text-xl md:text-2xl font-bold text-[#442D1C]">
                     Order #{selectedOrder.orderNumber || selectedOrder.id}
                   </h2>
-                  <p className="text-sm text-[#8E5022] mt-1">
+                  <p className="text-xs md:text-sm text-[#8E5022] mt-1">
                     {format(
                       new Date(selectedOrder.createdAt),
                       "MMMM dd, yyyy 'at' HH:mm",
@@ -942,7 +1040,7 @@ export default function AdminOrdersPage() {
               </div>
 
               {/* Modal Body */}
-              <div className="flex-1 overflow-y-auto p-6 space-y-8">
+              <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6 md:space-y-8">
                 {/* Payment Verification */}
                 {selectedOrder.status === 'PENDING' && (
                   <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6">
@@ -984,7 +1082,7 @@ export default function AdminOrdersPage() {
                   </div>
                 )}
 
-                {/* 👇 NEW: Invoice Correction Box (Only for Admins) 👇 */}
+                {/* Invoice Correction */}
                 <div className="bg-white p-4 rounded-xl border border-stone-200 shadow-sm mb-6">
                   <h3 className="font-serif font-bold text-[#442D1C] text-sm mb-3 flex items-center gap-2">
                     <Printer className="w-4 h-4 text-[#8E5022]" /> Invoice
@@ -999,7 +1097,7 @@ export default function AdminOrdersPage() {
                         type="text"
                         defaultValue={selectedOrder.customerGst || ''}
                         id="admin-gst-input"
-                        placeholder="Enter GSTIN (e.g. 22AAAAA0000A1Z5)"
+                        placeholder="Enter GSTIN"
                         className="w-full px-3 py-2 bg-[#FDFBF7] border border-[#EDD8B4] rounded-lg text-sm text-[#442D1C] focus:ring-1 focus:ring-[#C85428] outline-none uppercase"
                       />
                     </div>
@@ -1009,7 +1107,6 @@ export default function AdminOrdersPage() {
                           document.getElementById('admin-gst-input');
                         const newGst = input.value.trim().toUpperCase();
 
-                        // Optimistic Update
                         const oldOrder = selectedOrder;
                         setSelectedOrder({
                           ...selectedOrder,
@@ -1017,8 +1114,6 @@ export default function AdminOrdersPage() {
                         });
 
                         try {
-                          // Reuse your existing update API or create a specific action
-                          // Since your update API handles generic fields, we can use it!
                           const res = await fetch('/api/admin/orders/update', {
                             method: 'PUT',
                             headers: { 'Content-Type': 'application/json' },
@@ -1033,9 +1128,9 @@ export default function AdminOrdersPage() {
                           toast.success(
                             'GST Updated! User can now download Tax Invoice.',
                           );
-                          fetchOrders(); // Refresh master list
+                          fetchOrders();
                         } catch (e) {
-                          setSelectedOrder(oldOrder); // Revert
+                          setSelectedOrder(oldOrder);
                           toast.error('Failed to save GST');
                         }
                       }}
@@ -1044,15 +1139,10 @@ export default function AdminOrdersPage() {
                       Save
                     </button>
                   </div>
-                  <p className="text-[10px] text-stone-400 mt-2 italic">
-                    * Adding a GST number here instantly enables the "Tax
-                    Invoice" option in the user's dashboard.
-                  </p>
                 </div>
-                {/* 👆 END NEW BOX 👆 */}
 
                 {/* Customer & Address */}
-                <div className="grid md:grid-cols-2 gap-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   <div>
                     <h3 className="font-serif font-bold text-[#442D1C] border-b border-[#EDD8B4] pb-2 mb-4">
                       Customer
@@ -1060,7 +1150,6 @@ export default function AdminOrdersPage() {
                     <div className="space-y-3 text-sm">
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 rounded-full bg-[#EDD8B4] flex items-center justify-center overflow-hidden border border-[#C85428]/30">
-                          {/* 👇 Image Logic Added Here 👇 */}
                           {selectedOrder.User?.image ? (
                             <img
                               src={selectedOrder.User.image}
@@ -1209,7 +1298,7 @@ export default function AdminOrdersPage() {
               </div>
 
               {/* Footer */}
-              <div className="p-6 bg-[#FDFBF7] border-t border-[#EDD8B4] flex flex-col sm:flex-row justify-between items-center gap-4">
+              <div className="p-4 md:p-6 bg-[#FDFBF7] border-t border-[#EDD8B4] flex flex-col sm:flex-row justify-between items-center gap-4">
                 <div className="text-xs text-[#8E5022] w-full sm:w-auto">
                   <span className="font-bold mr-2">Update Status:</span>
                   <select
@@ -1217,7 +1306,7 @@ export default function AdminOrdersPage() {
                     onChange={(e) =>
                       updateOrderStatus(selectedOrder.id, e.target.value)
                     }
-                    className="bg-white border border-[#EDD8B4] rounded p-2 focus:ring-1 focus:ring-[#C85428] outline-none cursor-pointer text-sm"
+                    className="bg-white border border-[#EDD8B4] rounded p-2 focus:ring-1 focus:ring-[#C85428] outline-none cursor-pointer text-sm w-full sm:w-auto"
                   >
                     <option value="PENDING">Pending</option>
                     <option value="CONFIRMED">Confirmed</option>
@@ -1235,7 +1324,7 @@ export default function AdminOrdersPage() {
                     className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 border border-[#442D1C] text-[#442D1C] rounded-lg hover:bg-[#EDD8B4]/20 transition-colors text-sm font-medium"
                   >
                     <Package className="w-4 h-4" />
-                    Shipping Label
+                    Label
                   </Link>
 
                   <Link
@@ -1244,7 +1333,7 @@ export default function AdminOrdersPage() {
                     className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-[#442D1C] text-white rounded-lg hover:bg-[#2c1d12] transition-colors text-sm font-medium shadow-sm"
                   >
                     <Printer className="w-4 h-4" />
-                    Print Invoice
+                    Invoice
                   </Link>
                 </div>
               </div>
@@ -1262,10 +1351,10 @@ function StatCard({ label, value, icon, color }) {
     <div className="bg-white p-4 rounded-xl border border-[#EDD8B4] shadow-sm flex items-center justify-between">
       <div>
         <p className="text-xs text-[#8E5022] font-bold uppercase">{label}</p>
-        <p className="text-2xl font-bold text-[#442D1C] mt-1">{value}</p>
+        <p className="text-xl md:text-2xl font-bold text-[#442D1C] mt-1">{value}</p>
       </div>
-      <div className={`p-3 rounded-lg ${color}`}>
-        {React.cloneElement(icon, { size: 24 })}
+      <div className={`p-2 md:p-3 rounded-lg ${color}`}>
+        {React.cloneElement(icon, { className: `${icon.props.className} w-5 h-5 md:w-6 md:h-6` })}
       </div>
     </div>
   );
@@ -1278,7 +1367,7 @@ function StatusBadge({ status }) {
     PROCESSING: 'bg-blue-100 text-blue-800 border-blue-200',
     SHIPPED: 'bg-purple-100 text-purple-800 border-purple-200',
     DELIVERED: 'bg-green-100 text-green-800 border-green-200',
-    CANCELLED: 'bg-red-100 text-red-800 border-red-200', // 👈 Added
+    CANCELLED: 'bg-red-100 text-red-800 border-red-200',
   };
 
   const icons = {
@@ -1294,7 +1383,7 @@ function StatusBadge({ status }) {
 
   return (
     <span
-      className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold border ${
+      className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] md:text-xs font-bold border ${
         styles[status] || 'bg-gray-100 text-gray-800'
       }`}
     >

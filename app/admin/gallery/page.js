@@ -11,9 +11,9 @@ import {
   Star,
   X,
   Image as ImageIcon,
-  Loader2, // Added Loader2
-  Plus, // Added Plus
-  Check, // Added Check
+  Loader2,
+  Plus,
+  Check,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { AnimatePresence, motion } from "framer-motion";
@@ -127,44 +127,46 @@ export default function AdminGalleryPage() {
   );
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen font-sans">
+    <div className="p-4 md:p-6 bg-gray-50 min-h-screen font-sans">
       <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+        
+        {/* Responsive Header */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 md:mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-[#442D1C]">
+            <h1 className="text-2xl md:text-3xl font-bold text-[#442D1C]">
               Gallery Management
             </h1>
-            <p className="text-gray-600 mt-1">
+            <p className="text-sm md:text-base text-gray-600 mt-1">
               Manage photos and images across all categories
             </p>
           </div>
 
-          <div className="flex gap-3">
+          <div className="flex gap-2 w-full md:w-auto">
             <button
               onClick={() => setViewMode(viewMode === "grid" ? "list" : "grid")}
-              className="px-4 py-3 bg-white border border-gray-300 rounded-xl font-medium hover:bg-gray-50 transition-colors flex items-center gap-2 text-stone-700"
+              className="flex-1 md:flex-none px-4 py-3 bg-white border border-gray-300 rounded-xl font-medium hover:bg-gray-50 transition-colors flex items-center justify-center gap-2 text-stone-700 active:scale-95"
             >
               {viewMode === "grid" ? (
                 <List className="w-5 h-5" />
               ) : (
                 <Grid className="w-5 h-5" />
               )}
-              {viewMode === "grid" ? "List View" : "Grid View"}
+              <span className="hidden sm:inline">{viewMode === "grid" ? "List View" : "Grid View"}</span>
             </button>
 
             <button
               onClick={() => setShowUploadModal(true)}
-              className="bg-[#8E5022] text-white px-6 py-3 rounded-xl font-medium hover:bg-[#652810] transition-colors flex items-center gap-2 shadow-md"
+              className="flex-1 md:flex-none bg-[#8E5022] text-white px-6 py-3 rounded-xl font-medium hover:bg-[#652810] transition-colors flex items-center justify-center gap-2 shadow-md active:scale-95"
             >
               <Upload className="w-5 h-5" />
-              Upload Images
+              <span className="hidden sm:inline">Upload Images</span>
+              <span className="sm:hidden">Upload</span>
             </button>
           </div>
         </div>
 
-        {/* Filters & Search */}
-        <div className="bg-white rounded-2xl p-6 shadow-sm mb-8 border border-stone-100">
+        {/* Responsive Filters & Search */}
+        <div className="bg-white rounded-2xl p-4 md:p-6 shadow-sm mb-6 md:mb-8 border border-stone-100">
           <div className="flex flex-col md:flex-row gap-4">
             <div className="flex-1">
               <div className="relative">
@@ -174,16 +176,16 @@ export default function AdminGalleryPage() {
                   placeholder="Search gallery..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-12 pr-4 py-3 bg-gray-50 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#8E5022]/20 focus:border-[#8E5022]"
+                  className="w-full pl-12 pr-4 py-3 bg-gray-50 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#8E5022]/20 focus:border-[#8E5022] transition-shadow"
                 />
               </div>
             </div>
 
-            <div className="flex gap-4">
+            <div className="flex gap-2 md:gap-4">
               <select
                 value={categoryFilter}
                 onChange={(e) => setCategoryFilter(e.target.value)}
-                className="px-4 py-3 bg-gray-50 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#8E5022]/20 focus:border-[#8E5022] min-w-[200px]"
+                className="flex-1 md:flex-none px-4 py-3 bg-gray-50 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#8E5022]/20 focus:border-[#8E5022] min-w-[140px] md:min-w-[200px]"
               >
                 <option value="all">All Categories</option>
                 {GALLERY_CATEGORIES.map((category) => (
@@ -195,7 +197,7 @@ export default function AdminGalleryPage() {
 
               <button
                 onClick={fetchGallery}
-                className="px-6 py-3 bg-[#442D1C] text-white rounded-xl font-medium hover:bg-[#2B1B12] transition-colors"
+                className="px-6 py-3 bg-[#442D1C] text-white rounded-xl font-medium hover:bg-[#2B1B12] transition-colors active:scale-95"
               >
                 Refresh
               </button>
@@ -234,16 +236,16 @@ export default function AdminGalleryPage() {
             )}
 
             {filteredItems.length === 0 && (
-              <div className="bg-white rounded-2xl p-12 text-center shadow-sm">
-                <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-gray-100 flex items-center justify-center">
-                  <ImageIcon className="w-12 h-12 text-gray-400" />
+              <div className="bg-white rounded-2xl p-8 md:p-12 text-center shadow-sm border border-stone-100">
+                <div className="w-20 h-20 md:w-24 md:h-24 mx-auto mb-6 rounded-full bg-gray-100 flex items-center justify-center">
+                  <ImageIcon className="w-10 h-10 md:w-12 md:h-12 text-gray-400" />
                 </div>
                 <h3 className="text-xl font-semibold text-gray-900 mb-2">
                   No items found
                 </h3>
                 <button
                   onClick={() => setShowUploadModal(true)}
-                  className="bg-[#8E5022] text-white px-8 py-3 rounded-xl font-medium hover:bg-[#652810] transition-colors mt-4"
+                  className="bg-[#8E5022] text-white px-8 py-3 rounded-xl font-medium hover:bg-[#652810] transition-colors mt-4 shadow-md active:scale-95"
                 >
                   Add Your First Image
                 </button>
@@ -278,7 +280,7 @@ export default function AdminGalleryPage() {
 
 function GalleryGridView({ items, onEdit, onDelete, onToggleFeatured }) {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
       {items.map((item) => (
         <div
           key={item.id}
@@ -292,7 +294,7 @@ function GalleryGridView({ items, onEdit, onDelete, onToggleFeatured }) {
             />
 
             {/* Badges */}
-            <div className="absolute top-2 left-2 flex gap-2">
+            <div className="absolute top-2 left-2 flex gap-2 z-10">
               {item.featured && (
                 <div className="bg-[#C85428] text-white px-2 py-1 rounded-md text-xs font-bold flex items-center gap-1 shadow-sm">
                   <Star className="w-3 h-3 fill-white" />
@@ -302,17 +304,17 @@ function GalleryGridView({ items, onEdit, onDelete, onToggleFeatured }) {
             </div>
 
             {/* Category */}
-            <div className="absolute top-2 right-2">
+            <div className="absolute top-2 right-2 z-10">
               <span className="px-2 py-1 bg-black/60 backdrop-blur-md text-white rounded-md text-xs font-medium">
                 {item.category}
               </span>
             </div>
 
-            {/* Action Overlay */}
+            {/* Action Overlay - Always visible on mobile tap (via hover simulation or tapping image) or use separate buttons below on mobile if preferred, but hover works well for desktop */}
             <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
               <button
                 onClick={() => onToggleFeatured(item.id, item.featured)}
-                className={`w-10 h-10 rounded-full flex items-center justify-center transition-transform hover:scale-110 ${
+                className={`w-10 h-10 rounded-full flex items-center justify-center transition-transform hover:scale-110 active:scale-90 ${
                   item.featured
                     ? "bg-amber-400 text-white"
                     : "bg-white text-stone-600"
@@ -326,14 +328,14 @@ function GalleryGridView({ items, onEdit, onDelete, onToggleFeatured }) {
 
               <button
                 onClick={() => onEdit(item)}
-                className="w-10 h-10 rounded-full bg-white text-stone-700 hover:text-[#8E5022] flex items-center justify-center transition-transform hover:scale-110"
+                className="w-10 h-10 rounded-full bg-white text-stone-700 hover:text-[#8E5022] flex items-center justify-center transition-transform hover:scale-110 active:scale-90"
               >
                 <Edit className="w-5 h-5" />
               </button>
 
               <button
                 onClick={() => onDelete(item.id)}
-                className="w-10 h-10 rounded-full bg-red-500 text-white hover:bg-red-600 flex items-center justify-center transition-transform hover:scale-110"
+                className="w-10 h-10 rounded-full bg-red-500 text-white hover:bg-red-600 flex items-center justify-center transition-transform hover:scale-110 active:scale-90"
               >
                 <Trash2 className="w-5 h-5" />
               </button>
@@ -358,22 +360,22 @@ function GalleryListView({ items, onEdit, onDelete, onToggleFeatured }) {
   return (
     <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-stone-100">
       <div className="overflow-x-auto">
-        <table className="w-full">
+        <table className="w-full min-w-[600px]">
           <thead>
             <tr className="bg-gray-50 border-b border-gray-200">
-              <th className="py-4 px-6 text-left text-sm font-semibold text-gray-900">
+              <th className="py-4 px-6 text-left text-sm font-semibold text-gray-900 w-24">
                 Image
               </th>
               <th className="py-4 px-6 text-left text-sm font-semibold text-gray-900">
                 Details
               </th>
-              <th className="py-4 px-6 text-left text-sm font-semibold text-gray-900">
+              <th className="py-4 px-6 text-left text-sm font-semibold text-gray-900 w-32">
                 Category
               </th>
-              <th className="py-4 px-6 text-left text-sm font-semibold text-gray-900">
+              <th className="py-4 px-6 text-left text-sm font-semibold text-gray-900 w-24">
                 Featured
               </th>
-              <th className="py-4 px-6 text-left text-sm font-semibold text-gray-900">
+              <th className="py-4 px-6 text-right text-sm font-semibold text-gray-900 w-32">
                 Actions
               </th>
             </tr>
@@ -388,17 +390,17 @@ function GalleryListView({ items, onEdit, onDelete, onToggleFeatured }) {
                   <img
                     src={item.image}
                     alt={item.title}
-                    className="w-16 h-16 rounded-lg object-cover bg-stone-200"
+                    className="w-16 h-16 rounded-lg object-cover bg-stone-200 border border-stone-100"
                   />
                 </td>
                 <td className="py-4 px-6">
                   <h4 className="font-medium text-gray-900">{item.title}</h4>
-                  <p className="text-sm text-gray-500 line-clamp-1">
+                  <p className="text-sm text-gray-500 line-clamp-1 mt-0.5">
                     {item.description || "No description"}
                   </p>
                 </td>
                 <td className="py-4 px-6">
-                  <span className="px-3 py-1 bg-stone-100 text-stone-600 rounded-full text-xs font-medium border border-stone-200">
+                  <span className="px-3 py-1 bg-stone-100 text-stone-600 rounded-full text-xs font-bold border border-stone-200 inline-block">
                     {item.category}
                   </span>
                 </td>
@@ -408,7 +410,7 @@ function GalleryListView({ items, onEdit, onDelete, onToggleFeatured }) {
                     className={`p-2 rounded-full transition-colors ${
                       item.featured
                         ? "text-amber-500 bg-amber-50"
-                        : "text-gray-300 hover:text-gray-400"
+                        : "text-gray-300 hover:text-gray-400 hover:bg-gray-50"
                     }`}
                   >
                     <Star
@@ -418,8 +420,8 @@ function GalleryListView({ items, onEdit, onDelete, onToggleFeatured }) {
                     />
                   </button>
                 </td>
-                <td className="py-4 px-6">
-                  <div className="flex items-center gap-2">
+                <td className="py-4 px-6 text-right">
+                  <div className="flex items-center justify-end gap-2">
                     <button
                       onClick={() => onEdit(item)}
                       className="p-2 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors"
@@ -534,22 +536,22 @@ function GalleryModal({ item, onClose, onSuccess }) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#442D1C]/50 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-0 md:p-4 bg-[#442D1C]/50 backdrop-blur-sm"
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
       <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        exit={{ opacity: 0, scale: 0.95 }}
-        className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col border border-[#EDD8B4]"
+        initial={{ y: "100%", opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        exit={{ y: "100%", opacity: 0 }}
+        className="bg-white w-full h-[90vh] md:h-auto md:max-h-[90vh] md:rounded-xl md:w-full md:max-w-2xl flex flex-col border-t md:border border-[#EDD8B4] rounded-t-2xl shadow-2xl"
       >
-        <div className="p-5 border-b border-[#EDD8B4] flex items-center justify-between bg-[#FDFBF7] rounded-t-xl">
+        <div className="p-5 border-b border-[#EDD8B4] flex items-center justify-between bg-[#FDFBF7] md:rounded-t-xl shrink-0">
           <h2 className="font-serif text-xl font-bold text-[#442D1C]">
             {item ? "Edit Photo" : "Upload New Photo"}
           </h2>
           <button
             onClick={onClose}
-            className="text-[#8E5022] hover:text-[#442D1C]"
+            className="text-[#8E5022] hover:text-[#442D1C] p-1 rounded-full hover:bg-[#EDD8B4]/20"
           >
             <X className="w-6 h-6" />
           </button>
@@ -557,12 +559,12 @@ function GalleryModal({ item, onClose, onSuccess }) {
 
         <form
           onSubmit={handleSubmit}
-          className="overflow-y-auto p-6 space-y-6 custom-scrollbar"
+          className="overflow-y-auto p-6 space-y-6 custom-scrollbar flex-1"
         >
           {/* Cloudinary Image Upload Section */}
           <section>
-            <h3 className="font-serif font-bold text-[#442D1C] border-b border-[#EDD8B4] pb-2 mb-4">
-              Image File
+            <h3 className="font-serif font-bold text-[#442D1C] border-b border-[#EDD8B4] pb-2 mb-4 text-sm">
+              IMAGE FILE
             </h3>
             <div className="relative aspect-video rounded-lg border border-[#EDD8B4] bg-[#FDFBF7] flex flex-col items-center justify-center overflow-hidden group">
               {formData.image ? (
@@ -578,7 +580,7 @@ function GalleryModal({ item, onClose, onSuccess }) {
                       onClick={() =>
                         document.getElementById("replace-upload").click()
                       }
-                      className="p-1.5 bg-white rounded-full text-[#8E5022] shadow-sm hover:bg-gray-100"
+                      className="p-2 bg-white rounded-full text-[#8E5022] shadow-sm hover:bg-gray-100"
                       title="Replace Image"
                     >
                       <Edit className="w-4 h-4" />
@@ -599,7 +601,7 @@ function GalleryModal({ item, onClose, onSuccess }) {
                           image: "",
                         }))
                       }
-                      className="p-1.5 bg-white rounded-full text-red-500 shadow-sm hover:bg-gray-100"
+                      className="p-2 bg-white rounded-full text-red-500 shadow-sm hover:bg-gray-100"
                       title="Remove Image"
                     >
                       <X className="w-4 h-4" />
@@ -643,8 +645,8 @@ function GalleryModal({ item, onClose, onSuccess }) {
 
           {/* Basic Info */}
           <section className="space-y-4">
-            <h3 className="font-serif font-bold text-[#442D1C] border-b border-[#EDD8B4] pb-2">
-              Details
+            <h3 className="font-serif font-bold text-[#442D1C] border-b border-[#EDD8B4] pb-2 text-sm">
+              DETAILS
             </h3>
             <div className="grid md:grid-cols-2 gap-4">
               <div>
@@ -658,7 +660,7 @@ function GalleryModal({ item, onClose, onSuccess }) {
                   onChange={(e) =>
                     setFormData({ ...formData, title: e.target.value })
                   }
-                  className="w-full p-2.5 bg-[#FDFBF7] border border-[#EDD8B4] rounded-lg focus:ring-1 focus:ring-[#C85428] outline-none"
+                  className="w-full p-3 bg-[#FDFBF7] border border-[#EDD8B4] rounded-lg focus:ring-1 focus:ring-[#C85428] outline-none transition-shadow"
                   placeholder="e.g. Morning Light"
                 />
               </div>
@@ -673,7 +675,7 @@ function GalleryModal({ item, onClose, onSuccess }) {
                   onChange={(e) =>
                     setFormData({ ...formData, category: e.target.value })
                   }
-                  className="w-full p-2.5 bg-[#FDFBF7] border border-[#EDD8B4] rounded-lg focus:ring-1 focus:ring-[#C85428] outline-none"
+                  className="w-full p-3 bg-[#FDFBF7] border border-[#EDD8B4] rounded-lg focus:ring-1 focus:ring-[#C85428] outline-none transition-shadow"
                 >
                   {GALLERY_CATEGORIES.map((category) => (
                     <option key={category} value={category}>
@@ -692,7 +694,7 @@ function GalleryModal({ item, onClose, onSuccess }) {
                   onChange={(e) =>
                     setFormData({ ...formData, description: e.target.value })
                   }
-                  className="w-full p-2.5 bg-[#FDFBF7] border border-[#EDD8B4] rounded-lg focus:ring-1 focus:ring-[#C85428] outline-none"
+                  className="w-full p-3 bg-[#FDFBF7] border border-[#EDD8B4] rounded-lg focus:ring-1 focus:ring-[#C85428] outline-none transition-shadow resize-none"
                   rows="3"
                   placeholder="Tell the story..."
                 />
@@ -708,7 +710,7 @@ function GalleryModal({ item, onClose, onSuccess }) {
                   onChange={(e) =>
                     setFormData({ ...formData, eventId: e.target.value })
                   }
-                  className="w-full p-2.5 bg-[#FDFBF7] border border-[#EDD8B4] rounded-lg focus:ring-1 focus:ring-[#C85428] outline-none"
+                  className="w-full p-3 bg-[#FDFBF7] border border-[#EDD8B4] rounded-lg focus:ring-1 focus:ring-[#C85428] outline-none transition-shadow"
                   placeholder="UUID of related event"
                 />
               </div>
@@ -716,13 +718,13 @@ function GalleryModal({ item, onClose, onSuccess }) {
           </section>
 
           {/* Flags */}
-          <section className="pt-2">
-            <label className="flex items-center gap-2 cursor-pointer select-none">
+          <section className="pt-2 pb-4">
+            <label className="flex items-center gap-3 cursor-pointer select-none bg-stone-50 p-3 rounded-xl border border-stone-100">
               <div
                 className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${
                   formData.featured
                     ? "bg-[#C85428] border-[#C85428]"
-                    : "border-[#EDD8B4] bg-[#FDFBF7]"
+                    : "border-[#EDD8B4] bg-white"
                 }`}
               >
                 {formData.featured && (
@@ -744,22 +746,22 @@ function GalleryModal({ item, onClose, onSuccess }) {
           </section>
         </form>
 
-        <div className="p-5 border-t border-[#EDD8B4] bg-[#FDFBF7] rounded-b-xl flex justify-end gap-3">
+        <div className="p-5 border-t border-[#EDD8B4] bg-[#FDFBF7] md:rounded-b-xl flex justify-end gap-3 shrink-0">
           <button
             onClick={onClose}
-            className="px-5 py-2.5 text-[#8E5022] hover:bg-[#EDD8B4]/20 rounded-lg font-medium transition-colors"
+            className="px-6 py-3 text-[#8E5022] hover:bg-[#EDD8B4]/20 rounded-lg font-medium transition-colors w-full md:w-auto"
           >
             Cancel
           </button>
           <button
             onClick={handleSubmit}
             disabled={isSubmitting || !formData.image}
-            className="px-5 py-2.5 bg-[#442D1C] text-[#EDD8B4] rounded-lg font-bold hover:bg-[#652810] shadow-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-6 py-3 bg-[#442D1C] text-[#EDD8B4] rounded-lg font-bold hover:bg-[#652810] shadow-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 w-full md:w-auto active:scale-95"
           >
             {isSubmitting ? (
-              <div className="flex items-center gap-2">
+              <>
                 <Loader2 className="w-4 h-4 animate-spin" /> Saving...
-              </div>
+              </>
             ) : item ? (
               "Save Changes"
             ) : (

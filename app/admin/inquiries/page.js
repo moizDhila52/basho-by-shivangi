@@ -42,14 +42,14 @@ export default function AdminInquiriesPage() {
   const [viewType, setViewType] = useState('CUSTOMER'); // "CUSTOMER" or "CORPORATE"
   const [replyMessage, setReplyMessage] = useState(''); // For the email composer
   const [isReplying, setIsReplying] = useState(false);
-  const { addToast } = useToast(); // Ensure addToast is destructured
+  const { addToast } = useToast();
 
   // Modal State
   const [selectedInquiry, setSelectedInquiry] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [adminNote, setAdminNote] = useState(''); // Local state for note editing
+  const [adminNote, setAdminNote] = useState('');
   const [savingNote, setSavingNote] = useState(false);
-  const { refreshTrigger, markAsRead } = useNotification(); // Get Hook
+  const { refreshTrigger, markAsRead } = useNotification();
 
   useEffect(() => {
     markAsRead('inquiries');
@@ -58,7 +58,7 @@ export default function AdminInquiriesPage() {
   // 2. Real-time refresh
   useEffect(() => {
     if (refreshTrigger.inquiries > 0) {
-      fetchInquiries(); // Silent refresh
+      fetchInquiries();
     }
   }, [refreshTrigger.inquiries]);
 
@@ -84,7 +84,6 @@ export default function AdminInquiriesPage() {
   // --- Filtering ---
   const filteredInquiries = useMemo(() => {
     return inquiries.filter((item) => {
-      // Logic: If companyName is "Individual", it's a Customer Inquiry
       const isCorporate = item.companyName !== 'Individual';
       const typeMatches = viewType === 'CORPORATE' ? isCorporate : !isCorporate;
 
@@ -102,7 +101,6 @@ export default function AdminInquiriesPage() {
   // --- Actions ---
 
   const handleStatusChange = async (id, newStatus) => {
-    // Optimistic Update
     const oldInquiries = [...inquiries];
     setInquiries((prev) =>
       prev.map((i) => (i.id === id ? { ...i, status: newStatus } : i)),
@@ -136,7 +134,6 @@ export default function AdminInquiriesPage() {
 
       if (!res.ok) throw new Error();
 
-      // Update local state
       const updated = await res.json();
       setInquiries((prev) =>
         prev.map((i) => (i.id === updated.id ? updated : i)),
@@ -214,11 +211,11 @@ export default function AdminInquiriesPage() {
     );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-4 md:p-0">
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="font-serif text-3xl font-bold text-[#442D1C]">
+          <h1 className="font-serif text-2xl md:text-3xl font-bold text-[#442D1C]">
             Inquiries
           </h1>
           <p className="text-[#8E5022] mt-1 text-sm">
@@ -226,40 +223,42 @@ export default function AdminInquiriesPage() {
           </p>
         </div>
 
-        {/* VIEW TOGGLE */}
-        <div className="flex bg-[#EDD8B4]/20 p-1 rounded-xl border border-[#EDD8B4]">
+        <div className="flex items-center gap-2 w-full md:w-auto">
+          {/* VIEW TOGGLE */}
+          <div className="flex bg-[#EDD8B4]/20 p-1 rounded-xl border border-[#EDD8B4] flex-1 md:flex-none">
+            <button
+              onClick={() => setViewType('CUSTOMER')}
+              className={`flex-1 md:flex-none px-4 py-2 rounded-lg text-sm font-bold transition-all ${
+                viewType === 'CUSTOMER'
+                  ? 'bg-[#442D1C] text-white shadow-md'
+                  : 'text-[#8E5022]'
+              }`}
+            >
+              Customer
+            </button>
+            <button
+              onClick={() => setViewType('CORPORATE')}
+              className={`flex-1 md:flex-none px-4 py-2 rounded-lg text-sm font-bold transition-all ${
+                viewType === 'CORPORATE'
+                  ? 'bg-[#442D1C] text-white shadow-md'
+                  : 'text-[#8E5022]'
+              }`}
+            >
+              Corporate
+            </button>
+          </div>
+
           <button
-            onClick={() => setViewType('CUSTOMER')}
-            className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${
-              viewType === 'CUSTOMER'
-                ? 'bg-[#442D1C] text-white shadow-md'
-                : 'text-[#8E5022]'
-            }`}
+            onClick={fetchInquiries}
+            className="p-2.5 border border-[#EDD8B4] rounded-lg hover:bg-[#FDFBF7] text-[#8E5022] transition-colors"
           >
-            Customer
-          </button>
-          <button
-            onClick={() => setViewType('CORPORATE')}
-            className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${
-              viewType === 'CORPORATE'
-                ? 'bg-[#442D1C] text-white shadow-md'
-                : 'text-[#8E5022]'
-            }`}
-          >
-            Corporate
+            <RefreshCw className="w-5 h-5" />
           </button>
         </div>
-
-        <button
-          onClick={fetchInquiries}
-          className="p-2 border border-[#EDD8B4] rounded-lg hover:bg-[#FDFBF7] text-[#8E5022] transition-colors"
-        >
-          <RefreshCw className="w-5 h-5" />
-        </button>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      {/* Stats - Grid 2x2 on mobile, 4x1 on desktop */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
         <StatCard
           label="Pending"
           value={stats.pending}
@@ -295,15 +294,15 @@ export default function AdminInquiriesPage() {
             placeholder="Search company, contact person..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 bg-[#FDFBF7] border border-[#EDD8B4] rounded-lg text-sm text-[#442D1C] focus:ring-1 focus:ring-[#C85428] outline-none"
+            className="w-full pl-9 pr-4 py-2.5 bg-[#FDFBF7] border border-[#EDD8B4] rounded-lg text-sm text-[#442D1C] focus:ring-1 focus:ring-[#C85428] outline-none"
           />
         </div>
-        <div className="flex gap-2 w-full md:w-auto overflow-x-auto pb-2 md:pb-0">
+        <div className="flex gap-2 w-full md:w-auto overflow-x-auto pb-2 md:pb-0 scrollbar-hide">
           {['ALL', ...INQUIRY_STATUSES].map((status) => (
             <button
               key={status}
               onClick={() => setSelectedStatus(status)}
-              className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all ${
+              className={`px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap transition-all flex-shrink-0 ${
                 selectedStatus === status
                   ? 'bg-[#442D1C] text-[#EDD8B4]'
                   : 'bg-[#FDFBF7] text-[#8E5022] border border-[#EDD8B4] hover:border-[#C85428]'
@@ -315,75 +314,123 @@ export default function AdminInquiriesPage() {
         </div>
       </div>
 
-      {/* List */}
-      <div className="bg-white rounded-xl border border-[#EDD8B4] overflow-hidden shadow-sm">
+      {/* List Content */}
+      <div className="bg-transparent md:bg-white md:rounded-xl md:border md:border-[#EDD8B4] md:overflow-hidden md:shadow-sm">
         {filteredInquiries.length === 0 ? (
-          <div className="p-12 text-center text-[#8E5022]">
+          <div className="p-12 text-center text-[#8E5022] bg-white rounded-xl border border-[#EDD8B4] md:border-0">
             <MessageSquare className="w-12 h-12 mx-auto mb-3 opacity-50" />
             <p>No inquiries found.</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left">
-              <thead className="bg-[#FDFBF7] border-b border-[#EDD8B4]">
-                <tr className="text-xs font-bold text-[#8E5022] uppercase">
-                  <th className="p-4">Contact</th>
-                  {viewType === 'CORPORATE' && <th className="p-4">Company</th>}
-                  <th className="p-4">Interests</th>
-                  <th className="p-4">Status</th>
-                  <th className="p-4 text-right">Date</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[#EDD8B4]/30 text-sm text-[#442D1C]">
-                {filteredInquiries.map((inquiry) => (
-                  <tr
-                    key={inquiry.id}
-                    onClick={() => openModal(inquiry)}
-                    className="hover:bg-[#FDFBF7]/50 cursor-pointer transition-colors group"
-                  >
-                    <td className="p-4">
-                      <div className="font-bold">{inquiry.contactName}</div>
-                      <div className="text-xs text-[#8E5022]">
-                        {inquiry.email}
-                      </div>
-                    </td>
-                    {viewType === 'CORPORATE' && (
+          <>
+            {/* Desktop Table View */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-left">
+                <thead className="bg-[#FDFBF7] border-b border-[#EDD8B4]">
+                  <tr className="text-xs font-bold text-[#8E5022] uppercase">
+                    <th className="p-4">Contact</th>
+                    {viewType === 'CORPORATE' && <th className="p-4">Company</th>}
+                    <th className="p-4">Interests</th>
+                    <th className="p-4">Status</th>
+                    <th className="p-4 text-right">Date</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[#EDD8B4]/30 text-sm text-[#442D1C]">
+                  {filteredInquiries.map((inquiry) => (
+                    <tr
+                      key={inquiry.id}
+                      onClick={() => openModal(inquiry)}
+                      className="hover:bg-[#FDFBF7]/50 cursor-pointer transition-colors group"
+                    >
                       <td className="p-4">
-                        <div className="flex items-center gap-2">
-                          <Briefcase className="w-3 h-3 text-[#8E5022]" />
-                          {inquiry.companyName}
-                        </div>
-                        <div className="text-xs text-[#8E5022] pl-5">
-                          {inquiry.companySize || 'N/A'}
+                        <div className="font-bold">{inquiry.contactName}</div>
+                        <div className="text-xs text-[#8E5022]">
+                          {inquiry.email}
                         </div>
                       </td>
-                    )}
-                    <td className="p-4">
-                      <div className="flex flex-wrap gap-1">
-                        {inquiry.interest?.slice(0, 2).map((tag, i) => (
-                          <span
-                            key={i}
-                            className="px-2 py-0.5 bg-[#EDD8B4]/30 rounded text-xs text-[#652810] border border-[#EDD8B4]/50"
-                          >
-                            {tag}
-                          </span>
-                        ))}
-                        {(inquiry.interest?.length || 0) > 2 && (
-                          <span className="text-xs text-[#8E5022]">...</span>
-                        )}
-                      </div>
-                    </td>
-                    <td className="p-4">
-                      <StatusBadge status={inquiry.status} />
-                    </td>
-                    <td className="p-4 text-right text-[#8E5022]">
+                      {viewType === 'CORPORATE' && (
+                        <td className="p-4">
+                          <div className="flex items-center gap-2">
+                            <Briefcase className="w-3 h-3 text-[#8E5022]" />
+                            {inquiry.companyName}
+                          </div>
+                          <div className="text-xs text-[#8E5022] pl-5">
+                            {inquiry.companySize || 'N/A'}
+                          </div>
+                        </td>
+                      )}
+                      <td className="p-4">
+                        <div className="flex flex-wrap gap-1">
+                          {inquiry.interest?.slice(0, 2).map((tag, i) => (
+                            <span
+                              key={i}
+                              className="px-2 py-0.5 bg-[#EDD8B4]/30 rounded text-xs text-[#652810] border border-[#EDD8B4]/50"
+                            >
+                              {tag}
+                            </span>
+                          ))}
+                          {(inquiry.interest?.length || 0) > 2 && (
+                            <span className="text-xs text-[#8E5022]">...</span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="p-4">
+                        <StatusBadge status={inquiry.status} />
+                      </td>
+                      <td className="p-4 text-right text-[#8E5022]">
+                        {format(new Date(inquiry.createdAt), 'MMM dd')}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobile Card View */}
+            <div className="md:hidden space-y-3">
+              {filteredInquiries.map((inquiry) => (
+                <div
+                  key={inquiry.id}
+                  onClick={() => openModal(inquiry)}
+                  className="bg-white p-4 rounded-xl border border-[#EDD8B4] shadow-sm active:scale-[0.98] transition-transform"
+                >
+                  <div className="flex justify-between items-start mb-3">
+                    <div>
+                      <h3 className="font-bold text-[#442D1C]">{inquiry.contactName}</h3>
+                      <p className="text-xs text-[#8E5022]">{inquiry.email}</p>
+                    </div>
+                    <StatusBadge status={inquiry.status} />
+                  </div>
+
+                  {viewType === 'CORPORATE' && (
+                    <div className="flex items-center gap-2 text-sm text-[#652810] mb-2 bg-[#FDFBF7] p-2 rounded-lg">
+                      <Briefcase className="w-3 h-3 text-[#8E5022]" />
+                      <span className="font-medium">{inquiry.companyName}</span>
+                      <span className="text-xs text-[#8E5022] ml-auto">
+                        {inquiry.companySize || 'N/A'}
+                      </span>
+                    </div>
+                  )}
+
+                  <div className="flex justify-between items-center mt-3 pt-3 border-t border-[#EDD8B4]/30">
+                    <div className="flex flex-wrap gap-1">
+                      {inquiry.interest?.slice(0, 3).map((tag, i) => (
+                        <span
+                          key={i}
+                          className="px-2 py-0.5 bg-[#EDD8B4]/20 rounded text-[10px] font-medium text-[#652810]"
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                    <span className="text-xs text-[#8E5022] whitespace-nowrap ml-2">
                       {format(new Date(inquiry.createdAt), 'MMM dd')}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
         )}
       </div>
 
@@ -391,25 +438,25 @@ export default function AdminInquiriesPage() {
       <AnimatePresence>
         {isModalOpen && selectedInquiry && (
           <div
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#442D1C]/50 backdrop-blur-sm"
+            className="fixed inset-0 z-50 flex items-center justify-center p-0 md:p-4 bg-[#442D1C]/50 backdrop-blur-sm"
             onClick={() => setIsModalOpen(false)}
           >
             <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
+              initial={{ y: '100%', opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: '100%', opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
-              className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden border border-[#EDD8B4]"
+              className="bg-white w-full h-[95vh] md:h-auto md:max-h-[90vh] md:w-full md:max-w-4xl md:rounded-xl shadow-2xl flex flex-col overflow-hidden border-t md:border border-[#EDD8B4] mt-auto md:mt-0 rounded-t-2xl"
             >
               {/* Modal Header */}
-              <div className="p-6 bg-[#FDFBF7] border-b border-[#EDD8B4] flex justify-between items-start">
+              <div className="p-4 md:p-6 bg-[#FDFBF7] border-b border-[#EDD8B4] flex justify-between items-start shrink-0">
                 <div>
-                  <h2 className="font-serif text-2xl font-bold text-[#442D1C]">
+                  <h2 className="font-serif text-xl md:text-2xl font-bold text-[#442D1C]">
                     {selectedInquiry.companyName === 'Individual'
                       ? 'Customer Inquiry'
                       : selectedInquiry.companyName}
                   </h2>
-                  <div className="flex items-center gap-2 text-sm text-[#8E5022] mt-1">
+                  <div className="flex items-center gap-2 text-xs md:text-sm text-[#8E5022] mt-1">
                     <User className="w-3 h-3" /> {selectedInquiry.contactName}
                     <span className="w-1 h-1 rounded-full bg-[#EDD8B4]" />
                     <Calendar className="w-3 h-3" />{' '}
@@ -421,14 +468,14 @@ export default function AdminInquiriesPage() {
                 </div>
                 <button
                   onClick={() => setIsModalOpen(false)}
-                  className="text-[#8E5022] hover:text-[#442D1C]"
+                  className="p-2 -mr-2 text-[#8E5022] hover:text-[#442D1C]"
                 >
                   <X className="w-6 h-6" />
                 </button>
               </div>
 
               {/* Modal Body */}
-              <div className="flex-1 overflow-y-auto p-6 grid grid-cols-1 lg:grid-cols-2 gap-8">
+              <div className="flex-1 overflow-y-auto p-4 md:p-6 grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8">
                 {/* Left Side: Message Details & Admin Notes */}
                 <div className="space-y-6">
                   <div className="bg-[#FDFBF7] p-4 rounded-lg border border-[#EDD8B4] space-y-2">
@@ -449,7 +496,7 @@ export default function AdminInquiriesPage() {
                     <h3 className="text-xs font-bold text-[#8E5022] uppercase mb-2">
                       Message
                     </h3>
-                    <div className="bg-gray-50 p-4 rounded-lg text-sm leading-relaxed whitespace-pre-wrap border border-gray-100">
+                    <div className="bg-gray-50 p-4 rounded-lg text-sm leading-relaxed whitespace-pre-wrap border border-gray-100 max-h-60 overflow-y-auto">
                       {selectedInquiry.message}
                     </div>
                   </div>
@@ -461,10 +508,10 @@ export default function AdminInquiriesPage() {
                     <textarea
                       value={adminNote}
                       onChange={(e) => setAdminNote(e.target.value)}
-                      className="w-full h-32 p-3 bg-[#FDFBF7] border border-[#EDD8B4] rounded-lg text-sm outline-none"
+                      className="w-full h-24 md:h-32 p-3 bg-[#FDFBF7] border border-[#EDD8B4] rounded-lg text-sm outline-none resize-none"
                     />
-                    <div className="mt-2 flex justify-between items-center">
-                      <div className="flex items-center gap-2">
+                    <div className="mt-2 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                      <div className="flex items-center gap-2 w-full sm:w-auto">
                         <span className="text-xs font-bold text-[#8E5022] uppercase">
                           Status:
                         </span>
@@ -476,7 +523,7 @@ export default function AdminInquiriesPage() {
                               e.target.value,
                             )
                           }
-                          className="bg-white border border-[#EDD8B4] rounded px-2 py-1 text-sm outline-none"
+                          className="bg-white border border-[#EDD8B4] rounded px-2 py-1 text-sm outline-none flex-1 sm:flex-none"
                         >
                           {INQUIRY_STATUSES.map((s) => (
                             <option key={s} value={s}>
@@ -487,7 +534,7 @@ export default function AdminInquiriesPage() {
                       </div>
                       <button
                         onClick={saveAdminNote}
-                        className="text-xs font-bold text-[#C85428] hover:underline"
+                        className="text-xs font-bold text-[#C85428] hover:underline w-full sm:w-auto text-right sm:text-left"
                       >
                         {savingNote ? 'Saving...' : 'Save Notes'}
                       </button>
@@ -496,7 +543,7 @@ export default function AdminInquiriesPage() {
                 </div>
 
                 {/* Right Side: Email Composer */}
-                <div className="bg-[#FDFBF7] p-6 rounded-xl border border-[#EDD8B4] flex flex-col">
+                <div className="bg-[#FDFBF7] p-4 md:p-6 rounded-xl border border-[#EDD8B4] flex flex-col">
                   <div className="flex items-center gap-2 mb-4 text-[#442D1C]">
                     <Send size={18} />
                     <h3 className="font-serif font-bold text-lg">
@@ -507,7 +554,7 @@ export default function AdminInquiriesPage() {
                   <textarea
                     value={replyMessage}
                     onChange={(e) => setReplyMessage(e.target.value)}
-                    className="flex-1 min-h-[250px] p-4 bg-white border border-[#EDD8B4] rounded-lg text-sm outline-none focus:ring-2 focus:ring-[#C85428]/20"
+                    className="flex-1 min-h-[150px] md:min-h-[250px] p-4 bg-white border border-[#EDD8B4] rounded-lg text-sm outline-none focus:ring-2 focus:ring-[#C85428]/20 resize-none"
                     placeholder="Write your professional response to the customer here..."
                   />
 
@@ -528,16 +575,17 @@ export default function AdminInquiriesPage() {
               </div>
 
               {/* Footer Actions */}
-              <div className="p-4 bg-[#FDFBF7] border-t border-[#EDD8B4] flex justify-between items-center">
+              <div className="p-4 bg-[#FDFBF7] border-t border-[#EDD8B4] flex justify-between items-center shrink-0 safe-area-pb">
                 <button
                   onClick={() => handleDelete(selectedInquiry.id)}
-                  className="text-red-500 hover:text-red-700 p-2 rounded hover:bg-red-50 transition-colors"
+                  className="text-red-500 hover:text-red-700 p-2 rounded hover:bg-red-50 transition-colors flex items-center gap-2 text-sm"
                 >
                   <Trash2 className="w-5 h-5" />
+                  <span className="md:hidden">Delete</span>
                 </button>
                 <button
                   onClick={() => setIsModalOpen(false)}
-                  className="text-sm font-medium text-[#8E5022] hover:text-[#442D1C]"
+                  className="text-sm font-medium text-[#8E5022] hover:text-[#442D1C] px-4 py-2 border border-[#EDD8B4] rounded-lg bg-white"
                 >
                   Close Detail
                 </button>
@@ -553,13 +601,13 @@ export default function AdminInquiriesPage() {
 // Helpers
 function StatCard({ label, value, icon, color }) {
   return (
-    <div className="bg-white p-4 rounded-xl border border-[#EDD8B4] shadow-sm flex items-center justify-between">
+    <div className="bg-white p-3 md:p-4 rounded-xl border border-[#EDD8B4] shadow-sm flex items-center justify-between">
       <div>
-        <p className="text-xs text-[#8E5022] font-bold uppercase">{label}</p>
-        <p className="text-2xl font-bold text-[#442D1C] mt-1">{value}</p>
+        <p className="text-[10px] md:text-xs text-[#8E5022] font-bold uppercase">{label}</p>
+        <p className="text-xl md:text-2xl font-bold text-[#442D1C] mt-1">{value}</p>
       </div>
-      <div className={`p-3 rounded-lg ${color}`}>
-        {React.cloneElement(icon, { size: 20 })}
+      <div className={`p-2 md:p-3 rounded-lg ${color}`}>
+        {React.cloneElement(icon, { size: 18, className: "md:w-5 md:h-5" })}
       </div>
     </div>
   );
@@ -575,7 +623,7 @@ function StatusBadge({ status }) {
   };
   return (
     <span
-      className={`px-2 py-0.5 rounded text-xs font-bold border ${
+      className={`px-2 py-0.5 rounded text-[10px] md:text-xs font-bold border whitespace-nowrap ${
         styles[status] || 'bg-gray-100'
       }`}
     >
