@@ -14,6 +14,9 @@ import {
   Truck,
   X,
   AlertTriangle,
+  // 👇 UPDATED: Added new icons for trust badges
+  ShieldCheck,
+  Package,
 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -159,16 +162,20 @@ export default function CartPage() {
   // --- Dynamic Calculation Logic ---
   const subtotal = getTotalPrice();
 
-  console.log("--- DEBUG SHIPPING ---");
-  cartItems.forEach(item => {
-      console.log(`Item: ${item.name}, Weight from DB: ${item.weight}, Fallback used? ${!item.weight}`);
+  console.log('--- DEBUG SHIPPING ---');
+  cartItems.forEach((item) => {
+    console.log(
+      `Item: ${item.name}, Weight from DB: ${
+        item.weight
+      }, Fallback used? ${!item.weight}`,
+    );
   });
 
   const totalWeight = cartItems.reduce((acc, item) => {
     return acc + (item.weight || 0.5) * item.quantity;
   }, 0);
 
-  console.log("Total Calculated Weight:", totalWeight);
+  console.log('Total Calculated Weight:', totalWeight);
   let shippingCost = 0;
 
   if (totalWeight <= 1) {
@@ -229,7 +236,7 @@ export default function CartPage() {
     return (
       <main className="min-h-screen bg-[#FDFBF7]">
         {/* Back Button */}
-        <div className="fixed top-20 left-4 md:top-28 md:left-8 z-30">
+        <div className="fixed top-24 left-4 md:top-28 md:left-8 z-30">
           <Link href="/products">
             <motion.button
               whileHover={{ x: -4 }}
@@ -251,25 +258,25 @@ export default function CartPage() {
             initial="hidden"
             animate="visible"
             variants={staggerContainer}
-            className="text-center max-w-md"
+            className="text-center max-w-md w-full"
           >
             <motion.div
               variants={fadeInUp}
-              className="w-32 h-32 mx-auto mb-8 rounded-full bg-gradient-to-br from-[#EDD8B4] to-[#C85428]/20 flex items-center justify-center"
+              className="w-24 h-24 md:w-32 md:h-32 mx-auto mb-6 md:mb-8 rounded-full bg-gradient-to-br from-[#EDD8B4] to-[#C85428]/20 flex items-center justify-center"
             >
-              <ShoppingBag className="w-16 h-16 text-[#8E5022]" />
+              <ShoppingBag className="w-12 h-12 md:w-16 md:h-16 text-[#8E5022]" />
             </motion.div>
 
             <motion.h1
               variants={fadeInUp}
-              className="font-serif text-4xl md:text-5xl text-[#442D1C] mb-4"
+              className="font-serif text-3xl md:text-5xl text-[#442D1C] mb-4"
             >
               Your cart is empty
             </motion.h1>
 
             <motion.p
               variants={fadeInUp}
-              className="text-stone-600 text-lg mb-8"
+              className="text-stone-600 text-base md:text-lg mb-8"
             >
               Discover our handcrafted ceramics and add some beautiful pieces to
               your collection
@@ -277,7 +284,7 @@ export default function CartPage() {
 
             <motion.div variants={fadeInUp}>
               <Link href="/products">
-                <button className="bg-[#8E5022] text-white px-8 py-4 rounded-xl font-medium hover:bg-[#652810] transition-colors inline-flex items-center gap-3">
+                <button className="bg-[#8E5022] text-white px-6 py-3.5 md:px-8 md:py-4 rounded-xl font-medium hover:bg-[#652810] transition-colors inline-flex items-center gap-3 w-full md:w-auto justify-center">
                   <ShoppingBag className="w-5 h-5" />
                   Browse Collections
                 </button>
@@ -310,36 +317,39 @@ export default function CartPage() {
         message={`Are you sure you want to remove all ${getTotalItems()} items from your cart?`}
       />
 
-      {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 py-24">
+      {/* Main Content - Added pb-20 for mobile spacing */}
+      <div className="max-w-7xl mx-auto px-4 py-24 md:py-28 pb-32">
         {/* Header */}
         <motion.div
           initial="hidden"
           animate="visible"
           variants={staggerContainer}
-          className="mb-12"
+          className="mb-8 md:mb-12"
         >
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
             <motion.div variants={fadeInUp} className="flex items-center gap-4">
-              <ShoppingBag className="w-8 h-8 text-[#8E5022]" />
-              <h1 className="font-serif text-4xl md:text-5xl text-[#442D1C]">
+              <ShoppingBag className="w-6 h-6 md:w-8 md:h-8 text-[#8E5022]" />
+              <h1 className="font-serif text-3xl md:text-5xl text-[#442D1C]">
                 Shopping Cart
               </h1>
             </motion.div>
 
-            {/* Clear Cart Button - Top Right */}
+            {/* Clear Cart Button */}
             <motion.button
               variants={fadeInUp}
               onClick={() => setShowClearDialog(true)}
               disabled={isUpdating}
-              className="group flex items-center gap-2 px-4 py-2 rounded-xl border-2 border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              className="group flex items-center justify-center gap-2 px-4 py-2 rounded-xl border-2 border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300 transition-all disabled:opacity-50 disabled:cursor-not-allowed w-full md:w-auto"
             >
               <Trash2 className="w-4 h-4 group-hover:scale-110 transition-transform" />
-              <span className="font-medium hidden sm:inline">Clear Cart</span>
+              <span className="font-medium">Clear Cart</span>
             </motion.button>
           </div>
 
-          <motion.p variants={fadeInUp} className="text-stone-600 text-lg">
+          <motion.p
+            variants={fadeInUp}
+            className="text-stone-600 text-base md:text-lg"
+          >
             {getTotalItems()} {getTotalItems() === 1 ? 'item' : 'items'} in your
             cart
           </motion.p>
@@ -358,18 +368,18 @@ export default function CartPage() {
                 key={item.id}
                 variants={fadeInUp}
                 custom={index}
-                className={`bg-white rounded-3xl p-6 shadow-lg transition-all ${
+                className={`bg-white rounded-3xl p-4 md:p-6 shadow-lg transition-all ${
                   item.isOutOfStock || item.quantity > item.stock
                     ? 'opacity-75 border-2 border-orange-100'
                     : 'hover:shadow-xl'
                 }`}
               >
-                <div className="flex gap-6 relative">
+                <div className="flex flex-col sm:flex-row gap-4 md:gap-6 relative">
                   {/* --- OOS OVERLAY & WISHLIST ACTION --- */}
                   {(item.isOutOfStock || item.quantity > item.stock) && (
-                    <div className="absolute top-0 right-14 z-20 flex flex-col items-end gap-2">
+                    <div className="absolute top-0 right-0 sm:right-14 z-20 flex flex-col items-end gap-2">
                       {/* 1. The Badge */}
-                      <span className="bg-red-100 text-red-700 text-xs font-bold px-3 py-1.5 rounded-full flex items-center gap-1 shadow-sm">
+                      <span className="bg-red-100 text-red-700 text-[10px] md:text-xs font-bold px-2 py-1 md:px-3 md:py-1.5 rounded-full flex items-center gap-1 shadow-sm">
                         <AlertTriangle className="w-3 h-3" />
                         {item.isOutOfStock
                           ? 'Out of Stock'
@@ -380,22 +390,23 @@ export default function CartPage() {
                       <button
                         onClick={() => moveToWishlist(item)}
                         disabled={isUpdating}
-                        className="flex items-center gap-1.5 bg-white border border-[#EDD8B4] px-3 py-1.5 rounded-full shadow-sm hover:bg-[#FDFBF7] transition-colors group/wish"
+                        className="flex items-center gap-1.5 bg-white border border-[#EDD8B4] px-2 py-1 md:px-3 md:py-1.5 rounded-full shadow-sm hover:bg-[#FDFBF7] transition-colors group/wish"
                       >
-                        <Heart className="w-3.5 h-3.5 text-[#8E5022] group-hover/wish:fill-[#8E5022] transition-colors" />
-                        <span className="text-xs font-medium text-[#442D1C]">
-                          Save for later
+                        <Heart className="w-3 h-3 md:w-3.5 md:h-3.5 text-[#8E5022] group-hover/wish:fill-[#8E5022] transition-colors" />
+                        <span className="text-[10px] md:text-xs font-medium text-[#442D1C]">
+                          Save
                         </span>
                       </button>
                     </div>
                   )}
                   {/* ----------------------------------- */}
+
                   {/* Product Image */}
                   <Link
                     href={`/products/${item.slug}`}
-                    className="flex-shrink-0"
+                    className="flex-shrink-0 mx-auto sm:mx-0"
                   >
-                    <div className="relative w-32 h-32 rounded-2xl overflow-hidden bg-gradient-to-br from-stone-100 to-stone-50 group cursor-pointer">
+                    <div className="relative w-full sm:w-32 h-48 sm:h-32 rounded-2xl overflow-hidden bg-gradient-to-br from-stone-100 to-stone-50 group cursor-pointer">
                       <img
                         src={item.image}
                         alt={item.name}
@@ -408,71 +419,73 @@ export default function CartPage() {
                   </Link>
 
                   {/* Product Details */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex justify-between items-start mb-3">
-                      <div className="flex-1 min-w-0">
-                        <Link href={`/products/${item.slug}`}>
-                          <h3 className="font-serif text-2xl text-[#442D1C] mb-1 hover:text-[#C85428] transition-colors cursor-pointer truncate">
-                            {item.name}
-                          </h3>
-                        </Link>
-                        <p className="text-sm text-stone-500 uppercase tracking-wider">
-                          {item.category}
-                        </p>
-                      </div>
+                  <div className="flex-1 min-w-0 flex flex-col justify-between">
+                    <div>
+                      <div className="flex justify-between items-start mb-2">
+                        <div className="flex-1 min-w-0 pr-8 sm:pr-0">
+                          <Link href={`/products/${item.slug}`}>
+                            <h3 className="font-serif text-xl md:text-2xl text-[#442D1C] mb-1 hover:text-[#C85428] transition-colors cursor-pointer truncate">
+                              {item.name}
+                            </h3>
+                          </Link>
+                          <p className="text-xs md:text-sm text-stone-500 uppercase tracking-wider">
+                            {item.category}
+                          </p>
+                        </div>
 
-                      {/* Remove Button */}
-                      <button
-                        onClick={() => removeFromCart(item.id)}
-                        disabled={isUpdating}
-                        className="ml-4 w-10 h-10 rounded-full bg-stone-100 hover:bg-red-50 flex items-center justify-center transition-colors group disabled:opacity-50 disabled:cursor-not-allowed"
-                        title="Remove from cart"
-                      >
-                        <Trash2 className="w-4 h-4 text-stone-400 group-hover:text-red-500 transition-colors" />
-                      </button>
-                    </div>
-
-                    {/* Price and Stock */}
-                    <div className="flex items-center gap-4 mb-4">
-                      <div className="flex items-baseline gap-2">
-                        <span className="font-serif text-2xl text-[#8E5022]">
-                          ₹{item.price.toFixed(2)}
-                        </span>
-                        {item.originalPrice &&
-                          item.originalPrice > item.price && (
-                            <span className="text-stone-400 line-through text-sm">
-                              ₹{item.originalPrice.toFixed(2)}
-                            </span>
-                          )}
-                      </div>
-                      {item.stock && (
-                        <span
-                          className={`text-xs px-3 py-1 rounded-full ${
-                            item.stock > 10
-                              ? 'bg-green-100 text-green-700'
-                              : 'bg-orange-100 text-orange-700'
-                          }`}
+                        {/* Remove Button (Desktop Position) */}
+                        <button
+                          onClick={() => removeFromCart(item.id)}
+                          disabled={isUpdating}
+                          className="hidden sm:flex ml-4 w-10 h-10 rounded-full bg-stone-100 hover:bg-red-50 items-center justify-center transition-colors group disabled:opacity-50 disabled:cursor-not-allowed"
+                          title="Remove from cart"
                         >
-                          {item.stock > 10
-                            ? 'In Stock'
-                            : `Only ${item.stock} left`}
-                        </span>
-                      )}
+                          <Trash2 className="w-4 h-4 text-stone-400 group-hover:text-red-500 transition-colors" />
+                        </button>
+                      </div>
+
+                      {/* Price and Stock */}
+                      <div className="flex items-center gap-3 mb-4 flex-wrap">
+                        <div className="flex items-baseline gap-2">
+                          <span className="font-serif text-xl md:text-2xl text-[#8E5022]">
+                            ₹{item.price.toFixed(2)}
+                          </span>
+                          {item.originalPrice &&
+                            item.originalPrice > item.price && (
+                              <span className="text-stone-400 line-through text-xs md:text-sm">
+                                ₹{item.originalPrice.toFixed(2)}
+                              </span>
+                            )}
+                        </div>
+                        {item.stock && (
+                          <span
+                            className={`text-[10px] md:text-xs px-2 py-0.5 rounded-full ${
+                              item.stock > 10
+                                ? 'bg-green-100 text-green-700'
+                                : 'bg-orange-100 text-orange-700'
+                            }`}
+                          >
+                            {item.stock > 10
+                              ? 'In Stock'
+                              : `Only ${item.stock} left`}
+                          </span>
+                        )}
+                      </div>
                     </div>
 
-                    {/* Quantity Controls */}
-                    <div className="flex items-center justify-between">
+                    {/* Quantity Controls & Mobile Actions */}
+                    <div className="flex flex-wrap items-center justify-between gap-4 mt-auto">
                       <div className="flex items-center border-2 border-stone-200 rounded-2xl overflow-hidden">
                         <button
                           onClick={() =>
                             updateQuantity(item.id, item.quantity - 1)
                           }
                           disabled={isUpdating}
-                          className="w-10 h-10 flex items-center justify-center hover:bg-stone-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="w-8 h-8 md:w-10 md:h-10 flex items-center justify-center hover:bg-stone-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                          <Minus className="w-4 h-4 text-[#442D1C]" />
+                          <Minus className="w-3 h-3 md:w-4 md:h-4 text-[#442D1C]" />
                         </button>
-                        <span className="w-12 h-10 flex items-center justify-center font-medium text-[#442D1C]">
+                        <span className="w-10 md:w-12 h-8 md:h-10 flex items-center justify-center font-medium text-sm md:text-base text-[#442D1C]">
                           {item.quantity}
                         </span>
                         <button
@@ -480,18 +493,29 @@ export default function CartPage() {
                             updateQuantity(item.id, item.quantity + 1)
                           }
                           disabled={isUpdating}
-                          className="w-10 h-10 flex items-center justify-center hover:bg-stone-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="w-8 h-8 md:w-10 md:h-10 flex items-center justify-center hover:bg-stone-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                          <Plus className="w-4 h-4 text-[#442D1C]" />
+                          <Plus className="w-3 h-3 md:w-4 md:h-4 text-[#442D1C]" />
                         </button>
                       </div>
 
-                      <div className="text-right">
-                        <div className="text-sm text-stone-500 mb-1">
-                          Subtotal
-                        </div>
-                        <div className="font-serif text-xl text-[#442D1C]">
-                          ₹{(item.price * item.quantity).toFixed(2)}
+                      <div className="flex items-center gap-4">
+                        {/* Remove Button (Mobile Only) */}
+                        <button
+                          onClick={() => removeFromCart(item.id)}
+                          disabled={isUpdating}
+                          className="sm:hidden w-8 h-8 rounded-full bg-stone-100 hover:bg-red-50 flex items-center justify-center transition-colors group disabled:opacity-50"
+                        >
+                          <Trash2 className="w-4 h-4 text-stone-400 group-hover:text-red-500 transition-colors" />
+                        </button>
+
+                        <div className="text-right">
+                          <div className="text-xs text-stone-500 mb-0.5">
+                            Subtotal
+                          </div>
+                          <div className="font-serif text-lg md:text-xl text-[#442D1C]">
+                            ₹{(item.price * item.quantity).toFixed(2)}
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -507,8 +531,10 @@ export default function CartPage() {
                 try {
                   await addToCart(product);
                   toast.success(`Added ${product.name} to cart`);
+                  router.refresh();
                 } catch (error) {
-                  console.error(error);
+                  console.error('Error adding to cart:', error);
+                  toast.error('Failed to add item. Please try again.');
                 }
               }}
             />
@@ -521,14 +547,14 @@ export default function CartPage() {
             transition={{ delay: 0.3 }}
             className="lg:col-span-5"
           >
-            <div className="sticky top-24">
-              <div className="bg-white rounded-3xl p-8 shadow-xl">
+            <div className="lg:sticky lg:top-24">
+              <div className="bg-white rounded-3xl p-6 md:p-8 shadow-xl">
                 <h2 className="font-serif text-2xl text-[#442D1C] mb-6">
                   Order Summary
                 </h2>
 
                 {/* Summary Items */}
-                <div className="space-y-4 mb-6">
+                <div className="space-y-4 mb-6 text-sm md:text-base">
                   <div className="flex justify-between text-stone-600">
                     <span>Subtotal ({getTotalItems()} items)</span>
                     <span className="font-medium">₹{subtotal.toFixed(2)}</span>
@@ -558,7 +584,7 @@ export default function CartPage() {
                       <span className="text-lg font-medium text-[#442D1C]">
                         Total
                       </span>
-                      <span className="font-serif text-3xl text-[#442D1C]">
+                      <span className="font-serif text-2xl md:text-3xl text-[#442D1C]">
                         ₹{total.toFixed(2)}
                       </span>
                     </div>
@@ -569,7 +595,7 @@ export default function CartPage() {
                 <button
                   onClick={handleCheckout}
                   disabled={isUpdating || hasOutOfStockItems}
-                  className={`w-full py-5 rounded-2xl font-medium text-lg flex items-center justify-center gap-3 mb-4 transition-colors ${
+                  className={`w-full py-4 md:py-5 rounded-2xl font-medium text-base md:text-lg flex items-center justify-center gap-3 mb-4 transition-colors ${
                     isUpdating || hasOutOfStockItems
                       ? 'bg-stone-300 text-stone-500 cursor-not-allowed'
                       : 'bg-[#8E5022] text-white hover:bg-[#652810]'
@@ -593,41 +619,40 @@ export default function CartPage() {
                   )}
                 </button>
                 <Link href="/products">
-                  <button className="w-full bg-transparent border-2 border-stone-300 text-stone-700 py-5 rounded-2xl font-medium hover:border-[#8E5022] hover:text-[#8E5022] transition-colors">
+                  <button className="w-full bg-transparent border-2 border-stone-300 text-stone-700 py-4 md:py-5 rounded-2xl font-medium hover:border-[#8E5022] hover:text-[#8E5022] transition-colors">
                     Continue Shopping
                   </button>
                 </Link>
 
-                {/* Trust Badges */}
+                {/* Trust Badges - UPDATED SECTION */}
                 <div className="mt-6 pt-6 border-t border-stone-200 space-y-3">
-                  <div className="flex items-center gap-3 text-sm text-stone-600">
-                    <div className="w-8 h-8 rounded-full bg-[#EDD8B4]/50 flex items-center justify-center">
-                      <Truck className="w-4 h-4 text-[#8E5022]" />
-                    </div>
-                    <span>
-                      Free shipping on orders over ₹
-                      {settings.freeShippingThreshold}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-3 text-sm text-stone-600">
-                    <div className="w-8 h-8 rounded-full bg-[#EDD8B4]/50 flex items-center justify-center">
-                      <Heart className="w-4 h-4 text-[#8E5022]" />
+                  {/* Badge 1: Handcrafted (Kept) */}
+                  <div className="flex items-center gap-3 text-xs md:text-sm text-stone-600">
+                    <div className="w-7 h-7 md:w-8 md:h-8 rounded-full bg-[#EDD8B4]/50 flex items-center justify-center flex-shrink-0">
+                      <Heart className="w-3.5 h-3.5 md:w-4 md:h-4 text-[#8E5022]" />
                     </div>
                     <span>Handcrafted with love</span>
                   </div>
-                  <div className="flex items-center gap-3 text-sm text-stone-600">
-                    <div className="w-8 h-8 rounded-full bg-[#EDD8B4]/50 flex items-center justify-center">
-                      <ShoppingBag className="w-4 h-4 text-[#8E5022]" />
+
+                  {/* Badge 2: Secured Payment (New) */}
+                  <div className="flex items-center gap-3 text-xs md:text-sm text-stone-600">
+                    <div className="w-7 h-7 md:w-8 md:h-8 rounded-full bg-[#EDD8B4]/50 flex items-center justify-center flex-shrink-0">
+                      <ShieldCheck className="w-3.5 h-3.5 md:w-4 md:h-4 text-[#8E5022]" />
                     </div>
-                    <span>30-day return policy</span>
+                    <span>100% Secured Payment</span>
+                  </div>
+
+                  {/* Badge 3: Secure Packaging (New) */}
+                  <div className="flex items-center gap-3 text-xs md:text-sm text-stone-600">
+                    <div className="w-7 h-7 md:w-8 md:h-8 rounded-full bg-[#EDD8B4]/50 flex items-center justify-center flex-shrink-0">
+                      <Package className="w-3.5 h-3.5 md:w-4 md:h-4 text-[#8E5022]" />
+                    </div>
+                    <span>Safe & Secure Packaging</span>
                   </div>
                 </div>
               </div>
 
-              {/* Security Note */}
-              <div className="mt-4 text-center text-xs text-stone-500">
-                Secure checkout powered by Razorpay
-              </div>
+             
             </div>
           </motion.div>
         </div>

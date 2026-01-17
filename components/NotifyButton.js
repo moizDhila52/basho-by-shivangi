@@ -25,14 +25,20 @@ export default function NotifyButton({ productId, stock }) {
       const res = await fetch('/api/products/waitlist', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ productId }),
+        body: JSON.stringify({
+          productId,
+          email: user.email, // Explicitly pass the email from the auth context
+        }),
       });
+
+      const data = await res.json();
 
       if (res.ok) {
         setNotified(true);
         addToast("We will email you when it's back!", 'success');
       } else {
-        addToast('Something went wrong', 'error');
+        // Show the specific error message from the server
+        addToast(data.error || 'Something went wrong', 'error');
       }
     } catch (err) {
       addToast('Failed to connect', 'error');
@@ -40,7 +46,6 @@ export default function NotifyButton({ productId, stock }) {
       setLoading(false);
     }
   };
-
   if (notified) {
     return (
       <button
