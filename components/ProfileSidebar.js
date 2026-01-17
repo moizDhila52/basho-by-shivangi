@@ -42,40 +42,48 @@ export default function ProfileSidebar({ user }) {
     { href: '/profile/settings', label: 'Settings', icon: Settings },
   ];
 
-  const handleImageUpload = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    if (file.size > 5 * 1024 * 1024) {
-      return toast.error('Image must be less than 5MB');
-    }
-
-    setUploading(true);
-    const formData = new FormData();
-    formData.append('file', file);
-
-    try {
-      const res = await fetch('/api/user/upload-image', {
-        method: 'POST',
-        body: formData,
-      });
-      const data = await res.json();
-
-      if (res.ok) {
-        setAvatar(data.imageUrl); // Update Sidebar
-        toast.success('Profile picture updated!');
-
-        // 👇 INSTANTLY UPDATE NAVBAR (No reload needed)
-        updateUser({ image: data.imageUrl });
-      } else {
-        throw new Error(data.error || 'Upload failed');
-      }
-    } catch (error) {
-      console.error(error);
-      toast.error('Failed to upload image');
-    } finally {
-      setUploading(false);
-    }
+  const handleSignOut = () => {
+    toast(
+      (t) => (
+        <div className="flex flex-col gap-3">
+          <p className="font-medium text-[#442D1C]">
+            Are you sure you want to sign out?
+          </p>
+          <div className="flex gap-2">
+            <button
+              onClick={async () => {
+                toast.dismiss(t.id);
+                try {
+                  const res = await fetch('/api/auth/logout', {
+                    method: 'POST',
+                  });
+                  if (res.ok) {
+                    toast.success('Signed out successfully');
+                    window.location.href = '/'; // Take to home page
+                  }
+                } catch (error) {
+                  toast.error('Logout failed');
+                }
+              }}
+              className="bg-red-600 text-white px-3 py-1 rounded-lg text-sm"
+            >
+              Yes, Sign Out
+            </button>
+            <button
+              onClick={() => toast.dismiss(t.id)}
+              className="bg-stone-200 text-stone-800 px-3 py-1 rounded-lg text-sm"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      ),
+      {
+        duration: 5000,
+        position: 'top-center',
+        style: { minWidth: '300px' },
+      },
+    );
   };
   return (
     <aside className="lg:col-span-3 bg-white rounded-2xl shadow-sm border border-[#EDD8B4]/30 h-fit lg:sticky lg:top-24 overflow-hidden">
@@ -133,12 +141,13 @@ export default function ProfileSidebar({ user }) {
         })}
 
         <div className="pt-4 mt-4 border-t border-[#EDD8B4]/30">
-          <form action="/api/auth/logout" method="POST">
-            <button className="w-full flex items-center gap-3 px-4 py-3 text-red-600 hover:bg-red-50 rounded-xl transition-colors font-medium">
-              <LogOut className="w-5 h-5" />
-              Sign Out
-            </button>
-          </form>
+          <button
+            onClick={handleSignOut}
+            className="w-full flex items-center gap-3 px-4 py-3 text-red-600 hover:bg-red-50 rounded-xl transition-colors font-medium"
+          >
+            <LogOut className="w-5 h-5" />
+            Sign Out
+          </button>
         </div>
       </nav>
     </aside>
