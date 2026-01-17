@@ -46,13 +46,13 @@ export default function OurStoryPage() {
 
         <div className="max-w-4xl mx-auto text-center relative z-10">
           <motion.div initial="hidden" animate="visible" variants={fadeInUp}>
-            <span className="text-[#8E5022] uppercase tracking-[0.3em] text-sm font-bold mb-4 block">
+            <span className="text-[#8E5022] uppercase tracking-[0.3em] text-sm font-medium mb-4 inline-block">
               The Bashō Philosophy
             </span>
             <h1 className="font-serif text-5xl md:text-7xl leading-tight mb-6 text-[#442D1C]">
-              Poetry in <span className="italic text-[#C85428]">Clay</span>,
+              Poetry in Clay,
               <br />
-              Stillness in Motion.
+             <span className="text-[#C85428]">Stillness in Motion.</span> 
             </h1>
             <p className="text-xl text-stone-600 max-w-2xl mx-auto leading-relaxed">
               Inspired by the Japanese poet Matsuo Bashō, we craft earthy, raw
@@ -168,7 +168,7 @@ export default function OurStoryPage() {
       <section className="py-24 px-4">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
-            <span className="text-[#8E5022] uppercase tracking-[0.2em] text-xs font-bold">
+           <span className="text-[#8E5022] uppercase tracking-[0.3em] text-sm font-medium mb-4 inline-block">
               Our Ethos
             </span>
             <h2 className="font-serif text-4xl mt-3 text-[#442D1C]">
