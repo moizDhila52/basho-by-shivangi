@@ -294,6 +294,22 @@ export default function NewWorkshopPage() {
                 className="p-3 bg-[#FDFBF7] border border-[#EDD8B4] rounded-lg w-full focus:ring-1 focus:ring-[#C85428] outline-none"
               />
 
+              {/* PASTE YOUR NEW CODE HERE */}
+    <div className="md:col-span-2">
+      <label className="block text-xs font-bold text-[#8E5022] uppercase mb-1">
+        Instructor Bio
+      </label>
+      <textarea
+        rows={3}
+        placeholder="Tell students about the instructor's background and expertise..."
+        value={formData.instructorBio}
+        onChange={(e) =>
+          setFormData({ ...formData, instructorBio: e.target.value })
+        }
+        className="w-full p-3 bg-[#FDFBF7] border border-[#EDD8B4] rounded-lg focus:ring-1 focus:ring-[#C85428] outline-none text-sm"
+      />
+    </div>
+
               {/* Instructor Image Upload */}
               <div className="md:col-span-2 flex flex-col md:flex-row items-center gap-4 bg-[#FDFBF7] p-3 rounded-lg border border-[#EDD8B4]">
                 <div className="w-16 h-16 bg-white rounded-full overflow-hidden border border-[#EDD8B4] flex-shrink-0">

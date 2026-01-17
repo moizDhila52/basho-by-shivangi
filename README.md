@@ -1,47 +1,123 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# 🏯 Basho by Shivangi
 
-## Getting Started
+A full-stack **e-commerce platform** for *Basho by Shivangi*, celebrating handcrafted pottery and Japanese-inspired cultural experiences. This project includes online shopping, workshop registrations, and immersive product discovery.
 
-First, run the development server:
+## 🚀 Demo
+
+**Live Site:** https://basho-by-shivangi.vercel.app
+
+---
+
+## 📦 Features
+
+### 🛍️ E-Commerce Core
+- Browse **handcrafted pottery** collections
+- Product detail pages
+- Add to cart + quantity management
+- Workshop booking pages
+
+### 🎨 Cultural Workshops
+- Dedicated workshop info & registration
+- Pages for cultural activities
+
+### 📱 Modern UI & Navigation
+- Built with **Next.js App Router**
+- Fully responsive layout
+- Clean component structure
+
+### 🧠 State Management
+- React Context API for shared state
+- Organized into `/context` and `/hooks`
+
+---
+
+## 💻 Tech Stack
+
+| Layer | Technology |
+|-------|------------|
+| Frontend | **Next.js** |
+| Language | **JavaScript** |
+| Styling | CSS / PostCSS |
+| ORM | Prisma |
+| Build & Deploy | Vercel |
+| Runtime | Node.js |
+
+---
+
+## 🧩 Project Structure
+
+```
+/
+├── app/                  # App router pages, layouts, routes
+├── components/           # Reusable UI components
+├── context/              # Global state providers
+├── hooks/                # Custom hooks
+├── lib/                  # Helper utilities
+├── prisma/               # Prisma schema & database
+├── public/               # Static files
+├── .vscode/              # Editor settings
+├── jsconfig.json
+├── next.config.mjs
+├── package.json
+├── postcss.config.mjs
+└── server.js
+```
+
+---
+
+## 🧠 Getting Started
+
+### 🔧 Prerequisites
+Ensure you have:
+- **Node.js v16+**
+- **npm**
+
+### 📌 Installation
+
+```bash
+git clone https://github.com/moizDhila52/basho-by-shivangi.git
+cd basho-by-shivangi
+npm install
+```
+
+### 🚀 Development
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
-
-## Routes needed to be implemented yet.
+Visit:
 
 ```
-/about
-/products
-/tea-ware
-/dinnerware
-/custom
-/workshops
+http://localhost:3000
 ```
+
+---
+
+## 📝 Future Enhancements
+- Dedicated product categories  
+- Integrated payment gateway  
+- User authentication  
+- Order history page  
+- Admin dashboard  
+
+---
+
+## 🤝 Contributing
+
+1. **Fork** the repo  
+2. Create a branch: `git checkout -b feature/new-feature`  
+3. Commit: `git commit -m "Add new feature"`  
+4. Push: `git push origin feature/new-feature`  
+5. Open a Pull Request  
+
+---
+
+## 📄 License
+This project is open-source. Feel free to modify and use as needed.
+
+---
+
+## 🙏 Acknowledgements
+Special thanks to the open-source community and contributors.
+

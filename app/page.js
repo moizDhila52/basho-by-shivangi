@@ -59,7 +59,7 @@ const HERO_SLIDES = [
     title: "Join Our Circle",
     subtitle: "Connect with artisans and admirers.",
     cta: "Read Our Story",
-    link: "/connect",
+    link: "/contact",
     // Using the founder image for the connect slide
     image: "/brand/founder.jpg",
     position: "center 20%",
