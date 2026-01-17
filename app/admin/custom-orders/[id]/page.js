@@ -210,61 +210,66 @@ export default function AdminCustomOrderDetailPage() {
   return (
     <div className="min-h-screen bg-[#FDFBF7] p-4 md:p-6 print:p-0 print:bg-white">
       <div className="max-w-7xl mx-auto print:hidden">
-        {/* Header */}
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-8">
-          <div className="flex items-center gap-4">
+        
+        {/* Responsive Header */}
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-6 md:mb-8">
+          <div className="flex items-start gap-3 md:gap-4 w-full md:w-auto">
             <button
               onClick={() => router.back()}
-              className="p-2 bg-white border border-[#EDD8B4] rounded-xl hover:bg-[#FDFBF7] text-[#8E5022] transition-colors shadow-sm"
+              className="p-2 bg-white border border-[#EDD8B4] rounded-xl hover:bg-[#FDFBF7] text-[#8E5022] transition-colors shadow-sm shrink-0"
             >
               <ArrowLeft size={20} />
             </button>
-            <div>
-              <div className="flex items-center gap-3">
-                <h1 className="font-serif text-3xl font-bold text-[#442D1C]">
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-2 md:gap-3">
+                <h1 className="font-serif text-2xl md:text-3xl font-bold text-[#442D1C] truncate">
                   Order #{order.id.slice(0, 8).toUpperCase()}
                 </h1>
                 <span
-                  className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider border ${getStatusColor(
+                  className={`px-3 py-1 rounded-full text-[10px] md:text-xs font-bold uppercase tracking-wider border whitespace-nowrap ${getStatusColor(
                     order.status,
                   )}`}
                 >
                   {order.status.replace('_', ' ')}
                 </span>
               </div>
-              <p className="text-[#8E5022] text-sm mt-1 flex items-center gap-2">
-                <Calendar size={14} />
-                Placed on {new Date(order.createdAt).toLocaleDateString()}
+              <p className="text-[#8E5022] text-xs md:text-sm mt-1 flex items-center gap-2">
+                <Calendar size={14} className="shrink-0" />
+                <span>Placed on {new Date(order.createdAt).toLocaleDateString()}</span>
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full md:w-auto">
             {!isEditing && (
               <button
                 onClick={() => setIsEditing(true)}
-                className="flex items-center gap-2 bg-[#442D1C] text-[#EDD8B4] px-5 py-2.5 rounded-xl font-bold text-sm hover:bg-[#2c1d12] transition-all shadow-lg"
+                className="flex items-center justify-center gap-2 bg-[#442D1C] text-[#EDD8B4] px-5 py-3 md:py-2.5 rounded-xl font-bold text-sm hover:bg-[#2c1d12] transition-all shadow-lg active:scale-95"
               >
                 <Edit2 size={16} /> Manage Order
               </button>
             )}
             <button
               onClick={handlePrint}
-              className="flex items-center gap-2 bg-white border border-[#EDD8B4] text-[#442D1C] px-5 py-2.5 rounded-xl font-bold text-sm hover:bg-[#FDFBF7] transition-colors"
+              className="flex items-center justify-center gap-2 bg-white border border-[#EDD8B4] text-[#442D1C] px-5 py-3 md:py-2.5 rounded-xl font-bold text-sm hover:bg-[#FDFBF7] transition-colors active:scale-95"
             >
               <Printer size={16} /> Print Invoice
             </button>
           </div>
         </div>
 
-        <div className="grid lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2 space-y-8">
+        {/* Main Grid Content */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
+          
+          {/* Left Column (Details & Actions) */}
+          <div className="lg:col-span-2 space-y-6 md:space-y-8">
+            
             {/* Request Details */}
-            <div className="bg-white p-6 rounded-2xl border border-[#EDD8B4] shadow-sm">
-              <h3 className="font-serif text-xl font-bold text-[#442D1C] mb-6 flex items-center gap-2">
+            <div className="bg-white p-5 md:p-6 rounded-2xl border border-[#EDD8B4] shadow-sm">
+              <h3 className="font-serif text-lg md:text-xl font-bold text-[#442D1C] mb-4 md:mb-6 flex items-center gap-2">
                 <Package className="text-[#C85428]" /> Request Details
               </h3>
-              <div className="grid md:grid-cols-2 gap-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
                 <div className="space-y-4">
                   <div>
                     <p className="text-xs font-bold text-[#8E5022] uppercase">
@@ -295,9 +300,11 @@ export default function AdminCustomOrderDetailPage() {
                       <p className="text-xs font-bold text-[#8E5022] uppercase mb-1">
                         Dimensions
                       </p>
-                      <div className="flex gap-3 text-sm text-[#442D1C] bg-[#FDFBF7] p-3 rounded-lg border border-[#EDD8B4]/50">
+                      <div className="flex flex-wrap gap-2 md:gap-3 text-sm text-[#442D1C] bg-[#FDFBF7] p-3 rounded-lg border border-[#EDD8B4]/50">
                         <span>H: {order.dimensions.height || '-'}</span>
+                        <span className="text-[#EDD8B4]">|</span>
                         <span>W: {order.dimensions.width || '-'}</span>
+                        <span className="text-[#EDD8B4]">|</span>
                         <span>D: {order.dimensions.depth || '-'}</span>
                       </div>
                     </div>
@@ -318,14 +325,14 @@ export default function AdminCustomOrderDetailPage() {
 
             {/* Admin Actions Panel */}
             <div
-              className={`bg-white p-6 rounded-2xl border shadow-sm transition-all ${
+              className={`bg-white p-5 md:p-6 rounded-2xl border shadow-sm transition-all ${
                 isEditing
                   ? 'border-[#C85428] ring-1 ring-[#C85428]/20'
                   : 'border-[#EDD8B4]'
               }`}
             >
               <div className="flex justify-between items-center mb-6">
-                <h3 className="font-serif text-xl font-bold text-[#442D1C] flex items-center gap-2">
+                <h3 className="font-serif text-lg md:text-xl font-bold text-[#442D1C] flex items-center gap-2">
                   <MessageSquare className="text-[#C85428]" /> Admin Actions
                 </h3>
                 {isEditing && (
@@ -340,7 +347,7 @@ export default function AdminCustomOrderDetailPage() {
 
               {isEditing ? (
                 <div className="space-y-6">
-                  <div className="grid md:grid-cols-2 gap-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                     <div>
                       <label className="block text-xs font-bold text-[#8E5022] uppercase mb-2">
                         Update Status
@@ -348,7 +355,7 @@ export default function AdminCustomOrderDetailPage() {
                       <select
                         value={status}
                         onChange={(e) => setStatus(e.target.value)}
-                        className="w-full p-3 bg-[#FDFBF7] border border-[#EDD8B4] rounded-xl outline-none"
+                        className="w-full p-3 bg-[#FDFBF7] border border-[#EDD8B4] rounded-xl outline-none focus:border-[#C85428] transition-colors"
                       >
                         {statusOptions.map((opt) => (
                           <option key={opt} value={opt}>
@@ -365,14 +372,14 @@ export default function AdminCustomOrderDetailPage() {
                         type="text"
                         value={estimatedCompletion}
                         onChange={(e) => setEstimatedCompletion(e.target.value)}
-                        className="w-full p-3 bg-[#FDFBF7] border border-[#EDD8B4] rounded-xl outline-none"
+                        className="w-full p-3 bg-[#FDFBF7] border border-[#EDD8B4] rounded-xl outline-none focus:border-[#C85428] transition-colors"
                         placeholder="e.g. 2 Weeks"
                       />
                     </div>
                   </div>
 
-                  {/* NEW: Payment Status & ID Input */}
-                  <div className="grid md:grid-cols-2 gap-6 p-4 bg-stone-50 rounded-xl border border-stone-200">
+                  {/* Payment Status & ID Input */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 p-4 bg-stone-50 rounded-xl border border-stone-200">
                     <div>
                       <label className="block text-xs font-bold text-[#8E5022] uppercase mb-2">
                         Payment Status
@@ -380,7 +387,7 @@ export default function AdminCustomOrderDetailPage() {
                       <select
                         value={paymentStatus}
                         onChange={(e) => setPaymentStatus(e.target.value)}
-                        className="w-full p-3 bg-white border border-[#EDD8B4] rounded-xl outline-none"
+                        className="w-full p-3 bg-white border border-[#EDD8B4] rounded-xl outline-none focus:border-[#C85428] transition-colors"
                       >
                         <option value="PENDING">Pending</option>
                         <option value="PAID">Paid</option>
@@ -396,14 +403,14 @@ export default function AdminCustomOrderDetailPage() {
                           type="text"
                           value={paymentId}
                           onChange={(e) => setPaymentId(e.target.value)}
-                          className="w-full p-3 bg-white border border-[#EDD8B4] rounded-xl outline-none"
+                          className="w-full p-3 bg-white border border-[#EDD8B4] rounded-xl outline-none focus:border-[#C85428] transition-colors"
                           placeholder="Manual / Razorpay ID"
                         />
                       </div>
                     )}
                   </div>
 
-                  <div className="grid md:grid-cols-2 gap-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                     <div>
                       <label className="block text-xs font-bold text-[#8E5022] uppercase mb-2">
                         Estimated Price (₹)
@@ -412,7 +419,7 @@ export default function AdminCustomOrderDetailPage() {
                         type="number"
                         value={estimatedPrice}
                         onChange={(e) => setEstimatedPrice(e.target.value)}
-                        className="w-full p-3 bg-[#FDFBF7] border border-[#EDD8B4] rounded-xl outline-none"
+                        className="w-full p-3 bg-[#FDFBF7] border border-[#EDD8B4] rounded-xl outline-none focus:border-[#C85428] transition-colors"
                       />
                     </div>
                     <div>
@@ -423,7 +430,7 @@ export default function AdminCustomOrderDetailPage() {
                         type="number"
                         value={actualPrice}
                         onChange={(e) => setActualPrice(e.target.value)}
-                        className="w-full p-3 bg-[#FDFBF7] border border-[#EDD8B4] rounded-xl outline-none"
+                        className="w-full p-3 bg-[#FDFBF7] border border-[#EDD8B4] rounded-xl outline-none focus:border-[#C85428] transition-colors"
                         placeholder="For payment"
                       />
                     </div>
@@ -436,14 +443,14 @@ export default function AdminCustomOrderDetailPage() {
                       value={adminNotes}
                       onChange={(e) => setAdminNotes(e.target.value)}
                       rows={3}
-                      className="w-full p-3 bg-[#FDFBF7] border border-[#EDD8B4] rounded-xl outline-none"
+                      className="w-full p-3 bg-[#FDFBF7] border border-[#EDD8B4] rounded-xl outline-none focus:border-[#C85428] transition-colors"
                     />
                   </div>
-                  <div className="flex gap-4 pt-2 border-t border-[#EDD8B4]/30">
+                  <div className="flex flex-col sm:flex-row gap-3 md:gap-4 pt-2 border-t border-[#EDD8B4]/30">
                     <button
                       onClick={handleUpdate}
                       disabled={isUpdating}
-                      className="flex-1 bg-[#442D1C] text-[#EDD8B4] py-3 rounded-xl font-bold hover:bg-[#2c1d12] transition-colors disabled:opacity-70"
+                      className="flex-1 bg-[#442D1C] text-[#EDD8B4] py-3 rounded-xl font-bold hover:bg-[#2c1d12] transition-colors disabled:opacity-70 active:scale-95"
                     >
                       {isUpdating ? 'Saving...' : 'Save Changes'}
                     </button>
@@ -451,7 +458,7 @@ export default function AdminCustomOrderDetailPage() {
                       <button
                         onClick={handleSendQuote}
                         disabled={isUpdating || !estimatedPrice}
-                        className="flex-1 bg-[#C85428] text-white py-3 rounded-xl font-bold hover:bg-[#a04320] transition-colors disabled:opacity-70 flex items-center justify-center gap-2"
+                        className="flex-1 bg-[#C85428] text-white py-3 rounded-xl font-bold hover:bg-[#a04320] transition-colors disabled:opacity-70 flex items-center justify-center gap-2 active:scale-95"
                       >
                         <Send size={18} /> Send Quote Email
                       </button>
@@ -460,7 +467,7 @@ export default function AdminCustomOrderDetailPage() {
                 </div>
               ) : (
                 <div className="space-y-4 text-sm">
-                  <div className="grid grid-cols-2 gap-4 bg-[#FDFBF7] p-4 rounded-xl border border-[#EDD8B4]/50">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 bg-[#FDFBF7] p-4 rounded-xl border border-[#EDD8B4]/50">
                     <div>
                       <p className="text-xs font-bold text-[#8E5022] uppercase">
                         Est. Price
@@ -477,7 +484,7 @@ export default function AdminCustomOrderDetailPage() {
                         {actualPrice ? `₹${actualPrice}` : '-'}
                       </p>
                     </div>
-                    <div>
+                    <div className="sm:col-span-2 md:col-span-1">
                       <p className="text-xs font-bold text-[#8E5022] uppercase">
                         Completion
                       </p>
@@ -497,9 +504,9 @@ export default function AdminCustomOrderDetailPage() {
 
             {/* Payment Information Card (Shows when PAID) */}
             {order.paymentStatus === 'PAID' && (
-              <div className="bg-green-50 border border-green-200 rounded-2xl p-6 shadow-sm">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center text-green-700">
+              <div className="bg-green-50 border border-green-200 rounded-2xl p-5 md:p-6 shadow-sm">
+                <div className="flex items-start sm:items-center gap-3 mb-4">
+                  <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center text-green-700 shrink-0">
                     <CheckCircle size={20} />
                   </div>
                   <div>
@@ -511,7 +518,7 @@ export default function AdminCustomOrderDetailPage() {
                     </p>
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-4 text-sm pl-13">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4 text-sm sm:pl-13">
                   <div className="bg-white p-3 rounded-lg border border-green-100">
                     <p className="text-xs font-bold text-green-600 uppercase">
                       Amount Paid
@@ -520,7 +527,7 @@ export default function AdminCustomOrderDetailPage() {
                       ₹{order.actualPrice}
                     </p>
                   </div>
-                  <div className="bg-white p-3 rounded-lg border border-green-100">
+                  <div className="bg-white p-3 rounded-lg border border-green-100 overflow-hidden">
                     <p className="text-xs font-bold text-green-600 uppercase">
                       Transaction ID
                     </p>
@@ -533,7 +540,7 @@ export default function AdminCustomOrderDetailPage() {
                           navigator.clipboard.writeText(order.paymentId);
                           toast.success('Copied ID');
                         }}
-                        className="text-green-500 hover:text-green-700"
+                        className="text-green-500 hover:text-green-700 shrink-0"
                       >
                         <Clipboard size={14} />
                       </button>
@@ -544,16 +551,19 @@ export default function AdminCustomOrderDetailPage() {
             )}
           </div>
 
+          {/* Right Column (Customer & Meta) */}
           <div className="space-y-6">
-            <div className="bg-white p-6 rounded-2xl border border-[#EDD8B4] shadow-sm">
+            
+            {/* Customer Details */}
+            <div className="bg-white p-5 md:p-6 rounded-2xl border border-[#EDD8B4] shadow-sm">
               <h3 className="font-serif text-lg font-bold text-[#442D1C] mb-4 flex items-center gap-2">
                 <User size={18} /> Customer
               </h3>
               <div className="mb-4">
-                <p className="font-bold text-[#442D1C]">{order.contactName}</p>
+                <p className="font-bold text-[#442D1C] text-lg">{order.contactName}</p>
                 <a
                   href={`mailto:${order.contactEmail}`}
-                  className="text-sm text-[#C85428] hover:underline block"
+                  className="text-sm text-[#C85428] hover:underline block break-all"
                 >
                   {order.contactEmail}
                 </a>
@@ -566,7 +576,8 @@ export default function AdminCustomOrderDetailPage() {
               </div>
             </div>
 
-            <div className="bg-[#442D1C] p-6 rounded-2xl text-[#EDD8B4] shadow-lg">
+            {/* Quick Tools */}
+            <div className="bg-[#442D1C] p-5 md:p-6 rounded-2xl text-[#EDD8B4] shadow-lg">
               <h3 className="font-serif text-lg font-bold mb-4">Quick Tools</h3>
               <div className="space-y-3">
                 <button
@@ -574,7 +585,7 @@ export default function AdminCustomOrderDetailPage() {
                     navigator.clipboard.writeText(order.id);
                     toast.success('Order ID copied');
                   }}
-                  className="w-full flex items-center gap-3 p-3 bg-white/5 hover:bg-white/10 rounded-xl transition-colors text-sm"
+                  className="w-full flex items-center gap-3 p-3 bg-white/5 hover:bg-white/10 rounded-xl transition-colors text-sm active:bg-white/20"
                 >
                   <Package size={16} /> Copy Order ID
                 </button>
@@ -586,14 +597,15 @@ export default function AdminCustomOrderDetailPage() {
                       }?subject=Re: Custom Order #${order.id.slice(0, 8)}`,
                     )
                   }
-                  className="w-full flex items-center gap-3 p-3 bg-white/5 hover:bg-white/10 rounded-xl transition-colors text-sm"
+                  className="w-full flex items-center gap-3 p-3 bg-white/5 hover:bg-white/10 rounded-xl transition-colors text-sm active:bg-white/20"
                 >
                   <Mail size={16} /> Email Customer
                 </button>
               </div>
             </div>
 
-            <div className="bg-white p-6 rounded-2xl border border-[#EDD8B4] shadow-sm">
+            {/* Timeline */}
+            <div className="bg-white p-5 md:p-6 rounded-2xl border border-[#EDD8B4] shadow-sm">
               <h3 className="font-serif text-lg font-bold text-[#442D1C] mb-4">
                 Timeline
               </h3>
@@ -620,8 +632,9 @@ export default function AdminCustomOrderDetailPage() {
               </div>
             </div>
 
+            {/* References */}
             {order.files && order.files.length > 0 && (
-              <div className="bg-white p-6 rounded-2xl border border-[#EDD8B4] shadow-sm">
+              <div className="bg-white p-5 md:p-6 rounded-2xl border border-[#EDD8B4] shadow-sm">
                 <h3 className="font-serif text-lg font-bold text-[#442D1C] mb-4 flex items-center gap-2">
                   <Clipboard size={18} /> References
                 </h3>
@@ -643,6 +656,7 @@ export default function AdminCustomOrderDetailPage() {
         </div>
       </div>
 
+      {/* Print View - Kept largely same but responsive within print context if needed */}
       <div className="hidden print:block max-w-[210mm] mx-auto bg-white p-8">
         <div className="flex justify-between items-start border-b-2 border-[#442D1C] pb-8 mb-8">
           <div>

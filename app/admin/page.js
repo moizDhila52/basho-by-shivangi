@@ -1,37 +1,39 @@
 "use client";
 
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback } from "react";
 import {
-  DollarSign, // Can rename this to IndianRupee if you prefer, but icon name is fine
   ShoppingBag,
-  Package,
   Users,
   TrendingUp,
   TrendingDown,
-  Calendar,
-  Star,
-  Activity,
-  CreditCard,
-  Truck,
-  CheckCircle,
-  AlertCircle,
-  MoreHorizontal,
-  Download,
   Filter,
   RefreshCw,
-  Loader2,
-  FileDown,
-  ShoppingCart,
-  Percent,
   Clock,
   Award,
-  IndianRupee, // Imported for the icon
+  IndianRupee,
+  Palette,
+  Hammer,
+  Receipt,
+  ChevronRight,
+  PackageOpen,
+  Layers,
+  BarChart3,
+  PieChart as PieChartIcon,
+  CheckCircle,
+  Activity,
+  Truck,
+  AlertCircle,
+  CalendarDays,
+  Package,
+  Star,
+  Sparkles,
+  Search
 } from "lucide-react";
 import {
   LineChart,
   Line,
-  BarChart,
-  Bar,
+  AreaChart,
+  Area,
   PieChart,
   Pie,
   Cell,
@@ -39,23 +41,14 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  Legend,
   ResponsiveContainer,
-  AreaChart,
-  Area,
 } from "recharts";
 import { motion } from "framer-motion";
-import {
-  format,
-  subDays,
-  startOfMonth,
-  endOfMonth,
-  eachDayOfInterval,
-} from "date-fns";
-import { jsPDF } from "jspdf";
-import autoTable from "jspdf-autotable";
-import { useAdmin } from "@/context/AdminContext"; // 👈 Add this at top
+import { format, subDays } from "date-fns";
+import { useAdmin } from "@/context/AdminContext";
 import { useNotification } from "@/context/NotificationContext";
+import Link from "next/link";
+import Image from "next/image";
 
 // Bashō Color Palette
 const COLORS = {
@@ -65,24 +58,25 @@ const COLORS = {
   terracotta: "#C85428",
   cream: "#EDD8B4",
   background: "#FDFBF7",
+  white: "#FFFFFF",
 };
 
-// Chart color variations
-const CHART_COLORS = {
-  revenue: COLORS.terracotta,
-  orders: COLORS.clay,
-  customers: COLORS.brown,
-  products: COLORS.dark,
-  success: "#10B981",
-  warning: "#F59E0B",
-  danger: "#EF4444",
-};
+// Payment type options
+const PAYMENT_TYPES = [
+  { value: "all", label: "All Transactions", icon: <Receipt className="w-4 h-4" /> },
+  { value: "orders", label: "Store Orders", icon: <ShoppingBag className="w-4 h-4" /> },
+  { value: "custom", label: "Custom Requests", icon: <Hammer className="w-4 h-4" /> },
+  { value: "workshops", label: "Workshops", icon: <Palette className="w-4 h-4" /> },
+];
 
 export default function AdminDashboard() {
   const { stats } = useAdmin();
   const [loading, setLoading] = useState(true);
   const [timeRange, setTimeRange] = useState("30days");
+  const [paymentType, setPaymentType] = useState("all");
   const { refreshTrigger } = useNotification();
+  
+  // Initial State
   const [dashboardData, setDashboardData] = useState({
     summary: {
       totalRevenue: 0,
@@ -90,7 +84,6 @@ export default function AdminDashboard() {
       totalCustomers: 0,
       totalProducts: 0,
       avgOrderValue: 0,
-      conversionRate: 0,
       pendingOrders: 0,
       activeWorkshops: 0,
       revenueChange: 0,
@@ -102,38 +95,24 @@ export default function AdminDashboard() {
     topProducts: [],
     recentOrders: [],
     categoryData: [],
-    dailyStats: [],
+    dailyStats: {},
   });
 
+  // Handle refresh trigger
   useEffect(() => {
     if (refreshTrigger.orders > 0) {
       fetchDashboardData(); 
     }
   }, [refreshTrigger.orders]);
 
-  useEffect(() => {
-    if (stats) {
-      setDashboardData((prev) => ({
-        ...prev,
-        summary: {
-          ...prev.summary,
-          // Overwrite with live numbers from context
-          pendingOrders: stats.pendingOrders, 
-          totalRevenue: stats.totalRevenue, 
-          // You can also sync totalOrders if your context tracks it
-        },
-        dailyStats: {
-            ...prev.dailyStats,
-            todayOrders: stats.todaysOrders // Live Today's Count
-        }
-      }));
-    }
-  }, [stats]);
-
+  // Main data fetching function
   const fetchDashboardData = useCallback(async () => {
     setLoading(true);
     try {
-      const queryParams = new URLSearchParams({ timeRange });
+      const queryParams = new URLSearchParams({ 
+        timeRange,
+        paymentType 
+      });
       const response = await fetch(`/api/admin/dashboard?${queryParams}`);
 
       if (!response.ok) {
@@ -144,318 +123,10 @@ export default function AdminDashboard() {
       setDashboardData(data);
     } catch (error) {
       console.error("Error fetching dashboard data:", error);
-      // Fallback to local calculations if API fails
-      calculateFallbackData();
     } finally {
       setLoading(false);
     }
-  }, [timeRange]);
-
-  // Fallback calculation if API fails
-  const calculateFallbackData = async () => {
-    try {
-      const [ordersRes, productsRes, customersRes, workshopsRes] =
-        await Promise.all([
-          fetch("/api/admin/orders").then((res) =>
-            res.ok ? res.json() : { orders: [] }
-          ),
-          fetch("/api/admin/products").then((res) =>
-            res.ok ? res.json() : { products: [] }
-          ),
-          fetch("/api/admin/customers").then((res) =>
-            res.ok ? res.json() : { customers: [] }
-          ),
-          fetch("/api/admin/workshops").then((res) =>
-            res.ok ? res.json() : { workshops: [] }
-          ),
-        ]);
-
-      const orders = ordersRes.orders || [];
-      const products = productsRes.products || [];
-      const customers = customersRes.customers || [];
-      const workshops = workshopsRes.workshops || [];
-
-      // Calculate summary stats
-      const totalRevenue = orders.reduce(
-        (sum, order) => sum + (order.total || 0),
-        0
-      );
-      const totalOrders = orders.length;
-      const totalCustomers = customers.length;
-      const totalProducts = products.length;
-      const pendingOrders = orders.filter((o) => o.status === "PENDING").length;
-      const activeWorkshops = workshops.filter(
-        (w) => w.status === "ACTIVE"
-      ).length;
-      const avgOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
-
-      // Calculate revenue trend data
-      const revenueData = generateRevenueData(orders);
-      const orderStatusData = calculateOrderStatusData(orders);
-      const categoryData = calculateCategoryData(products);
-      const dailyStats = generateDailyStats(orders);
-      const topProducts = calculateTopProducts(products, orders);
-
-      setDashboardData({
-        summary: {
-          totalRevenue,
-          totalOrders,
-          totalCustomers,
-          totalProducts,
-          avgOrderValue,
-          conversionRate: calculateConversionRate(orders, customers),
-          pendingOrders,
-          activeWorkshops,
-          revenueChange: 12.5, // Would need previous period data
-          ordersChange: 8.2,
-          customersChange: 15.3,
-        },
-        revenueData,
-        orderStatusData,
-        topProducts,
-        recentOrders: orders.slice(0, 5),
-        categoryData,
-        dailyStats,
-      });
-    } catch (error) {
-      console.error("Error calculating fallback data:", error);
-    }
-  };
-
-  // Helper functions for data calculation
-  const generateRevenueData = (orders) => {
-    const days = 30;
-    const data = [];
-
-    for (let i = days; i >= 0; i--) {
-      const date = subDays(new Date(), i);
-      const dayOrders = orders.filter(
-        (order) =>
-          new Date(order.createdAt).toDateString() === date.toDateString()
-      );
-
-      const revenue = dayOrders.reduce(
-        (sum, order) => sum + (order.total || 0),
-        0
-      );
-      const orderCount = dayOrders.length;
-
-      data.push({
-        date: format(date, "MMM dd"),
-        fullDate: date,
-        revenue,
-        orders: orderCount,
-        avgOrder: orderCount > 0 ? revenue / orderCount : 0,
-      });
-    }
-
-    return data;
-  };
-
-  const calculateOrderStatusData = (orders) => {
-    const statusCounts = orders.reduce((acc, order) => {
-      acc[order.status] = (acc[order.status] || 0) + 1;
-      return acc;
-    }, {});
-
-    return Object.entries(statusCounts).map(([status, count]) => ({
-      status,
-      count,
-      color: getStatusColor(status),
-    }));
-  };
-
-  const calculateCategoryData = (products) => {
-    const categoryCounts = products.reduce((acc, product) => {
-      const category = product.Category?.name || "Uncategorized";
-      acc[category] = (acc[category] || 0) + 1;
-      return acc;
-    }, {});
-
-    return Object.entries(categoryCounts).map(([category, count]) => ({
-      category,
-      count,
-      value: count,
-      color: getCategoryColor(category),
-    }));
-  };
-
-  const generateDailyStats = (orders) => {
-    const today = new Date();
-    const yesterday = subDays(today, 1);
-
-    const todayOrders = orders.filter(
-      (order) =>
-        new Date(order.createdAt).toDateString() === today.toDateString()
-    );
-    const yesterdayOrders = orders.filter(
-      (order) =>
-        new Date(order.createdAt).toDateString() === yesterday.toDateString()
-    );
-
-    const todayRevenue = todayOrders.reduce(
-      (sum, order) => sum + (order.total || 0),
-      0
-    );
-    const yesterdayRevenue = yesterdayOrders.reduce(
-      (sum, order) => sum + (order.total || 0),
-      0
-    );
-
-    return {
-      todayRevenue,
-      yesterdayRevenue,
-      todayOrders: todayOrders.length,
-      yesterdayOrders: yesterdayOrders.length,
-      revenueChange:
-        yesterdayRevenue > 0
-          ? (
-              ((todayRevenue - yesterdayRevenue) / yesterdayRevenue) *
-              100
-            ).toFixed(1)
-          : 0,
-    };
-  };
-
-  const calculateTopProducts = (products, orders) => {
-    // Count product sales from orders
-    const productSales = {};
-
-    orders.forEach((order) => {
-      if (order.OrderItem) {
-        order.OrderItem.forEach((item) => {
-          productSales[item.productId] =
-            (productSales[item.productId] || 0) + item.quantity;
-        });
-      }
-    });
-
-    return products
-      .map((product) => ({
-        ...product,
-        sales: productSales[product.id] || 0,
-        revenue: (productSales[product.id] || 0) * product.price,
-      }))
-      .sort((a, b) => b.sales - a.sales)
-      .slice(0, 5);
-  };
-
-  const calculateConversionRate = (orders, customers) => {
-    // Simple conversion calculation
-    // In reality, you'd track sessions and purchases
-    const uniqueCustomerOrders = new Set(
-      orders.map((order) => order.userId || order.customerEmail)
-    ).size;
-    return customers.length > 0
-      ? ((uniqueCustomerOrders / customers.length) * 100).toFixed(1)
-      : 0;
-  };
-
-  const getStatusColor = (status) => {
-    switch (status) {
-      case "DELIVERED":
-        return "#10B981";
-      case "PROCESSING":
-        return COLORS.clay;
-      case "SHIPPED":
-        return COLORS.terracotta;
-      case "PENDING":
-        return "#F59E0B";
-      case "CANCELLED":
-        return "#EF4444";
-      default:
-        return COLORS.dark;
-    }
-  };
-
-  const getCategoryColor = (category) => {
-    const colors = [
-      COLORS.dark,
-      COLORS.brown,
-      COLORS.clay,
-      COLORS.terracotta,
-      COLORS.cream,
-    ];
-    const index =
-      category.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0) %
-      colors.length;
-    return colors[index];
-  };
-
-  const handleDownloadReport = () => {
-    const doc = new jsPDF();
-
-    // Add header
-    doc.setFillColor(COLORS.dark);
-    doc.rect(0, 0, 210, 40, "F");
-    doc.setTextColor(COLORS.cream);
-    doc.setFontSize(24);
-    doc.text("Bashō Ceramics", 105, 20, { align: "center" });
-    doc.setFontSize(12);
-    doc.text(
-      `Dashboard Report - ${format(new Date(), "MMMM dd, yyyy")}`,
-      105,
-      30,
-      { align: "center" }
-    );
-
-    // Add summary table
-    doc.setTextColor(COLORS.dark);
-    doc.setFontSize(16);
-    doc.text("Performance Summary", 14, 50);
-
-    autoTable(doc, {
-      startY: 55,
-      head: [["Metric", "Value", "Change"]],
-      body: [
-        [
-          "Total Revenue",
-          `₹${dashboardData.summary.totalRevenue.toLocaleString()}`,
-          `${dashboardData.summary.revenueChange}%`,
-        ],
-        [
-          "Total Orders",
-          dashboardData.summary.totalOrders,
-          `${dashboardData.summary.ordersChange}%`,
-        ],
-        [
-          "Active Customers",
-          dashboardData.summary.totalCustomers,
-          `${dashboardData.summary.customersChange}%`,
-        ],
-        [
-          "Avg Order Value",
-          `₹${dashboardData.summary.avgOrderValue.toFixed(2)}`,
-          "-",
-        ],
-        ["Pending Orders", dashboardData.summary.pendingOrders, "-"],
-      ],
-      theme: "grid",
-      headStyles: { fillColor: COLORS.dark, textColor: COLORS.cream },
-      styles: { fontSize: 10, cellPadding: 5 },
-    });
-
-    // Add recent orders
-    doc.text("Recent Orders", 14, doc.lastAutoTable.finalY + 10);
-
-    autoTable(doc, {
-      startY: doc.lastAutoTable.finalY + 15,
-      head: [["Order ID", "Customer", "Amount", "Status", "Date"]],
-      body: dashboardData.recentOrders.map((order) => [
-        order.orderNumber || `#${order.id.slice(0, 8)}`,
-        order.customerName || "Guest",
-        `₹${order.total?.toFixed(2)}`,
-        order.status,
-        format(new Date(order.createdAt), "MMM dd, yyyy"),
-      ]),
-      theme: "grid",
-      headStyles: { fillColor: COLORS.dark, textColor: COLORS.cream },
-      styles: { fontSize: 8, cellPadding: 3 },
-    });
-
-    // Save the PDF
-    doc.save(`basho-dashboard-report-${format(new Date(), "yyyy-MM-dd")}.pdf`);
-  };
+  }, [timeRange, paymentType]);
 
   useEffect(() => {
     fetchDashboardData();
@@ -463,15 +134,15 @@ export default function AdminDashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-[60vh] flex items-center justify-center">
+      <div className="min-h-[60vh] flex items-center justify-center bg-[#FDFBF7]">
         <div className="text-center">
           <motion.div
             animate={{ rotate: 360 }}
             transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-            className="w-16 h-16 border-4 border-transparent border-t-[#C85428] rounded-full mx-auto mb-4"
+            className="w-16 h-16 border-4 border-transparent border-t-[#C85428] border-r-[#8E5022] rounded-full mx-auto mb-4"
           />
-          <p className="text-[#8E5022] font-medium">
-            Loading real-time analytics...
+          <p className="text-[#8E5022] font-serif tracking-wide animate-pulse">
+            Gathering Insights...
           </p>
         </div>
       </div>
@@ -479,225 +150,209 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
+    <div className="space-y-6 p-4 md:p-8 max-w-[1600px] mx-auto">
+      {/* Header with improved Filters */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4"
+        className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-6"
       >
         <div>
-          <h1 className="text-3xl font-serif font-bold text-[#442D1C]">
-            Dashboard Overview
+          <h1 className="text-3xl md:text-4xl font-serif font-bold text-[#442D1C] flex items-center gap-3">
+            Dashboard Overview <Sparkles className="w-6 h-6 text-[#C85428]" />
           </h1>
-          <p className="text-[#8E5022] mt-1">
-            Real-time analytics based on actual store data
+          <p className="text-[#8E5022] mt-2 font-light">
+            Here's what's happening with <strong>Basho</strong> today.
           </p>
         </div>
-        <div className="flex items-center gap-3">
-          <select
-            value={timeRange}
-            onChange={(e) => setTimeRange(e.target.value)}
-            className="bg-white border border-[#EDD8B4] text-sm px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#C85428] cursor-pointer text-[#442D1C]"
-          >
-            <option value="7days">Last 7 Days</option>
-            <option value="30days">Last 30 Days</option>
-            <option value="90days">Last 90 Days</option>
-            <option value="year">This Year</option>
-          </select>
+
+        <div className="flex flex-wrap items-center gap-3 w-full xl:w-auto bg-white p-2 rounded-xl border border-[#EDD8B4] shadow-sm">
+          {/* Payment Type Filter */}
+          <div className="relative flex-grow md:flex-grow-0">
+            <select
+              value={paymentType}
+              onChange={(e) => setPaymentType(e.target.value)}
+              className="w-full md:w-52 bg-[#FDFBF7] hover:bg-[#EDD8B4]/20 transition-colors border-0 text-sm px-4 py-3 pr-10 rounded-lg focus:ring-2 focus:ring-[#C85428] cursor-pointer text-[#442D1C] font-medium appearance-none"
+            >
+              {PAYMENT_TYPES.map((type) => (
+                <option key={type.value} value={type.value}>
+                  {type.label}
+                </option>
+              ))}
+            </select>
+            <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none text-[#8E5022]">
+              <Filter className="w-4 h-4" />
+            </div>
+          </div>
+
+          {/* Time Range Filter */}
+          <div className="relative flex-grow md:flex-grow-0">
+            <select
+              value={timeRange}
+              onChange={(e) => setTimeRange(e.target.value)}
+              className="w-full md:w-44 bg-[#FDFBF7] hover:bg-[#EDD8B4]/20 transition-colors border-0 text-sm px-4 py-3 pr-10 rounded-lg focus:ring-2 focus:ring-[#C85428] cursor-pointer text-[#442D1C] font-medium appearance-none"
+            >
+              <option value="7days">Last 7 Days</option>
+              <option value="30days">Last 30 Days</option>
+              <option value="90days">Last 3 Months</option>
+              <option value="year">This Year</option>
+            </select>
+            <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none text-[#8E5022]">
+              <CalendarDays className="w-4 h-4" />
+            </div>
+          </div>
+
           <button
             onClick={fetchDashboardData}
-            className="p-2 rounded-lg border border-[#EDD8B4] hover:bg-[#FDFBF7] transition-colors text-[#8E5022]"
+            className="p-3 rounded-lg bg-[#C85428] text-white hover:bg-[#A0401C] transition-colors shadow-md hover:shadow-lg active:scale-95 duration-200"
             title="Refresh data"
           >
-            <RefreshCw className="w-5 h-5" />
-          </button>
-          <button
-            onClick={handleDownloadReport}
-            className="flex items-center gap-2 bg-gradient-to-r from-[#C85428] to-[#8E5022] text-white px-4 py-2 rounded-lg font-medium hover:shadow-lg transition-shadow"
-          >
-            <FileDown className="w-4 h-4" />
-            Download Report
+            <RefreshCw className="w-4 h-4" />
           </button>
         </div>
       </motion.div>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      {/* Improved Stats Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
         <StatCard
           title="Total Revenue"
           value={`₹${dashboardData.summary.totalRevenue.toLocaleString()}`}
           change={dashboardData.summary.revenueChange}
-          isPositive={dashboardData.summary.revenueChange >= 0}
-          icon={<IndianRupee className="w-5 h-5" />}
-          color="from-[#C85428] to-[#8E5022]"
+          isPositive={parseFloat(dashboardData.summary.revenueChange) >= 0}
+          icon={<BarChart3 className="w-6 h-6" />}
+          variant="terracotta"
           delay={0}
-          description="Based on actual orders"
+          description="Gross earnings"
         />
         <StatCard
           title="Total Orders"
           value={dashboardData.summary.totalOrders.toLocaleString()}
           change={dashboardData.summary.ordersChange}
-          isPositive={dashboardData.summary.ordersChange >= 0}
-          icon={<ShoppingBag className="w-5 h-5" />}
-          color="from-[#8E5022] to-[#652810]"
+          isPositive={parseFloat(dashboardData.summary.ordersChange) >= 0}
+          icon={<PackageOpen className="w-6 h-6" />}
+          variant="clay"
           delay={100}
-          description="Completed transactions"
+          description="Completed sales"
         />
         <StatCard
           title="Active Customers"
           value={dashboardData.summary.totalCustomers.toLocaleString()}
           change={dashboardData.summary.customersChange}
-          isPositive={dashboardData.summary.customersChange >= 0}
-          icon={<Users className="w-5 h-5" />}
-          color="from-[#652810] to-[#442D1C]"
+          isPositive={parseFloat(dashboardData.summary.customersChange) >= 0}
+          icon={<Users className="w-6 h-6" />}
+          variant="brown"
           delay={200}
-          description="Registered users"
+          description="Unique buyers"
         />
         <StatCard
           title="Avg Order Value"
-          value={`₹${dashboardData.summary.avgOrderValue.toFixed(2)}`}
-          change="0%"
+          value={`₹${dashboardData.summary.avgOrderValue.toFixed(0)}`}
+          change={null} // Don't show change if irrelevant
           isPositive={true}
-          icon={<CreditCard className="w-5 h-5" />}
-          color="from-[#442D1C] to-[#652810]"
+          icon={<Layers className="w-6 h-6" />}
+          variant="dark"
           delay={300}
-          description="Average cart size"
+          description="Per transaction"
         />
       </div>
 
       {/* Charts Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Revenue & Orders Chart */}
+        {/* Revenue Chart */}
         <motion.div
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.2 }}
           className="bg-white p-6 rounded-2xl shadow-sm border border-[#EDD8B4]"
         >
           <div className="flex justify-between items-center mb-6">
-            <div>
-              <h3 className="font-serif text-xl font-bold text-[#442D1C]">
-                Revenue & Orders Trend
-              </h3>
-              <p className="text-sm text-[#8E5022]">
-                Based on actual sales data
-              </p>
-            </div>
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-[#C85428]"></div>
-                <span className="text-sm text-[#442D1C]">Revenue</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-[#8E5022]"></div>
-                <span className="text-sm text-[#442D1C]">Orders</span>
-              </div>
-            </div>
+             <div>
+               <h3 className="font-serif text-xl font-bold text-[#442D1C]">Financial Performance</h3>
+               <p className="text-xs text-[#8E5022]">Revenue vs Order Volume</p>
+             </div>
+             {/* Legend */}
+             <div className="flex gap-4 text-xs">
+                <div className="flex items-center gap-1">
+                   <div className="w-2 h-2 rounded-full bg-[#C85428]"></div> Revenue
+                </div>
+                <div className="flex items-center gap-1">
+                   <div className="w-2 h-2 rounded-full bg-[#8E5022]"></div> Orders
+                </div>
+             </div>
           </div>
           <div className="h-72">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={dashboardData.revenueData}>
                 <defs>
-                  <linearGradient
-                    id="revenueGradient"
-                    x1="0"
-                    y1="0"
-                    x2="0"
-                    y2="1"
-                  >
-                    <stop
-                      offset="5%"
-                      stopColor={COLORS.terracotta}
-                      stopOpacity={0.8}
-                    />
-                    <stop
-                      offset="95%"
-                      stopColor={COLORS.terracotta}
-                      stopOpacity={0}
-                    />
-                  </linearGradient>
-                  <linearGradient
-                    id="ordersGradient"
-                    x1="0"
-                    y1="0"
-                    x2="0"
-                    y2="1"
-                  >
-                    <stop
-                      offset="5%"
-                      stopColor={COLORS.clay}
-                      stopOpacity={0.8}
-                    />
-                    <stop
-                      offset="95%"
-                      stopColor={COLORS.clay}
-                      stopOpacity={0}
-                    />
+                  <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#C85428" stopOpacity={0.2}/>
+                    <stop offset="95%" stopColor="#C85428" stopOpacity={0}/>
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#EDD8B4" />
-                <XAxis dataKey="date" stroke="#8E5022" fontSize={12} />
-                <YAxis
-                  stroke="#8E5022"
-                  fontSize={12}
-                  tickFormatter={(value) => `₹${value.toLocaleString()}`}
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#EDD8B4" opacity={0.5} />
+                <XAxis 
+                  dataKey="date" 
+                  axisLine={false} 
+                  tickLine={false} 
+                  tick={{fill: '#8E5022', fontSize: 11}} 
+                  dy={10}
+                />
+                <YAxis 
+                  yAxisId="left"
+                  axisLine={false} 
+                  tickLine={false} 
+                  tick={{fill: '#8E5022', fontSize: 11}} 
+                  tickFormatter={(val) => `₹${val/1000}k`}
+                />
+                <YAxis 
+                  yAxisId="right" 
+                  orientation="right" 
+                  axisLine={false} 
+                  tickLine={false} 
+                  hide={true}
                 />
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: "#FDFBF7",
-                    border: `1px solid ${COLORS.cream}`,
-                    borderRadius: "8px",
-                    color: COLORS.dark,
+                    backgroundColor: "#FFFFFF",
+                    borderColor: "#EDD8B4",
+                    borderRadius: "12px",
+                    boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                    color: "#442D1C"
                   }}
-                  formatter={(value, name) => [
-                    name === "revenue"
-                      ? `₹${value.toLocaleString()}`
-                      : value,
-                    name === "revenue" ? "Revenue" : "Orders",
-                  ]}
-                  labelFormatter={(label) => `Date: ${label}`}
                 />
-                <Legend />
-                <Area
-                  type="monotone"
-                  dataKey="revenue"
-                  stroke={COLORS.terracotta}
+                <Area 
+                  yAxisId="left"
+                  type="monotone" 
+                  dataKey="revenue" 
+                  stroke="#C85428" 
                   strokeWidth={2}
-                  fill="url(#revenueGradient)"
-                  name="Revenue"
+                  fillOpacity={1} 
+                  fill="url(#colorRevenue)" 
                 />
-                <Line
-                  type="monotone"
-                  dataKey="orders"
-                  stroke={COLORS.clay}
-                  strokeWidth={2}
-                  dot={{ r: 3 }}
-                  name="Orders"
+                <Line 
+                   yAxisId="right"
+                   type="monotone" 
+                   dataKey="orders" 
+                   stroke="#8E5022" 
+                   strokeWidth={2} 
+                   dot={{fill: '#8E5022', r: 3}}
                 />
               </AreaChart>
             </ResponsiveContainer>
           </div>
         </motion.div>
 
-        {/* Category Distribution */}
+        {/* Category Pie Chart */}
         <motion.div
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.3 }}
-          className="bg-white p-6 rounded-2xl shadow-sm border border-[#EDD8B4]"
+          className="bg-white p-6 rounded-2xl shadow-sm border border-[#EDD8B4] flex flex-col"
         >
-          <div className="flex justify-between items-center mb-6">
-            <div>
-              <h3 className="font-serif text-xl font-bold text-[#442D1C]">
-                Product Categories
-              </h3>
-              <p className="text-sm text-[#8E5022]">Inventory distribution</p>
-            </div>
-            <Filter className="w-5 h-5 text-[#8E5022]" />
-          </div>
-          <div className="h-72">
-            {dashboardData.categoryData.length > 0 ? (
+           <h3 className="font-serif text-xl font-bold text-[#442D1C] mb-1">Inventory Distribution</h3>
+           <p className="text-xs text-[#8E5022] mb-6">Products by category</p>
+           
+           <div className="flex-1 min-h-[250px] relative">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
@@ -705,98 +360,79 @@ export default function AdminDashboard() {
                     cx="50%"
                     cy="50%"
                     innerRadius={60}
-                    outerRadius={90}
-                    paddingAngle={2}
+                    outerRadius={80}
+                    paddingAngle={5}
                     dataKey="value"
-                    label={({ category, percent }) =>
-                      `${category}: ${(percent * 100).toFixed(0)}%`
-                    }
                   >
                     {dashboardData.categoryData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
+                      <Cell key={`cell-${index}`} fill={entry.color} stroke="none" />
                     ))}
                   </Pie>
-                  <Tooltip
-                    formatter={(value, name, props) => [
-                      `${props.payload.count} products`,
-                      props.payload.category,
-                    ]}
-                    contentStyle={{
-                      backgroundColor: "#FDFBF7",
-                      border: `1px solid ${COLORS.cream}`,
-                      borderRadius: "8px",
-                      color: COLORS.dark,
-                    }}
+                  <Tooltip 
+                     contentStyle={{
+                        backgroundColor: "#FFFFFF",
+                        borderColor: "#EDD8B4",
+                        borderRadius: "8px",
+                        color: "#442D1C"
+                      }}
                   />
                 </PieChart>
               </ResponsiveContainer>
-            ) : (
-              <div className="h-full flex items-center justify-center text-[#8E5022]">
-                No category data available
+              {/* Center Text overlay */}
+              <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none">
+                 <span className="block text-2xl font-bold text-[#442D1C]">{dashboardData.summary.totalProducts}</span>
+                 <span className="text-[10px] text-[#8E5022] uppercase tracking-wider">Products</span>
               </div>
-            )}
-          </div>
+           </div>
+           
+           {/* Custom Legend */}
+           <div className="mt-4 grid grid-cols-2 gap-2 text-xs">
+              {dashboardData.categoryData.map((cat, i) => (
+                 <div key={i} className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-full" style={{backgroundColor: cat.color}}></div>
+                    <span className="text-[#442D1C] truncate">{cat.category}</span>
+                    <span className="text-[#8E5022] font-medium ml-auto">{cat.count}</span>
+                 </div>
+              ))}
+           </div>
         </motion.div>
       </div>
 
       {/* Bottom Section */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Order Status */}
+        
+        {/* Order Status Bars */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
-          className="bg-white p-6 rounded-2xl shadow-sm border border-[#EDD8B4]"
+           initial={{ opacity: 0, y: 20 }}
+           animate={{ opacity: 1, y: 0 }}
+           transition={{ delay: 0.4 }}
+           className="bg-white p-6 rounded-2xl shadow-sm border border-[#EDD8B4]"
         >
-          <h3 className="font-serif text-xl font-bold text-[#442D1C] mb-6">
-            Order Status
-          </h3>
-          <div className="space-y-4">
-            {dashboardData.orderStatusData.length > 0 ? (
-              dashboardData.orderStatusData.map((status, index) => (
-                <div key={index} className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div
-                      className="w-3 h-3 rounded-full"
-                      style={{ backgroundColor: status.color }}
-                    ></div>
-                    <span className="text-[#442D1C] font-medium">
-                      {status.status}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <span className="font-bold text-[#442D1C]">
-                      {status.count}
-                    </span>
-                    <div className="w-24 h-2 bg-[#EDD8B4] rounded-full overflow-hidden">
-                      <div
-                        className="h-full rounded-full transition-all duration-500"
-                        style={{
-                          width: `${
-                            (status.count /
-                              Math.max(
-                                ...dashboardData.orderStatusData.map(
-                                  (s) => s.count
-                                )
-                              )) *
-                            100
-                          }%`,
-                          backgroundColor: status.color,
-                        }}
-                      ></div>
+           <h3 className="font-serif text-xl font-bold text-[#442D1C] mb-6">Order Status</h3>
+           <div className="space-y-5">
+              {dashboardData.orderStatusData.map((status, index) => (
+                 <div key={index} className="group">
+                    <div className="flex justify-between items-center mb-1 text-sm">
+                       <span className="font-medium text-[#442D1C] capitalize">{status.status.replace('_', ' ').toLowerCase()}</span>
+                       <span className="text-[#8E5022] bg-[#FDFBF7] px-2 py-0.5 rounded-md text-xs border border-[#EDD8B4] group-hover:border-[#C85428] transition-colors">
+                          {status.count} orders
+                       </span>
                     </div>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <div className="text-center text-[#8E5022] py-8">
-                No order data available
-              </div>
-            )}
-          </div>
+                    <div className="w-full h-2 bg-[#FDFBF7] rounded-full overflow-hidden border border-[#EDD8B4]/30">
+                       <motion.div 
+                          initial={{ width: 0 }}
+                          animate={{ width: `${(status.count / dashboardData.summary.totalOrders) * 100}%` }}
+                          transition={{ duration: 1, delay: 0.5 }}
+                          className="h-full rounded-full"
+                          style={{ backgroundColor: status.color }}
+                       />
+                    </div>
+                 </div>
+              ))}
+           </div>
         </motion.div>
 
-        {/* Recent Orders */}
+        {/* Improved Recent Transactions Table */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -805,285 +441,201 @@ export default function AdminDashboard() {
         >
           <div className="flex justify-between items-center mb-6">
             <div>
-              <h3 className="font-serif text-xl font-bold text-[#442D1C]">
-                Recent Orders
-              </h3>
-              <p className="text-sm text-[#8E5022]">
-                Latest customer transactions
-              </p>
+              <h3 className="font-serif text-xl font-bold text-[#442D1C]">Recent Transactions</h3>
+              <p className="text-xs text-[#8E5022]">Latest activity from {paymentType === 'all' ? 'all sources' : paymentType}</p>
             </div>
-            <div className="text-sm text-[#C85428] font-medium">
-              {dashboardData.dailyStats.todayOrders} orders today
-            </div>
+            <Link 
+              href="/admin/orders" 
+              className="flex items-center gap-1 text-sm font-medium text-[#C85428] hover:text-[#A0401C] transition-colors group"
+            >
+              View All <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+            </Link>
           </div>
 
-          {dashboardData.recentOrders.length > 0 ? (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-[#EDD8B4]">
-                    <th className="text-left py-3 px-4 text-[#8E5022] font-medium">
-                      Order ID
-                    </th>
-                    <th className="text-left py-3 px-4 text-[#8E5022] font-medium">
-                      Customer
-                    </th>
-                    <th className="text-left py-3 px-4 text-[#8E5022] font-medium">
-                      Date
-                    </th>
-                    <th className="text-left py-3 px-4 text-[#8E5022] font-medium">
-                      Amount
-                    </th>
-                    <th className="text-left py-3 px-4 text-[#8E5022] font-medium">
-                      Status
-                    </th>
-                    <th className="text-left py-3 px-4 text-[#8E5022] font-medium">
-                      Items
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {dashboardData.recentOrders.map((order, index) => (
-                    <tr
-                      key={order.id}
-                      className="border-b border-[#EDD8B4]/50 hover:bg-[#FDFBF7] transition-colors"
-                    >
-                      <td className="py-3 px-4 font-mono text-xs text-[#C85428] font-bold">
-                        #{order.orderNumber || order.id.slice(0, 8)}
-                      </td>
-                      <td className="py-3 px-4">
-                        <div className="flex items-center gap-2">
-                          <div className="w-8 h-8 rounded-full bg-[#EDD8B4] flex items-center justify-center">
-                            <span className="text-xs font-medium text-[#8E5022]">
-                              {order.customerName?.charAt(0) || "G"}
-                            </span>
-                          </div>
-                          <div>
-                            <p className="font-medium text-[#442D1C]">
-                              {order.customerName || "Guest"}
-                            </p>
-                            <p className="text-xs text-[#8E5022]">
-                              {order.customerEmail || "No email"}
-                            </p>
-                          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-[#EDD8B4]">
+                  <th className="text-left py-4 px-4 text-[#8E5022] font-semibold text-xs uppercase tracking-wider">Customer</th>
+                  <th className="text-left py-4 px-4 text-[#8E5022] font-semibold text-xs uppercase tracking-wider">Date</th>
+                  <th className="text-left py-4 px-4 text-[#8E5022] font-semibold text-xs uppercase tracking-wider">Amount</th>
+                  <th className="text-left py-4 px-4 text-[#8E5022] font-semibold text-xs uppercase tracking-wider">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {dashboardData.recentOrders.map((order, i) => (
+                  <tr key={order.id || i} className="group hover:bg-[#FDFBF7] transition-colors border-b border-[#EDD8B4]/30 last:border-0">
+                    <td className="py-4 px-4">
+                      {/* IMPROVED USER PROFILE */}
+                      <div className="flex items-center gap-3">
+                        <div className="relative">
+                           <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold shadow-sm ${
+                              order.user?.isSubscribed 
+                                ? "bg-gradient-to-br from-[#C85428] to-[#8E5022] text-white" 
+                                : "bg-[#EDD8B4] text-[#442D1C]"
+                           }`}>
+                             {order.user?.image ? (
+                                <img src={order.user.image} alt="" className="w-full h-full rounded-full object-cover border-2 border-white" />
+                             ) : (
+                                <span>{getInitials(order.customerName || order.user?.name || "Guest")}</span>
+                             )}
+                           </div>
+                           {order.user?.isSubscribed && (
+                             <div className="absolute -bottom-1 -right-1 bg-yellow-400 text-white p-0.5 rounded-full border-2 border-white" title="Subscribed Member">
+                                <Star className="w-2.5 h-2.5 fill-current" />
+                             </div>
+                           )}
                         </div>
-                      </td>
-                      <td className="py-3 px-4 text-[#442D1C]">
-                        {format(new Date(order.createdAt), "MMM dd, HH:mm")}
-                      </td>
-                      <td className="py-3 px-4 font-bold text-[#442D1C]">
-                        ₹{order.total?.toFixed(2) || "0.00"}
-                      </td>
-                      <td className="py-3 px-4">
-                        <StatusBadge status={order.status} />
-                      </td>
-                      <td className="py-3 px-4 text-[#8E5022]">
-                        {order.OrderItem?.length || 1} items
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <div className="text-center py-12 text-[#8E5022]">
-              <Package className="w-12 h-12 mx-auto mb-3 opacity-50" />
-              <p>No recent orders found</p>
-            </div>
-          )}
+                        <div className="flex flex-col">
+                          <span className="font-semibold text-[#442D1C] text-sm flex items-center gap-2">
+                             {order.customerName || order.user?.name || "Guest Customer"}
+                          </span>
+                          <span className="text-[11px] text-[#8E5022] opacity-80">
+                            {order.customerEmail || order.user?.email || "No email provided"}
+                          </span>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="py-4 px-4">
+                       <div className="flex flex-col">
+                          <span className="text-sm text-[#442D1C] font-medium">{format(new Date(order.createdAt), "MMM dd")}</span>
+                          <span className="text-xs text-[#8E5022]">{format(new Date(order.createdAt), "hh:mm a")}</span>
+                       </div>
+                    </td>
+                    <td className="py-4 px-4">
+                       <span className="font-bold text-[#442D1C]">₹{order.total?.toLocaleString()}</span>
+                    </td>
+                    <td className="py-4 px-4">
+                      <StatusBadge status={order.status} />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {dashboardData.recentOrders.length === 0 && (
+               <div className="text-center py-10 text-[#8E5022] italic">No transactions found for this period.</div>
+            )}
+          </div>
         </motion.div>
       </div>
-
-      {/* Quick Stats */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.6 }}
-        className="grid grid-cols-2 md:grid-cols-4 gap-4"
-      >
-        <QuickStat
-          title="Today's Revenue"
-          value={`₹${
-            dashboardData.dailyStats.todayRevenue?.toFixed(2) || "0.00"
-          }`}
-          change={dashboardData.dailyStats.revenueChange}
-          icon={<IndianRupee className="w-5 h-5" />}
-          isRevenue={true}
-        />
-        <QuickStat
-          title="Pending Orders"
-          value={dashboardData.summary.pendingOrders}
-          icon={<Clock className="w-5 h-5" />}
-          isAlert={dashboardData.summary.pendingOrders > 5}
-        />
-        <QuickStat
-          title="Conversion Rate"
-          value={`${dashboardData.summary.conversionRate}%`}
-          icon={<Percent className="w-5 h-5" />}
-        />
-        <QuickStat
-          title="Active Workshops"
-          value={dashboardData.summary.activeWorkshops}
-          icon={<Award className="w-5 h-5" />}
-        />
-      </motion.div>
+      
+      {/* Quick Stats Footer */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+         <QuickStat title="Today's Revenue" value={`₹${dashboardData.dailyStats.todayRevenue?.toLocaleString() || 0}`} icon={<IndianRupee className="w-4 h-4"/>} />
+         <QuickStat title="Pending Orders" value={dashboardData.summary.pendingOrders} icon={<Clock className="w-4 h-4"/>} isAlert={dashboardData.summary.pendingOrders > 0} />
+         <QuickStat title="Workshops" value={dashboardData.summary.activeWorkshops} icon={<Award className="w-4 h-4"/>} />
+         <QuickStat title="Total Products" value={dashboardData.summary.totalProducts} icon={<Package className="w-4 h-4"/>} />
+      </div>
     </div>
   );
 }
 
-// Stat Card Component
-function StatCard({
-  title,
-  value,
-  change,
-  isPositive,
-  icon,
-  color,
-  delay,
-  description,
-}) {
+// --- HELPER COMPONENTS ---
+
+// 1. IMPROVED STAT CARD WITH GLASSY ICON DIV
+function StatCard({ title, value, change, isPositive, icon, variant = "clay", delay, description }) {
+  // Variant colors for the icon background
+  const variants = {
+    terracotta: "from-[#C85428] to-[#A0401C] shadow-[#C85428]/20 text-white",
+    clay: "from-[#8E5022] to-[#652810] shadow-[#8E5022]/20 text-white",
+    brown: "from-[#652810] to-[#442D1C] shadow-[#652810]/20 text-white",
+    dark: "from-[#442D1C] to-[#2A1B10] shadow-[#442D1C]/20 text-white",
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: delay / 1000 }}
-      className="relative overflow-hidden group bg-white rounded-2xl shadow-sm border border-[#EDD8B4] hover:shadow-md transition-all duration-300"
+      className="bg-white rounded-2xl p-6 shadow-sm border border-[#EDD8B4] hover:shadow-md transition-all duration-300 group relative overflow-hidden"
     >
-      <div className="absolute inset-0 bg-gradient-to-br from-white to-[#FDFBF7]"></div>
-      <div className="relative p-6">
-        <div className="flex justify-between items-start">
-          <div>
-            <p className="text-sm text-[#8E5022] mb-2">{title}</p>
-            <h3 className="text-3xl font-serif font-bold text-[#442D1C]">
-              {value}
-            </h3>
-            {description && (
-              <p className="text-xs text-[#8E5022] mt-1 opacity-75">
-                {description}
-              </p>
-            )}
-          </div>
-          <div
-            className={`p-3 rounded-xl bg-gradient-to-br ${color} shadow-lg group-hover:scale-110 transition-transform`}
-          >
-            {icon}
+      <div className="flex justify-between items-start">
+        <div className="z-10">
+          <p className="text-sm font-medium text-[#8E5022] mb-1">{title}</p>
+          <h3 className="text-3xl font-serif font-bold text-[#442D1C] tracking-tight">{value}</h3>
+          
+          <div className="flex items-center gap-2 mt-3">
+             {change !== null && (
+               <span className={`inline-flex items-center text-xs font-bold px-2 py-0.5 rounded-full ${
+                  isPositive 
+                  ? "bg-green-100 text-green-700" 
+                  : "bg-red-100 text-red-700"
+               }`}>
+                  {isPositive ? <TrendingUp className="w-3 h-3 mr-1" /> : <TrendingDown className="w-3 h-3 mr-1" />}
+                  {change}%
+               </span>
+             )}
+             <span className="text-xs text-[#8E5022]/70">{description}</span>
           </div>
         </div>
-        <div className="mt-4 flex items-center gap-2">
-          <span
-            className={`flex items-center text-sm font-medium px-2 py-1 rounded-full ${
-              isPositive
-                ? "bg-green-50 text-green-700 border border-green-200"
-                : "bg-red-50 text-red-700 border border-red-200"
-            }`}
-          >
-            {isPositive ? (
-              <TrendingUp className="w-4 h-4 mr-1" />
-            ) : (
-              <TrendingDown className="w-4 h-4 mr-1" />
-            )}
-            {change}%
-          </span>
-          <span className="text-sm text-[#8E5022] opacity-75">
-            vs last period
-          </span>
+        
+        {/* IMPROVED DIV ICON */}
+        <div className={`p-4 rounded-2xl bg-gradient-to-br ${variants[variant]} shadow-lg transform group-hover:scale-110 transition-transform duration-300 flex items-center justify-center`}>
+           {icon}
         </div>
       </div>
+      
+      {/* Background Decor */}
+      <div className="absolute -bottom-4 -right-4 w-24 h-24 bg-[#EDD8B4]/10 rounded-full blur-2xl group-hover:bg-[#EDD8B4]/20 transition-colors"></div>
     </motion.div>
   );
 }
 
-// Status Badge Component
+// 2. STATUS BADGE
 function StatusBadge({ status }) {
   const getStatusConfig = (status) => {
-    switch (status) {
+    switch (status?.toUpperCase()) {
       case "DELIVERED":
-        return {
-          color: "bg-green-50 text-green-700 border-green-200",
-          icon: <CheckCircle className="w-3 h-3" />,
-        };
+      case "COMPLETED":
+      case "CONFIRMED":
+        return { bg: "bg-emerald-50", text: "text-emerald-700", border: "border-emerald-200", icon: <CheckCircle className="w-3 h-3" /> };
       case "PROCESSING":
-        return {
-          color: "bg-[#EDD8B4] text-[#8E5022] border-[#8E5022]/20",
-          icon: <Activity className="w-3 h-3" />,
-        };
+      case "IN_PROGRESS":
+        return { bg: "bg-blue-50", text: "text-blue-700", border: "border-blue-200", icon: <Activity className="w-3 h-3" /> };
       case "SHIPPED":
-        return {
-          color: "bg-[#C85428]/10 text-[#C85428] border-[#C85428]/20",
-          icon: <Truck className="w-3 h-3" />,
-        };
+        return { bg: "bg-orange-50", text: "text-orange-700", border: "border-orange-200", icon: <Truck className="w-3 h-3" /> };
       case "PENDING":
-        return {
-          color: "bg-amber-50 text-amber-700 border-amber-200",
-          icon: <Clock className="w-3 h-3" />,
-        };
+        return { bg: "bg-amber-50", text: "text-amber-700", border: "border-amber-200", icon: <Clock className="w-3 h-3" /> };
       case "CANCELLED":
-        return {
-          color: "bg-red-50 text-red-700 border-red-200",
-          icon: <AlertCircle className="w-3 h-3" />,
-        };
+        return { bg: "bg-red-50", text: "text-red-700", border: "border-red-200", icon: <AlertCircle className="w-3 h-3" /> };
       default:
-        return {
-          color: "bg-[#EDD8B4] text-[#442D1C] border-[#EDD8B4]",
-          icon: <AlertCircle className="w-3 h-3" />,
-        };
+        return { bg: "bg-gray-50", text: "text-gray-700", border: "border-gray-200", icon: <AlertCircle className="w-3 h-3" /> };
     }
   };
 
   const config = getStatusConfig(status);
 
   return (
-    <span
-      className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium border ${config.color}`}
-    >
+    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border ${config.bg} ${config.text} ${config.border}`}>
       {config.icon}
       {status}
     </span>
   );
 }
 
-// Quick Stat Component
-function QuickStat({
-  title,
-  value,
-  change,
-  icon,
-  isRevenue = false,
-  isAlert = false,
-}) {
-  return (
-    <div className="bg-gradient-to-br from-white to-[#FDFBF7] p-4 rounded-xl border border-[#EDD8B4] hover:border-[#C85428] transition-colors">
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-sm text-[#8E5022]">{title}</p>
-          <p
-            className={`text-2xl font-bold mt-1 ${
-              isAlert ? "text-[#C85428]" : "text-[#442D1C]"
-            }`}
-          >
-            {value}
-          </p>
-          {change && (
-            <p
-              className={`text-xs mt-1 ${
-                parseFloat(change) >= 0 ? "text-green-600" : "text-red-600"
-              }`}
-            >
-              {parseFloat(change) >= 0 ? "↗" : "↘"}{" "}
-              {Math.abs(parseFloat(change))}%
-            </p>
-          )}
-        </div>
-        <div
-          className={`p-2 rounded-lg ${
-            isAlert
-              ? "bg-[#C85428]/10 text-[#C85428]"
-              : "bg-[#EDD8B4] text-[#8E5022]"
-          }`}
-        >
-          {icon}
-        </div>
+// 3. QUICK STAT FOOTER
+function QuickStat({ title, value, icon, isAlert }) {
+   return (
+      <div className={`flex items-center gap-3 p-4 rounded-xl border transition-colors ${
+         isAlert ? "bg-red-50 border-red-200" : "bg-white border-[#EDD8B4] hover:border-[#C85428]"
+      }`}>
+         <div className={`p-2 rounded-lg ${isAlert ? "bg-red-100 text-red-600" : "bg-[#FDFBF7] text-[#8E5022]"}`}>
+            {icon}
+         </div>
+         <div>
+            <p className="text-xs text-[#8E5022] font-medium">{title}</p>
+            <p className="text-lg font-bold text-[#442D1C]">{value}</p>
+         </div>
       </div>
-    </div>
-  );
+   )
+}
+
+// 4. UTILS
+function getInitials(name) {
+   return name
+     .split(' ')
+     .map(n => n[0])
+     .join('')
+     .toUpperCase()
+     .substring(0, 2);
 }
