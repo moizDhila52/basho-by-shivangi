@@ -15,6 +15,7 @@ import {
   Sparkles,
   Camera,
   Loader2,
+  Settings,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -38,6 +39,7 @@ export default function ProfileSidebar({ user }) {
     { href: '/profile/orders', label: 'My Orders', icon: Package },
     { href: '/profile/address', label: 'Addresses', icon: MapPin },
     { href: '/profile/reviews', label: 'My Reviews', icon: Star },
+    { href: '/profile/settings', label: 'Settings', icon: Settings },
   ];
 
   const handleImageUpload = async (e) => {
@@ -94,32 +96,8 @@ export default function ProfileSidebar({ user }) {
                 {user?.name?.[0]?.toUpperCase() || 'U'}
               </div>
             )}
-
-            {/* Loading Spinner Overlay */}
-            {uploading && (
-              <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-20">
-                <Loader2 className="w-8 h-8 text-white animate-spin" />
-              </div>
-            )}
           </div>
-
-          {/* Camera Button */}
-          <button
-            onClick={() => fileInputRef.current?.click()}
-            disabled={uploading}
-            className="absolute bottom-0 right-0 p-2 bg-[#8E5022] text-white rounded-full shadow-lg hover:bg-[#652810] transition-transform hover:scale-110 disabled:opacity-70 z-10"
-            title="Change Profile Picture"
-          >
-            <Camera className="w-4 h-4" />
-          </button>
-
-          <input
-            type="file"
-            ref={fileInputRef}
-            className="hidden"
-            accept="image/*"
-            onChange={handleImageUpload}
-          />
+          {/* CAMERA BUTTON REMOVED FROM HERE */}
         </div>
 
         <h2 className="font-serif text-xl text-[#442D1C] font-bold">

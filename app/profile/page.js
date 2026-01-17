@@ -1,16 +1,16 @@
+// app/profile/page.js
 import { prisma } from '@/lib/prisma';
 import { getSession } from '@/lib/session';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import ProfileForm from './ProfileForm';
 import {
-  Package,
-  Truck,
-  CheckCircle,
   ShoppingBag,
+  Truck,
   Calendar,
-  ChevronRight,
+  CheckCircle,
+  Package as PackageIcon,
   MapPin,
+  ChevronRight,
 } from 'lucide-react';
 
 // 👇 NUCLEAR CACHE BUSTING
@@ -18,7 +18,7 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 // --- Smaller Components ---
-
+// (Keep StatCard and ActiveOrderTracker exactly as they were in your original code)
 function StatCard({ icon: Icon, label, value, subtext }) {
   return (
     <div className="bg-white p-6 rounded-2xl border border-stone-100 shadow-sm flex items-start gap-4 transition-all hover:shadow-md">
@@ -39,7 +39,6 @@ function StatCard({ icon: Icon, label, value, subtext }) {
 function ActiveOrderTracker({ order }) {
   if (!order) return null;
 
-  // 👇 FIXED LOGIC HERE: Added 'CONFIRMED' to the first step
   const getProgressStep = (status) => {
     if (['PENDING', 'CONFIRMED'].includes(status)) return 1;
     if (['PROCESSING'].includes(status)) return 2;
@@ -51,13 +50,13 @@ function ActiveOrderTracker({ order }) {
   const currentStep = getProgressStep(order.status);
   const steps = [
     { id: 1, label: 'Confirmed', icon: CheckCircle },
-    { id: 2, label: 'Preparing', icon: Package },
+    { id: 2, label: 'Preparing', icon: PackageIcon },
     { id: 3, label: 'Shipped', icon: Truck },
     { id: 4, label: 'Delivered', icon: MapPin },
   ];
 
   return (
-    <div className="bg-white p-6 rounded-2xl border border-[#EDD8B4] shadow-sm mb-6 relative overflow-hidden">
+    <div className="bg-white p-6 rounded-2xl border border-[#EDD8B4] shadow-sm mb-8 relative overflow-hidden">
       <div className="absolute top-0 right-0 w-24 h-24 bg-[#FDFBF7] rounded-full -mr-8 -mt-8" />
       <div className="flex justify-between items-start mb-6 relative z-10">
         <div>
@@ -131,7 +130,7 @@ export default async function ProfilePage() {
 
   if (!user) redirect('/login');
 
-  // Fetch orders (Including Guest Orders by Email)
+  // Fetch orders
   const allOrders = await prisma.order.findMany({
     where: {
       OR: [{ userId: session.userId }, { customerEmail: user.email }],
@@ -149,19 +148,19 @@ export default async function ProfilePage() {
   const memberSince = new Date(user.createdAt).getFullYear();
 
   return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-500">
+    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-500 max-w-5xl">
       {/* 1. Header Section */}
       <div>
-        <h1 className="text-2xl md:text-3xl font-serif text-[#442D1C] mb-2">
+        <h1 className="text-3xl md:text-4xl font-serif text-[#442D1C] mb-3">
           Welcome back, {user.name?.split(' ')[0] || 'Guest'}
         </h1>
-        <p className="text-stone-500">
-          Here is what is happening with your collection.
+        <p className="text-stone-500 text-lg">
+          Here is an overview of your collection and activity.
         </p>
       </div>
 
-      {/* 2. Stat Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      {/* 2. Stat Cards Grid - Expanded to 3 columns */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <StatCard
           icon={ShoppingBag}
           label="Total Orders"
@@ -182,95 +181,78 @@ export default async function ProfilePage() {
         />
       </div>
 
-      {/* 3. Main Content Grid */}
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 items-start">
-        {/* LEFT COLUMN (2/3 width) - Tracker & Activity */}
-        <div className="xl:col-span-2 space-y-6">
-          {/* Tracker */}
-          {latestActiveOrder && (
-            <ActiveOrderTracker order={latestActiveOrder} />
-          )}
+      {/* 3. Main Content - Removed grid-cols-3, now just a stack */}
+      <div className="space-y-8">
+        {/* Tracker */}
+        {latestActiveOrder && <ActiveOrderTracker order={latestActiveOrder} />}
 
-          {/* Recent Activity List */}
-          <div className="bg-white rounded-2xl border border-stone-100 shadow-sm overflow-hidden">
-            <div className="px-6 py-4 border-b border-stone-100 flex justify-between items-center">
-              <h2 className="font-serif text-[#442D1C]">Recent Activity</h2>
-              <Link
-                href="/profile/orders"
-                className="text-xs text-[#8E5022] font-medium hover:underline"
-              >
-                View All
-              </Link>
+        {/* Recent Activity List - Expanded width */}
+        <div className="bg-white rounded-2xl border border-stone-100 shadow-sm overflow-hidden">
+          <div className="px-6 py-5 border-b border-stone-100 flex justify-between items-center bg-stone-50/50">
+            <h2 className="font-serif text-xl text-[#442D1C]">
+              Recent Activity
+            </h2>
+            <Link
+              href="/profile/orders"
+              className="text-sm text-[#C85428] font-bold hover:underline"
+            >
+              View All History
+            </Link>
+          </div>
+
+          {allOrders.length === 0 ? (
+            <div className="p-12 text-center text-stone-500">
+              <ShoppingBag className="w-12 h-12 mx-auto text-stone-300 mb-4" />
+              No orders placed yet.
             </div>
-
-            {allOrders.length === 0 ? (
-              <div className="p-8 text-center text-stone-500">
-                No orders yet.
-              </div>
-            ) : (
-              <div className="divide-y divide-stone-50">
-                {allOrders.slice(0, 4).map((order) => (
-                  <Link
-                    key={order.id}
-                    href={`/profile/orders/${order.id}`}
-                    className="block"
-                  >
-                    <div
-                      key={order.id}
-                      className="p-4 flex items-center justify-between hover:bg-[#FDFBF7] transition-colors group"
-                    >
-                      <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 bg-stone-50 rounded-lg flex items-center justify-center text-stone-400 group-hover:bg-white group-hover:shadow-sm transition-all">
-                          <ShoppingBag className="w-4 h-4" />
-                        </div>
-                        <div>
-                          <p className="font-medium text-[#442D1C] text-sm">
-                            {order.OrderItem.length} Item
-                            {order.OrderItem.length !== 1 && 's'}
-                          </p>
-                          <p className="text-[10px] text-stone-400">
-                            {new Date(order.createdAt).toLocaleDateString()}
-                          </p>
-                        </div>
+          ) : (
+            <div className="divide-y divide-stone-50">
+              {allOrders.slice(0, 5).map((order) => (
+                <Link
+                  key={order.id}
+                  href={`/profile/orders/${order.id}`}
+                  className="block group"
+                >
+                  <div className="p-5 flex items-center justify-between hover:bg-[#FDFBF7] transition-colors">
+                    <div className="flex items-center gap-5">
+                      <div className="w-12 h-12 bg-stone-100 rounded-xl flex items-center justify-center text-stone-500 group-hover:bg-white group-hover:shadow-sm transition-all border border-transparent group-hover:border-stone-200">
+                        <PackageIcon className="w-6 h-6" />
                       </div>
-                      <div className="text-right">
-                        <p className="font-medium text-[#442D1C] text-sm">
-                          ₹{order.total}
+                      <div>
+                        <p className="font-bold text-[#442D1C] text-base mb-1">
+                          Order #
+                          {order.orderNumber
+                            ? order.orderNumber.slice(-8).toUpperCase()
+                            : order.id.slice(-6).toUpperCase()}
                         </p>
-                        <p
-                          className={`text-[10px] font-bold uppercase ${
-                            order.status === 'DELIVERED'
-                              ? 'text-green-600'
-                              : 'text-blue-600'
-                          }`}
-                        >
-                          {order.status}
+                        <p className="text-sm text-stone-500 flex gap-3">
+                          <span>
+                            {new Date(order.createdAt).toLocaleDateString()}
+                          </span>
+                          <span>•</span>
+                          <span>{order.OrderItem.length} Items</span>
                         </p>
                       </div>
                     </div>
-                  </Link>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* RIGHT COLUMN (1/3 width) - Account Details */}
-        <div className="xl:col-span-1">
-          <div className="bg-white p-6 rounded-2xl border border-stone-100 shadow-sm sticky top-28">
-            <div className="flex items-center gap-3 mb-6 pb-4 border-b border-stone-100">
-              <div className="w-10 h-10 bg-[#EDD8B4] rounded-full flex items-center justify-center text-[#442D1C] font-serif font-bold">
-                {user.name ? user.name[0].toUpperCase() : 'U'}
-              </div>
-              <div>
-                <h3 className="font-bold text-[#442D1C] text-sm">
-                  Account Details
-                </h3>
-                <p className="text-xs text-stone-500">Update your profile</p>
-              </div>
+                    <div className="text-right">
+                      <p className="font-serif font-bold text-[#442D1C] text-lg mb-1">
+                        ₹{order.total}
+                      </p>
+                      <p
+                        className={`text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-full inline-block ${
+                          order.status === 'DELIVERED'
+                            ? 'bg-green-100 text-green-700'
+                            : 'bg-blue-50 text-blue-700'
+                        }`}
+                      >
+                        {order.status}
+                      </p>
+                    </div>
+                  </div>
+                </Link>
+              ))}
             </div>
-            <ProfileForm user={user} />
-          </div>
+          )}
         </div>
       </div>
     </div>

@@ -9,15 +9,9 @@ import {
   signInWithPopup,
   GoogleAuthProvider,
   sendPasswordResetEmail,
-<<<<<<< HEAD
-  setPersistence,            // 👈 ADD THIS
-  browserLocalPersistence,   // 👈 ADD THIS
-  browserSessionPersistence, // 👈 ADD THIS
-=======
   browserLocalPersistence,
   browserSessionPersistence,
   setPersistence,
->>>>>>> 367198913f54382e26ddab0b932e64bb940fa0b6
 } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { useToast } from "@/components/ToastProvider";

@@ -42,7 +42,7 @@ function OrderTracker({ status }) {
   const currentStep = getStepStatus(status);
 
   return (
-    <div className="w-full py-4">
+    <div className="w-full py-4 px-1">
       <div className="relative">
         <div className="absolute top-1/2 left-0 w-full h-1 bg-stone-100 -translate-y-1/2 rounded-full" />
         <div
@@ -57,7 +57,7 @@ function OrderTracker({ status }) {
             return (
               <div
                 key={step.id}
-                className="flex flex-col items-center gap-2 bg-[#FDFBF7] px-2"
+                className="flex flex-col items-center gap-2 bg-[#FDFBF7] px-1 z-10"
               >
                 <div
                   className={`w-8 h-8 rounded-full flex items-center justify-center border-2 transition-all ${
@@ -69,7 +69,7 @@ function OrderTracker({ status }) {
                   <step.icon className="w-4 h-4" />
                 </div>
                 <span
-                  className={`text-[10px] font-bold uppercase tracking-wider ${
+                  className={`text-[9px] md:text-[10px] font-bold uppercase tracking-wider text-center ${
                     isCompleted ? 'text-[#8E5022]' : 'text-stone-400'
                   }`}
                 >
@@ -124,7 +124,7 @@ export default async function OrderDetailPage({ params }) {
 
   const { id } = await params;
 
-  // 1. 👇 FETCH CURRENT USER EMAIL from DB (Because session email was undefined)
+  // 1. Fetch Current User
   const currentUser = await prisma.user.findUnique({
     where: { id: session.userId },
     select: { email: true },
@@ -139,19 +139,12 @@ export default async function OrderDetailPage({ params }) {
     notFound();
   }
 
-  // 2. 👇 UPDATED SECURITY LOGIC
+  // 2. Security Logic
   const isOwner = order.userId === session.userId;
-
-  // Now we compare against 'currentUser.email', not 'session.user.email'
   const isGuestOwner =
     order.userId === null && order.customerEmail === currentUser?.email;
 
   if (!isOwner && !isGuestOwner) {
-    console.log('❌ Permission Denied.');
-    console.log(`Order Owner: ${order.userId} | Email: ${order.customerEmail}`);
-    console.log(
-      `Current User ID: ${session.userId} | Fetched Email: ${currentUser?.email}`,
-    );
     notFound();
   }
 
@@ -160,190 +153,200 @@ export default async function OrderDetailPage({ params }) {
       ? JSON.parse(order.address)
       : order.address || {};
 
+  // 👇 FIXED: Removed 'min-h-screen', 'bg-[#FDFBF7]', 'pb-24' and 'p-4' to fix whitespace
   return (
-    <div className="min-h-screen bg-[#FDFBF7] p-4 md:p-8 animate-in fade-in zoom-in-95 duration-500">
-      <div className="max-w-6xl mx-auto space-y-6">
-        {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <Link href="/profile/orders">
-              <button className="w-10 h-10 bg-white rounded-full border border-stone-200 flex items-center justify-center hover:bg-stone-50 transition-colors">
-                <ArrowLeft className="w-5 h-5 text-stone-600" />
-              </button>
-            </Link>
-            <div>
-              <div className="flex items-center gap-3">
-                <h1 className="text-2xl font-serif text-[#442D1C]">
-                  Order #
-                  {order.orderNumber
-                    ? order.orderNumber
-                    : order.id.slice(-8).toUpperCase()}
-                </h1>
-                <span
-                  className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                    order.status === 'DELIVERED'
-                      ? 'bg-green-100 text-green-700'
-                      : 'bg-blue-50 text-blue-700'
-                  }`}
-                >
-                  {order.status}
-                </span>
-              </div>
-              <p className="text-stone-500 text-sm">
-                Placed on{' '}
-                {new Date(order.createdAt).toLocaleDateString('en-US', {
-                  day: 'numeric',
-                  month: 'long',
-                  year: 'numeric',
-                  hour: '2-digit',
-                  minute: '2-digit',
-                })}
-              </p>
-            </div>
-          </div>
-
-          <div className="flex gap-3">
-            <button className="flex items-center gap-2 px-4 py-2 bg-white border border-stone-200 rounded-xl text-sm font-medium text-stone-600 hover:bg-stone-50 transition-colors">
-              <HelpCircle className="w-4 h-4" />
-              Need Help?
+    <div className="animate-in fade-in zoom-in-95 duration-500 space-y-6">
+      {/* --- Header Section --- */}
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+        <div className="flex items-start gap-4">
+          <Link href="/profile/orders">
+            <button className="w-10 h-10 bg-white rounded-full border border-stone-200 flex items-center justify-center hover:bg-stone-50 transition-colors flex-shrink-0">
+              <ArrowLeft className="w-5 h-5 text-stone-600" />
             </button>
-            <InvoiceActions orderId={order.id} hasGst={!!order.customerGst} />
+          </Link>
+
+          <div className="flex-1">
+            <div className="flex flex-wrap items-center gap-3">
+              <h1 className="text-xl md:text-2xl font-serif text-[#442D1C]">
+                Order #
+                {order.orderNumber
+                  ? order.orderNumber
+                  : order.id.slice(-8).toUpperCase()}
+              </h1>
+              <span
+                className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                  order.status === 'DELIVERED'
+                    ? 'bg-green-100 text-green-700'
+                    : 'bg-blue-50 text-blue-700'
+                }`}
+              >
+                {order.status}
+              </span>
+            </div>
+            <p className="text-stone-500 text-xs md:text-sm mt-1">
+              Placed on{' '}
+              {new Date(order.createdAt).toLocaleDateString('en-US', {
+                day: 'numeric',
+                month: 'long',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+              })}
+            </p>
           </div>
         </div>
 
-        {/* Main Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left Column */}
-          <div className="lg:col-span-2 space-y-6">
-            <OrderPaymentStatus order={order} />
-            <div className="bg-white p-6 rounded-2xl border border-stone-100 shadow-sm">
-              <h3 className="font-bold text-[#442D1C] text-sm mb-6">
-                Order Status
-              </h3>
-              <OrderTracker status={order.status} />
-              {order.trackingNumber && (
-                <div className="mt-6 p-4 bg-[#FDFBF7] rounded-xl flex justify-between items-center border border-[#EDD8B4]/30">
-                  <div className="flex items-center gap-3">
-                    <Truck className="w-5 h-5 text-[#8E5022]" />
-                    <div>
-                      <p className="text-xs font-bold text-[#8E5022] uppercase">
-                        Tracking Number
-                      </p>
-                      <p className="text-sm font-medium text-[#442D1C]">
-                        {order.trackingNumber}
-                      </p>
-                    </div>
-                  </div>
-                  <button className="text-xs text-[#8E5022] underline hover:text-[#652810]">
-                    Track on Courier
-                  </button>
-                </div>
-              )}
-            </div>
+        <div className="flex flex-row gap-3 w-full lg:w-auto">
+          <button className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-3 py-3 bg-white border border-stone-200 rounded-xl text-sm font-medium text-stone-600 hover:bg-stone-50 transition-colors">
+            <HelpCircle className="w-4 h-4" />
+            <span className="whitespace-nowrap">Need Help?</span>
+          </button>
+          <div className="flex-1 sm:flex-none">
+            <InvoiceActions orderId={order.id} hasGst={!!order.customerGst} />
+          </div>
+        </div>
+      </div>
 
-            <div className="bg-white rounded-2xl border border-stone-100 shadow-sm overflow-hidden flex flex-col">
-              <div className="px-6 py-4 border-b border-stone-100 bg-stone-50/50">
-                <h3 className="font-bold text-[#442D1C] text-sm">
-                  Items in this shipment ({order.OrderItem.length})
-                </h3>
+      {/* --- Main Grid --- */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Left Column */}
+        <div className="lg:col-span-2 space-y-6">
+          <OrderPaymentStatus order={order} />
+
+          {/* Status Card */}
+          <div className="bg-white p-6 rounded-2xl border border-stone-100 shadow-sm">
+            <h3 className="font-bold text-[#442D1C] text-sm mb-6">
+              Order Status
+            </h3>
+            <OrderTracker status={order.status} />
+
+            {order.trackingNumber && (
+              <div className="mt-6 p-4 bg-[#FDFBF7] rounded-xl flex flex-wrap gap-4 justify-between items-center border border-[#EDD8B4]/30">
+                <div className="flex items-center gap-3">
+                  <Truck className="w-5 h-5 text-[#8E5022]" />
+                  <div>
+                    <p className="text-xs font-bold text-[#8E5022] uppercase">
+                      Tracking Number
+                    </p>
+                    <p className="text-sm font-medium text-[#442D1C] break-all">
+                      {order.trackingNumber}
+                    </p>
+                  </div>
+                </div>
+                <button className="text-xs text-[#8E5022] underline hover:text-[#652810]">
+                  Track on Courier
+                </button>
               </div>
+            )}
+          </div>
+
+          {/* Items List */}
+          <div className="bg-white rounded-2xl border border-stone-100 shadow-sm overflow-hidden flex flex-col">
+            <div className="px-6 py-4 border-b border-stone-100 bg-stone-50/50">
+              <h3 className="font-bold text-[#442D1C] text-sm">
+                Items in this shipment ({order.OrderItem.length})
+              </h3>
+            </div>
+            <div className="overflow-x-auto">
               <ClientItemsList items={order.OrderItem} />
             </div>
           </div>
+        </div>
 
-          {/* Right Column */}
-          <div className="lg:col-span-1 space-y-6">
-            <div className="bg-white p-6 rounded-2xl border border-stone-100 shadow-sm space-y-6">
-              <div>
-                <div className="flex items-center gap-2 mb-3">
-                  <MapPin className="w-4 h-4 text-[#8E5022]" />
-                  <h3 className="font-bold text-[#442D1C] text-sm">
-                    Delivery Address
-                  </h3>
-                </div>
-                <div className="text-sm text-stone-600 leading-relaxed pl-6">
-                  {address.street ? (
-                    <>
-                      <p>{address.street}</p>
-                      <p>
-                        {address.city}, {address.state}
-                      </p>
-                      <p>{address.pincode}</p>
-                      <p>India</p>
-                    </>
-                  ) : (
-                    <p className="text-stone-400 italic">
-                      Address data unavailable
-                    </p>
-                  )}
-                </div>
+        {/* Right Column */}
+        <div className="lg:col-span-1 space-y-6">
+          <div className="bg-white p-6 rounded-2xl border border-stone-100 shadow-sm space-y-6">
+            {/* Address */}
+            <div>
+              <div className="flex items-center gap-2 mb-3">
+                <MapPin className="w-4 h-4 text-[#8E5022]" />
+                <h3 className="font-bold text-[#442D1C] text-sm">
+                  Delivery Address
+                </h3>
               </div>
-              <div className="h-px bg-stone-100" />
-              <div>
-                <div className="flex items-center gap-2 mb-3">
-                  <CreditCard className="w-4 h-4 text-[#8E5022]" />
-                  <h3 className="font-bold text-[#442D1C] text-sm">
-                    Payment Details
-                  </h3>
-                </div>
-                <div className="pl-6 space-y-2">
-                  <p className="text-sm text-stone-600">
-                    Method:{' '}
-                    <span className="font-medium text-[#442D1C]">
-                      Online (Razorpay)
-                    </span>
-                  </p>
-                  {order.paymentId && (
-                    <p className="text-xs text-stone-400">
-                      Transaction ID: {order.paymentId}
+              <div className="text-sm text-stone-600 leading-relaxed pl-6 break-words">
+                {address.street ? (
+                  <>
+                    <p>{address.street}</p>
+                    <p>
+                      {address.city}, {address.state}
                     </p>
-                  )}
-                  <span
-                    className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-bold uppercase ${
-                      order.paymentStatus === 'PAID'
-                        ? 'bg-green-50 text-green-700'
-                        : 'bg-yellow-50 text-yellow-700'
-                    }`}
-                  >
-                    {order.paymentStatus || 'Pending'}
-                  </span>
-                </div>
+                    <p>{address.pincode}</p>
+                    <p>India</p>
+                  </>
+                ) : (
+                  <p className="text-stone-400 italic">
+                    Address data unavailable
+                  </p>
+                )}
               </div>
             </div>
 
-            <div className="bg-white p-6 rounded-2xl border border-stone-100 shadow-sm bg-[#FDFBF7]">
-              <h3 className="font-bold text-[#442D1C] text-sm mb-4">
-                Order Summary
-              </h3>
-              <div className="space-y-2">
-                <InfoRow
-                  label="Subtotal"
-                  value={`₹${order.subtotal?.toFixed(2)}`}
-                />
-                <InfoRow
-                  label="Shipping"
-                  value={
-                    order.shippingCost === 0
-                      ? 'Free'
-                      : `₹${order.shippingCost?.toFixed(2)}`
-                  }
-                />
-                <InfoRow
-                  label="Tax (GST)"
-                  value={`₹${order.tax?.toFixed(2)}`}
-                />
-                {order.discount > 0 && (
-                  <InfoRow
-                    label="Discount"
-                    value={`-₹${order.discount.toFixed(2)}`}
-                  />
-                )}
-                <InfoRow
-                  label="Total"
-                  value={`₹${order.total.toFixed(2)}`}
-                  isTotal
-                />
+            <div className="h-px bg-stone-100" />
+
+            {/* Payment */}
+            <div>
+              <div className="flex items-center gap-2 mb-3">
+                <CreditCard className="w-4 h-4 text-[#8E5022]" />
+                <h3 className="font-bold text-[#442D1C] text-sm">
+                  Payment Details
+                </h3>
               </div>
+              <div className="pl-6 space-y-2">
+                <p className="text-sm text-stone-600">
+                  Method:{' '}
+                  <span className="font-medium text-[#442D1C]">
+                    Online (Razorpay)
+                  </span>
+                </p>
+                {order.paymentId && (
+                  <p className="text-xs text-stone-400 break-all">
+                    Transaction ID: {order.paymentId}
+                  </p>
+                )}
+                <span
+                  className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-bold uppercase ${
+                    order.paymentStatus === 'PAID'
+                      ? 'bg-green-50 text-green-700'
+                      : 'bg-yellow-50 text-yellow-700'
+                  }`}
+                >
+                  {order.paymentStatus || 'Pending'}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Price Breakdown */}
+          <div className="bg-white p-6 rounded-2xl border border-stone-100 shadow-sm bg-[#FDFBF7]">
+            <h3 className="font-bold text-[#442D1C] text-sm mb-4">
+              Order Summary
+            </h3>
+            <div className="space-y-2">
+              <InfoRow
+                label="Subtotal"
+                value={`₹${order.subtotal?.toFixed(2)}`}
+              />
+              <InfoRow
+                label="Shipping"
+                value={
+                  order.shippingCost === 0
+                    ? 'Free'
+                    : `₹${order.shippingCost?.toFixed(2)}`
+                }
+              />
+              <InfoRow label="Tax (GST)" value={`₹${order.tax?.toFixed(2)}`} />
+              {order.discount > 0 && (
+                <InfoRow
+                  label="Discount"
+                  value={`-₹${order.discount.toFixed(2)}`}
+                />
+              )}
+              <InfoRow
+                label="Total"
+                value={`₹${order.total.toFixed(2)}`}
+                isTotal
+              />
             </div>
           </div>
         </div>

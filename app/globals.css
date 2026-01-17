@@ -205,3 +205,12 @@ main.landing-page {
     min-height: auto !important;
   }
 }
+
+/* In globals.css */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}

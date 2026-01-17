@@ -4,10 +4,11 @@ import { getSession } from '@/lib/session';
 import { renderToStream } from '@react-pdf/renderer';
 import { InvoiceDocument } from '@/components/pdf/InvoiceTemplate';
 
-export async function GET(request, props) {
+export async function GET(request, { params }) {
+  // Destructure params directly
   try {
-    const params = await props.params;
-    const id = params.id;
+    // Await params if using Next.js 15+, otherwise access directly
+    const { id } = await params;
 
     const session = await getSession();
     if (!session) {
@@ -22,7 +23,7 @@ export async function GET(request, props) {
       where: { id: id },
       include: {
         OrderItem: true,
-        User: true,
+        // User: true, // You generally don't need the full User object if order has customer details
       },
     });
 
@@ -30,16 +31,16 @@ export async function GET(request, props) {
       return new NextResponse('Order not found', { status: 404 });
     }
 
-    // 2. 👇 FETCH STORE SETTINGS (Address & GSTIN)
+    // 2. Fetch Store Settings
     const settings = await prisma.storeSettings.findFirst();
 
-    // Security Check
+    // Security Check: UNCOMMENTED THE RETURN
     const isOwner = order.userId === session.userId;
     if (!isOwner && session.role !== 'ADMIN') {
-      // return new NextResponse('Forbidden', { status: 403 });
+      return new NextResponse('Forbidden', { status: 403 });
     }
 
-    // 3. 👇 PASS SETTINGS TO TEMPLATE
+    // 3. Generate PDF Stream
     const stream = await renderToStream(
       <InvoiceDocument order={order} type={type} settings={settings} />,
     );

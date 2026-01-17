@@ -36,7 +36,7 @@ function StatusTracker({ status }) {
   if (['COMPLETED', 'SHIPPED', 'DELIVERED'].includes(status)) currentStep = 5;
 
   return (
-    <div className="w-full py-6">
+    <div className="w-full py-6 px-1">
       <div className="relative">
         {/* Progress Bar Background */}
         <div className="absolute top-1/2 left-0 w-full h-1 bg-stone-100 -translate-y-1/2 rounded-full" />
@@ -55,7 +55,7 @@ function StatusTracker({ status }) {
             return (
               <div
                 key={step.id}
-                className="flex flex-col items-center gap-2 bg-[#FDFBF7] px-2 z-10"
+                className="flex flex-col items-center gap-2 bg-[#FDFBF7] px-1 z-10"
               >
                 <div
                   className={`w-8 h-8 rounded-full flex items-center justify-center border-2 transition-all ${
@@ -64,10 +64,10 @@ function StatusTracker({ status }) {
                       : 'bg-white border-stone-200 text-stone-300'
                   }`}
                 >
-                  <step.icon className="w-4 h-4" />
+                  <step.icon className="w-3.5 h-3.5" />
                 </div>
                 <span
-                  className={`text-[10px] font-bold uppercase tracking-wider ${
+                  className={`text-[9px] md:text-[10px] font-bold uppercase tracking-wider text-center ${
                     isCompleted ? 'text-[#8E5022]' : 'text-stone-400'
                   }`}
                 >
@@ -106,7 +106,6 @@ export default function CustomOrderDetailPage() {
       .catch((err) => {
         console.error(err);
         setLoading(false);
-        // Keep order null to trigger specific error UI
       });
   }, [id]);
 
@@ -168,7 +167,6 @@ export default function CustomOrderDetailPage() {
       </div>
     );
 
-  // FIX: Check for order.id to prevent "slice of undefined" error
   if (!order || !order.id) {
     return (
       <div className="p-20 text-center border-2 border-dashed border-[#EDD8B4] rounded-2xl">
@@ -194,73 +192,80 @@ export default function CustomOrderDetailPage() {
   ].includes(order.status);
 
   return (
-    <div className="space-y-8 animate-in fade-in zoom-in-95 duration-500">
+    <div className="space-y-8 animate-in fade-in zoom-in-95 duration-500 pb-20 md:pb-0">
       <Script
         src="https://checkout.razorpay.com/v1/checkout.js"
         strategy="lazyOnload"
       />
 
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
+      {/* --- Header Section --- */}
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+        <div className="flex items-start gap-4">
           <Link href="/profile/custom-orders">
-            <button className="w-10 h-10 bg-white rounded-full border border-stone-200 flex items-center justify-center hover:bg-stone-50 transition-colors">
+            <button className="w-10 h-10 bg-white rounded-full border border-stone-200 flex items-center justify-center hover:bg-stone-50 transition-colors flex-shrink-0">
               <ArrowLeft className="w-5 h-5 text-stone-600" />
             </button>
           </Link>
-          <div>
-            <div className="flex items-center gap-3">
-              <h1 className="text-2xl font-serif text-[#442D1C]">
+          <div className="flex-1">
+            <div className="flex flex-wrap items-center gap-3">
+              <h1 className="text-xl md:text-2xl font-serif text-[#442D1C]">
                 Request #{order.id.slice(0, 8).toUpperCase()}
               </h1>
               <span className="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-[#EDD8B4] text-[#442D1C]">
                 {order.status.replace('_', ' ')}
               </span>
             </div>
-            <p className="text-stone-500 text-sm">
+            <p className="text-stone-500 text-xs md:text-sm mt-1">
               Submitted on {new Date(order.createdAt).toLocaleDateString()}
             </p>
           </div>
         </div>
 
-        <div className="flex gap-3">
-          <button className="flex items-center gap-2 px-4 py-2 bg-white border border-stone-200 rounded-xl text-sm font-medium text-stone-600 hover:bg-stone-50 transition-colors">
-            <HelpCircle className="w-4 h-4" /> Need Help?
+        {/* Buttons: Side-by-side on mobile */}
+        <div className="flex flex-row gap-3 w-full lg:w-auto">
+          <button className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-3 py-3 bg-white border border-stone-200 rounded-xl text-sm font-medium text-stone-600 hover:bg-stone-50 transition-colors">
+            <HelpCircle className="w-4 h-4" />
+            <span className="whitespace-nowrap">Need Help?</span>
           </button>
-          {/* INVOICE BUTTON (Shows when paid) */}
           {isPaid && (
-            <Link href={`/invoice/custom/${order.id}`} target="_blank">
-              <button className="flex items-center gap-2 px-4 py-2 bg-[#442D1C] text-white rounded-xl text-sm font-medium hover:bg-[#2c1d12] transition-colors shadow-sm">
-                <Download className="w-4 h-4" /> Invoice
+            <Link
+              href={`/invoice/custom/${order.id}`}
+              target="_blank"
+              className="flex-1 sm:flex-none"
+            >
+              <button className="w-full flex items-center justify-center gap-2 px-3 py-3 bg-[#442D1C] text-white rounded-xl text-sm font-medium hover:bg-[#2c1d12] transition-colors shadow-sm">
+                <Download className="w-4 h-4" />
+                <span className="whitespace-nowrap">Invoice</span>
               </button>
             </Link>
           )}
         </div>
       </div>
 
-      {/* Pay Now Section (Only if Quoted) */}
+      {/* --- Pay Now Section --- */}
       {order.status === 'QUOTED' && order.actualPrice && (
-        <div className="bg-[#442D1C] rounded-2xl p-8 text-[#EDD8B4] flex flex-col md:flex-row items-center justify-between gap-6 shadow-xl relative overflow-hidden">
+        <div className="bg-[#442D1C] rounded-2xl p-6 md:p-8 text-[#EDD8B4] flex flex-col md:flex-row items-center justify-between gap-6 shadow-xl relative overflow-hidden">
           <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />
-          <div className="relative z-10">
-            <h3 className="font-serif text-2xl mb-2 flex items-center gap-2">
+          <div className="relative z-10 text-center md:text-left">
+            <h3 className="font-serif text-2xl mb-2 flex items-center justify-center md:justify-start gap-2">
               <DollarSign className="w-6 h-6" /> Quote Ready
             </h3>
             <p className="opacity-90 max-w-md text-sm leading-relaxed">
               Our team has reviewed your request. This price includes materials,
-              craftsmanship, and kiln firing. Secure your order to begin
-              production.
+              craftsmanship, and kiln firing.
             </p>
           </div>
-          <div className="text-center md:text-right relative z-10">
+          <div className="text-center md:text-right relative z-10 w-full md:w-auto">
             <p className="text-xs uppercase tracking-widest opacity-70 mb-1">
               Total Amount
             </p>
-            <p className="text-4xl font-serif mb-4">₹{order.actualPrice}</p>
+            <p className="text-3xl md:text-4xl font-serif mb-4">
+              ₹{order.actualPrice}
+            </p>
             <button
               onClick={handlePayment}
               disabled={paying}
-              className="bg-[#EDD8B4] text-[#442D1C] px-8 py-3 rounded-xl font-bold hover:bg-white transition-colors flex items-center gap-2 disabled:opacity-70 shadow-lg"
+              className="w-full md:w-auto bg-[#EDD8B4] text-[#442D1C] px-8 py-3 rounded-xl font-bold hover:bg-white transition-colors flex items-center justify-center gap-2 disabled:opacity-70 shadow-lg"
             >
               {paying ? (
                 <Loader2 className="animate-spin" />
@@ -273,9 +278,9 @@ export default function CustomOrderDetailPage() {
         </div>
       )}
 
-      {/* Main Grid */}
+      {/* --- Main Content Grid --- */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* LEFT COLUMN */}
+        {/* Left Column (Stats & Details) */}
         <div className="lg:col-span-2 space-y-6">
           {/* Status Tracker */}
           <div className="bg-white p-6 rounded-2xl border border-stone-100 shadow-sm">
@@ -292,7 +297,8 @@ export default function CustomOrderDetailPage() {
                 Request Specifications
               </h3>
             </div>
-            <div className="p-6 grid md:grid-cols-2 gap-6 text-sm">
+            {/* Grid is 1 col on mobile, 2 on md+ */}
+            <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
               <div>
                 <p className="text-xs font-bold text-[#8E5022] uppercase mb-1">
                   Product Type
@@ -356,10 +362,10 @@ export default function CustomOrderDetailPage() {
           )}
         </div>
 
-        {/* RIGHT COLUMN */}
+        {/* Right Column (Timeline & Payment) */}
         <div className="lg:col-span-1 space-y-6">
-          {/* Timeline Info */}
           <div className="bg-white p-6 rounded-2xl border border-stone-100 shadow-sm space-y-6">
+            {/* Timeline */}
             <div>
               <div className="flex items-center gap-2 mb-3">
                 <Clock className="w-4 h-4 text-[#8E5022]" />
@@ -375,7 +381,7 @@ export default function CustomOrderDetailPage() {
               </div>
             </div>
 
-            {/* PAYMENT DETAILS (MATCHING REFERENCE) */}
+            {/* Payment Details */}
             {isPaid && (
               <>
                 <div className="h-px bg-stone-100" />
@@ -394,7 +400,7 @@ export default function CustomOrderDetailPage() {
                       </span>
                     </p>
                     {order.paymentId && (
-                      <p className="text-xs text-stone-400">
+                      <p className="text-xs text-stone-400 break-all">
                         Transaction ID:{' '}
                         <span className="font-mono">
                           {order.paymentId.slice(0, 12)}...

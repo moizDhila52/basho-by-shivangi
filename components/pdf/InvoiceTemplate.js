@@ -57,10 +57,11 @@ const styles = StyleSheet.create({
   addressContainer: {
     flexDirection: 'row',
     marginBottom: 40,
-    gap: 40, // React-PDF doesn't support gap, handled via width/margin below
+    gap: 40, // React-PDF doesn't fully support gap in all versions, handled via margin if needed
   },
   addressCol: {
     width: '45%',
+    marginRight: 20, // Add margin right to simulate gap
   },
   colTitle: {
     fontSize: 8,
@@ -173,6 +174,12 @@ const styles = StyleSheet.create({
 export const InvoiceDocument = ({ order, type = 'standard', settings }) => {
   const isGstInvoice = type === 'gst';
 
+  // FIX: Define default fallbacks for settings
+  const sellerAddress =
+    settings?.address ||
+    '123 Artisan Avenue, Pottery District, Jaipur 302001, India';
+  const sellerGstin = settings?.gstin || '24AAACC1206D1ZH'; // Dummy or empty if not set
+
   // Parse Address safely
   const address =
     typeof order.address === 'string'
@@ -200,7 +207,7 @@ export const InvoiceDocument = ({ order, type = 'standard', settings }) => {
           <View style={styles.brandSection}>
             <Text style={styles.logo}>Basho</Text>
             <View style={styles.companyInfo}>
-              {/* 👇 DYNAMIC ADDRESS RENDERING */}
+              {/* FIX: Use the variable 'sellerAddress' defined above */}
               {sellerAddress.split(',').map((line, i) => (
                 <Text key={i}>{line.trim()}</Text>
               ))}
