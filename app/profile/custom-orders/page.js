@@ -9,11 +9,10 @@ export default async function MyCustomOrdersPage() {
   const session = await getSession();
   if (!session) redirect('/login');
 
-  // 2. Secure Database Query (The Fix)
-  // We fetch directly here instead of using 'fetch(/api/...)', ensuring we only get THIS user's data.
+  // 2. Secure Database Query
   const orders = await prisma.customOrder.findMany({
     where: {
-      userId: session.userId, // 🔒 This prevents seeing other users' orders
+      userId: session.userId,
     },
     orderBy: { createdAt: 'desc' },
   });
@@ -37,12 +36,12 @@ export default async function MyCustomOrdersPage() {
   // --- Empty State ---
   if (orders.length === 0) {
     return (
-      <div className="bg-white rounded-2xl border border-dashed border-[#EDD8B4] p-12 text-center h-full flex flex-col items-center justify-center min-h-[400px]">
+      <div className="bg-white rounded-2xl border border-dashed border-[#EDD8B4] p-8 md:p-12 text-center h-full flex flex-col items-center justify-center min-h-[400px]">
         <Sparkles className="w-12 h-12 text-[#EDD8B4] mb-4" />
         <h3 className="font-serif text-xl text-[#442D1C] mb-2">
           No Custom Requests
         </h3>
-        <p className="text-[#8E5022] mb-6">
+        <p className="text-[#8E5022] mb-6 text-sm md:text-base">
           Have an idea? Commission a unique piece.
         </p>
         <Link
@@ -56,13 +55,15 @@ export default async function MyCustomOrdersPage() {
   }
 
   // --- Main List UI ---
+  // Added pb-24 for mobile nav spacing
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
+    <div className="space-y-6 pb-24 md:pb-0">
+      {/* Responsive Header */}
+      <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
         <h2 className="font-serif text-2xl text-[#442D1C]">Custom Requests</h2>
         <Link
           href="/custom-order"
-          className="text-sm font-bold text-[#C85428] hover:underline flex items-center gap-1"
+          className="w-full md:w-auto text-sm font-bold text-[#C85428] hover:underline flex items-center justify-center md:justify-start gap-2 bg-white md:bg-transparent p-3 md:p-0 rounded-xl border md:border-none border-stone-100 shadow-sm md:shadow-none"
         >
           <Sparkles size={14} /> New Request
         </Link>
@@ -71,9 +72,9 @@ export default async function MyCustomOrdersPage() {
       <div className="grid gap-4">
         {orders.map((order) => (
           <Link key={order.id} href={`/profile/custom-orders/${order.id}`}>
-            <div className="bg-white p-6 rounded-2xl border border-[#EDD8B4] hover:shadow-md transition-all group">
-              <div className="flex flex-col md:flex-row gap-6 items-start md:items-center justify-between">
-                {/* Icon & Title */}
+            <div className="bg-white p-5 rounded-2xl border border-[#EDD8B4] hover:shadow-md transition-all group">
+              <div className="flex flex-col md:flex-row gap-4 md:items-center justify-between">
+                {/* Left Section: Icon & Title */}
                 <div className="flex items-center gap-4">
                   <div className="w-12 h-12 rounded-xl bg-[#FDFBF7] flex items-center justify-center border border-[#EDD8B4] shrink-0">
                     <Package className="w-6 h-6 text-[#8E5022]" />
@@ -88,32 +89,35 @@ export default async function MyCustomOrdersPage() {
                   </div>
                 </div>
 
-                {/* Status Badge */}
-                <div
-                  className={`px-3 py-1 rounded-full text-xs font-bold border uppercase tracking-wider ${getStatusColor(
-                    order.status,
-                  )}`}
-                >
-                  {order.status.replace('_', ' ')}
-                </div>
+                {/* Right Section: Status & Price (Stacked row on mobile with border) */}
+                <div className="flex items-center justify-between md:justify-end gap-4 md:gap-6 border-t md:border-t-0 border-stone-100 pt-3 md:pt-0 mt-2 md:mt-0">
+                  {/* Status Badge */}
+                  <div
+                    className={`px-3 py-1 rounded-full text-[10px] font-bold border uppercase tracking-wider ${getStatusColor(
+                      order.status,
+                    )}`}
+                  >
+                    {order.status.replace('_', ' ')}
+                  </div>
 
-                {/* Logic: Show Price if Quoted, otherwise Show Date */}
-                <div className="text-right min-w-[100px]">
-                  {order.status === 'QUOTED' && order.actualPrice ? (
-                    <div>
-                      <p className="text-xs text-stone-500 uppercase font-bold">
-                        Quote Price
-                      </p>
-                      <p className="text-xl font-bold text-[#442D1C]">
-                        ₹{order.actualPrice}
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-2 text-stone-500 text-sm">
-                      <Calendar size={14} />
-                      {new Date(order.createdAt).toLocaleDateString()}
-                    </div>
-                  )}
+                  {/* Logic: Show Price if Quoted, otherwise Show Date */}
+                  <div className="text-right min-w-[100px]">
+                    {order.status === 'QUOTED' && order.actualPrice ? (
+                      <div>
+                        <p className="text-[10px] text-stone-500 uppercase font-bold hidden md:block">
+                          Quote Price
+                        </p>
+                        <p className="text-lg md:text-xl font-bold text-[#442D1C]">
+                          ₹{order.actualPrice}
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2 text-stone-500 text-sm">
+                        <Calendar size={14} />
+                        {new Date(order.createdAt).toLocaleDateString()}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>

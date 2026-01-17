@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import { useState, useEffect, Suspense } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import Link from "next/link";
-import { Eye, EyeOff, Loader2, ArrowRight, ArrowLeft } from "lucide-react";
+import { useState, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import Link from 'next/link';
+import { Eye, EyeOff, Loader2, ArrowRight, ArrowLeft } from 'lucide-react';
 import {
   signInWithEmailAndPassword,
   signInWithPopup,
@@ -12,10 +12,10 @@ import {
   setPersistence,
   browserLocalPersistence,
   browserSessionPersistence,
-} from "firebase/auth";
-import { auth } from "@/lib/firebase";
-import { useToast } from "@/components/ToastProvider";
-import { useAuth } from "@/components/AuthProvider";
+} from 'firebase/auth';
+import { auth } from '@/lib/firebase';
+import { useToast } from '@/components/ToastProvider';
+import { useAuth } from '@/components/AuthProvider';
 
 // 1. Logic Component (MUST be inside Suspense)
 function LoginContent() {
@@ -26,7 +26,7 @@ function LoginContent() {
 
   useEffect(() => {
     if (!authLoading && user) {
-      const redirect = searchParams.get("redirect") || "/";
+      const redirect = searchParams.get('redirect') || '/';
       router.push(redirect);
     }
   }, [user, authLoading, router, searchParams]);
@@ -34,8 +34,8 @@ function LoginContent() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
-  const [view, setView] = useState("login");
-  const [formData, setFormData] = useState({ email: "", password: "" });
+  const [view, setView] = useState('login');
+  const [formData, setFormData] = useState({ email: '', password: '' });
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -43,9 +43,9 @@ function LoginContent() {
 
   const createBackendSession = async (firebaseUser) => {
     try {
-      const res = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           uid: firebaseUser.uid,
           email: firebaseUser.email,
@@ -55,15 +55,15 @@ function LoginContent() {
         }),
       });
 
-      if (!res.ok) throw new Error("Session creation failed");
+      if (!res.ok) throw new Error('Session creation failed');
 
       await refreshAuth();
-      addToast("Welcome back!", "success");
-      const nextUrl = searchParams.get("redirect") || "/";
+      addToast('Welcome back!', 'success');
+      const nextUrl = searchParams.get('redirect') || '/';
       router.push(nextUrl);
     } catch (error) {
       console.error(error);
-      addToast("Failed to start session", "error");
+      addToast('Failed to start session', 'error');
     }
   };
 
@@ -81,15 +81,15 @@ function LoginContent() {
       const userCredential = await signInWithEmailAndPassword(
         auth,
         formData.email,
-        formData.password
+        formData.password,
       );
       await createBackendSession(userCredential.user);
     } catch (error) {
       const msg =
-        error.code === "auth/invalid-credential"
-          ? "Invalid email or password"
+        error.code === 'auth/invalid-credential'
+          ? 'Invalid email or password'
           : error.message;
-      addToast(msg, "error");
+      addToast(msg, 'error');
       setLoading(false);
     }
   };
@@ -101,7 +101,7 @@ function LoginContent() {
       const result = await signInWithPopup(auth, provider);
       await createBackendSession(result.user);
     } catch (error) {
-      addToast(error.message, "error");
+      addToast(error.message, 'error');
       setLoading(false);
     }
   };
@@ -109,22 +109,22 @@ function LoginContent() {
   const handleForgotPassword = async (e) => {
     e.preventDefault();
     if (!formData.email) {
-      return addToast("Please enter your email address", "error");
+      return addToast('Please enter your email address', 'error');
     }
 
     setLoading(true);
     try {
       await sendPasswordResetEmail(auth, formData.email);
       addToast(
-        "Link sent! Please check your inbox and spam folder.",
-        "success"
+        'Link sent! Please check your inbox and spam folder.',
+        'success',
       );
-      setView("login");
+      setView('login');
     } catch (error) {
-      if (error.code === "auth/user-not-found") {
-        addToast("No account found with this email", "error");
+      if (error.code === 'auth/user-not-found') {
+        addToast('No account found with this email', 'error');
       } else {
-        addToast(error.message, "error");
+        addToast(error.message, 'error');
       }
     } finally {
       setLoading(false);
@@ -134,10 +134,10 @@ function LoginContent() {
   return (
     <div className="bg-white p-8 rounded-3xl shadow-xl w-full max-w-[420px] border border-[#EDD8B4]">
       {/* --- VIEW 1: FORGOT PASSWORD FORM --- */}
-      {view === "forgot" ? (
+      {view === 'forgot' ? (
         <div className="animate-in fade-in slide-in-from-right duration-300">
           <button
-            onClick={() => setView("login")}
+            onClick={() => setView('login')}
             className="flex items-center gap-1 text-sm text-[#8E5022] hover:text-[#442D1C] mb-6 transition-colors"
           >
             <ArrowLeft size={16} /> Back to Login
@@ -176,7 +176,7 @@ function LoginContent() {
               {loading ? (
                 <Loader2 className="animate-spin" />
               ) : (
-                "Send Reset Link"
+                'Send Reset Link'
               )}
             </button>
           </form>
@@ -215,7 +215,7 @@ function LoginContent() {
               </label>
               <div className="relative">
                 <input
-                  type={showPassword ? "text" : "password"}
+                  type={showPassword ? 'text' : 'password'}
                   name="password"
                   value={formData.password}
                   onChange={handleChange}
@@ -267,7 +267,7 @@ function LoginContent() {
 
               <button
                 type="button"
-                onClick={() => setView("forgot")}
+                onClick={() => setView('forgot')}
                 className="text-[#C85428] font-medium hover:text-[#A0401C] transition-colors text-sm"
               >
                 Forgot Password?
@@ -279,7 +279,7 @@ function LoginContent() {
               disabled={loading}
               className="w-full bg-[#442D1C] text-white py-3.5 rounded-xl hover:bg-[#652810] transition-all font-medium text-lg flex justify-center items-center gap-2 shadow-md hover:shadow-xl translate-y-0 hover:-translate-y-0.5"
             >
-              {loading ? <Loader2 className="animate-spin" /> : "Sign In"}
+              {loading ? <Loader2 className="animate-spin" /> : 'Sign In'}
               {!loading && <ArrowRight size={20} />}
             </button>
           </form>
@@ -309,7 +309,7 @@ function LoginContent() {
           </button>
 
           <div className="text-center mt-8 text-sm text-stone-500">
-            New to Basho?{" "}
+            New to Basho?{' '}
             <Link
               href="/signup"
               className="text-[#C85428] font-bold hover:underline"
@@ -339,4 +339,4 @@ export default function LoginPage() {
       </Suspense>
     </div>
   );
-} 
+}
