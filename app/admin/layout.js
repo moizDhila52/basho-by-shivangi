@@ -20,8 +20,10 @@ import {
   Image as ImageIcon,
   PenTool,
   X,
-  Tags, // <--- ADDED for Categories
-  Mail, // <--- ADDED for Newsletter
+  Tags,
+  Mail,
+  Settings, // <--- ADDED for Settings
+  ExternalLink, // <--- ADDED for Visit Store
 } from 'lucide-react';
 import { signOut } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
@@ -62,7 +64,6 @@ const NAVIGATION_GROUPS = [
         icon: <Package size={20} />,
         path: '/admin/products',
       },
-      // --- NEW CATEGORIES SECTION ---
       {
         name: 'Categories',
         icon: <Tags size={20} />,
@@ -97,6 +98,12 @@ const NAVIGATION_GROUPS = [
         icon: <Truck size={20} />,
         path: '/admin/shipping',
       },
+      // --- ADDED SETTINGS HERE ---
+      {
+        name: 'Settings',
+        icon: <Settings size={20} />,
+        path: '/admin/settings',
+      },
     ],
   },
   {
@@ -107,7 +114,6 @@ const NAVIGATION_GROUPS = [
         icon: <Calendar size={20} />,
         path: '/admin/events',
       },
-      // --- NEW NEWSLETTER SECTION ---
       {
         name: 'Newsletter',
         icon: <Mail size={20} />,
@@ -180,14 +186,22 @@ function AdminLayoutContent({ children }) {
           ${isSidebarOpen ? 'lg:w-64' : 'lg:w-20'}
         `}
       >
-        {/* Sidebar Header */}
+        {/* Sidebar Header with Logo */}
         <div className="h-16 flex items-center justify-between lg:justify-center border-b border-[#652810] px-4">
           {isSidebarOpen || isMobileOpen ? (
-            <h1 className="font-serif text-2xl tracking-wide font-bold">
-              Bashō.
-            </h1>
+            <div className="flex items-center justify-center w-full">
+               <img 
+                 src="/images/Basho - logotm-03.jpg" 
+                 alt="Bashō" 
+                 className="h-10 w-auto object-contain rounded-sm"
+               />
+            </div>
           ) : (
-            <span className="font-serif text-xl font-bold">B.</span>
+             <img 
+               src="/images/Basho - logotm-03.jpg" 
+               alt="B." 
+               className="h-8 w-auto object-contain rounded-sm"
+             />
           )}
 
           {/* Mobile Close Button */}
@@ -331,6 +345,17 @@ function AdminLayoutContent({ children }) {
           </div>
 
           <div className="flex items-center gap-4">
+             {/* Visit Store Button */}
+             <a 
+               href="/" 
+               target="_blank" 
+               rel="noopener noreferrer"
+               className="hidden md:flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-[#652810] bg-[#FDFBF7] border border-[#EDD8B4] rounded-full hover:bg-[#EDD8B4] hover:text-[#442D1C] transition-colors"
+               title="Open Store in new tab"
+             >
+               Visit Store <ExternalLink size={14} />
+             </a>
+
             <button className="relative p-2 hover:bg-[#FDFBF7] rounded-full transition-colors text-[#652810]">
               <Bell size={20} />
               {(stats.pendingOrders > 0 || stats.lowStockItems > 0) && (

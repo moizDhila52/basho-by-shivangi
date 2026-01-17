@@ -75,6 +75,7 @@ export default function Header() {
         { href: '/events', label: 'Events' },
         { href: '/gallery', label: 'Gallery' },
         { href: '/testimonials', label: 'Testimonials' },
+        { href: '/experience', label: 'Experience' },
       ],
     },
   ];
