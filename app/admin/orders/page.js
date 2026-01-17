@@ -103,7 +103,7 @@ export default function AdminOrdersPage() {
   useEffect(() => {
     const fetchAnalytics = async () => {
       try {
-        const res = await fetch('/api/admin/analytics');
+        const res = await fetch('/api/admin/orders/stats');
         if (res.ok) {
           const data = await res.json();
           // Using (|| []) ensures slicing doesn't crash the app if data is undefined
