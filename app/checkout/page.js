@@ -510,25 +510,18 @@ export default function CheckoutPage() {
       toast.error("Please login to continue");
       return;
     }
-<<<<<<< HEAD
-    console.log('DEBUG USER OBJECT:', user);
 
     
-  // 🔴 FIX 1: Get database user ID
   let dbUserId = null;
   try {
     const userRes = await fetch('/api/user/me');
     if (userRes.ok) {
       const dbUser = await userRes.json();
       dbUserId = dbUser?.id;
-      console.log('DEBUG - Database user ID:', dbUserId);
     }
   } catch (err) {
     console.error('Failed to fetch user ID:', err);
   }
-=======
-    console.log("DEBUG USER OBJECT:", user);
->>>>>>> e7f8131698f757e746e04b8117dc2c104079867f
     setLoading(true);
     try {
       await fetch("/api/user/sync", {
