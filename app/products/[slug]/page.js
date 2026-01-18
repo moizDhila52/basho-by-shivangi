@@ -854,7 +854,6 @@ export default function ProductDetailPage() {
                     </div>
                   )}
               </div>
-              
             </div>
 
             <div className="mb-6 md:mb-8">
@@ -965,7 +964,10 @@ export default function ProductDetailPage() {
                 </>
               ) : !product.inStock ? (
                 <div className="flex-1">
-                  <NotifyButton productId={product.id} stock={product.stock} />
+                  <NotifyButton
+                    productId={product.id}
+                    stock={product.stock}
+                  />
                 </div>
               ) : (
                 <button
@@ -1039,24 +1041,25 @@ export default function ProductDetailPage() {
                   Care Instructions
                 </h4>
                 <p className="text-stone-600 text-sm md:text-base">
-                  {product.care || 'Hand wash recommended with mild detergent.'}
+                  {product.care ||
+                    'Hand wash recommended with mild detergent.'}
                 </p>
               </div>
               <div className="bg-[#EDD8B4]/20 rounded-xl md:rounded-2xl p-4 md:p-6">
-  <div className="flex items-center gap-2 md:gap-3 mb-3 md:mb-4">
-    <Shield className="w-5 h-5 md:w-6 md:h-6 text-[#8E5022]" />
-    <h4 className="font-serif text-lg md:text-xl text-[#442D1C]">
-      Bashō Guarantee
-    </h4>
-  </div>
-  <p className="text-stone-600 mb-2 md:mb-3 text-sm md:text-base">
-    Safe & Secure Packaging
-  </p>
-  <div className="flex items-center gap-2 text-xs md:text-sm text-stone-500">
-    <Truck className="w-3 h-3 md:w-4 md:h-4" />
-    Insured delivery for breakables
-  </div>
-</div>
+                <div className="flex items-center gap-2 md:gap-3 mb-3 md:mb-4">
+                  <Shield className="w-5 h-5 md:w-6 md:h-6 text-[#8E5022]" />
+                  <h4 className="font-serif text-lg md:text-xl text-[#442D1C]">
+                    Bashō Guarantee
+                  </h4>
+                </div>
+                <p className="text-stone-600 mb-2 md:mb-3 text-sm md:text-base">
+                  Safe & Secure Packaging
+                </p>
+                <div className="flex items-center gap-2 text-xs md:text-sm text-stone-500">
+                  <Truck className="w-3 h-3 md:w-4 md:h-4" />
+                  Insured delivery for breakables
+                </div>
+              </div>
             </div>
 
             <div className="mb-8 md:mb-12">
@@ -1076,8 +1079,8 @@ export default function ProductDetailPage() {
                   <div className="flex items-center gap-2 md:gap-3">
                     <Check className="w-4 h-4 md:w-5 md:h-5 text-blue-600" />
                     <p className="text-blue-800 font-medium text-sm md:text-base">
-                      You have already reviewed this product. Thank you for your
-                      feedback!
+                      You have already reviewed this product. Thank you for
+                      your feedback!
                     </p>
                   </div>
                 </div>
@@ -1098,16 +1101,18 @@ export default function ProductDetailPage() {
                   </div>
                 )}
 
-              {user && reviewEligibility && !reviewEligibility.hasPurchased && (
-                <div className="bg-amber-50 border-2 border-amber-200 rounded-xl md:rounded-2xl p-4 md:p-6 mb-6 md:mb-8">
-                  <div className="flex items-center gap-2 md:gap-3">
-                    <AlertCircle className="w-4 h-4 md:w-5 md:h-5 text-amber-600" />
-                    <p className="text-amber-800 font-medium text-sm md:text-base">
-                      Purchase this product to leave a review
-                    </p>
+              {user &&
+                reviewEligibility &&
+                !reviewEligibility.hasPurchased && (
+                  <div className="bg-amber-50 border-2 border-amber-200 rounded-xl md:rounded-2xl p-4 md:p-6 mb-6 md:mb-8">
+                    <div className="flex items-center gap-2 md:gap-3">
+                      <AlertCircle className="w-4 h-4 md:w-5 md:h-5 text-amber-600" />
+                      <p className="text-amber-800 font-medium text-sm md:text-base">
+                        Purchase this product to leave a review
+                      </p>
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
 
               {product.reviews && product.reviews.length > 0 ? (
                 <div className="space-y-4 md:space-y-6">
@@ -1160,12 +1165,39 @@ export default function ProductDetailPage() {
                       {/* --- REVIEW IMAGES (Myntra Style Display) --- */}
                       {review.images && review.images.length > 0 && (
                         <div className="flex gap-2 mt-3 md:mt-4 ml-10 md:ml-14">
-                          {review.images.slice(0, 3).map((img, index) => {
-                            const isLastVisible = index === 2;
-                            const remainingCount = review.images.length - 3;
+                          {review.images
+                            .slice(0, 3)
+                            .map((img, index) => {
+                              const isLastVisible = index === 2;
+                              const remainingCount =
+                                review.images.length - 3;
 
-                            // If this is the 3rd image AND there are more hidden
-                            if (isLastVisible && remainingCount > 0) {
+                              // If this is the 3rd image AND there are more hidden
+                              if (isLastVisible && remainingCount > 0) {
+                                return (
+                                  <div
+                                    key={index}
+                                    onClick={() => {
+                                      setLightboxImages(review.images);
+                                      setLightboxIndex(index);
+                                    }}
+                                    className="relative w-16 h-16 md:w-20 md:h-20 lg:w-24 lg:h-24 rounded-lg md:rounded-xl overflow-hidden cursor-pointer"
+                                  >
+                                    <img
+                                      src={img}
+                                      alt=""
+                                      className="w-full h-full object-cover"
+                                    />
+                                    <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                                      <span className="text-white font-bold text-lg md:text-xl">
+                                        +{remainingCount}
+                                      </span>
+                                    </div>
+                                  </div>
+                                );
+                              }
+
+                              // Standard Image Display
                               return (
                                 <div
                                   key={index}
@@ -1173,40 +1205,16 @@ export default function ProductDetailPage() {
                                     setLightboxImages(review.images);
                                     setLightboxIndex(index);
                                   }}
-                                  className="relative w-16 h-16 md:w-20 md:h-20 lg:w-24 lg:h-24 rounded-lg md:rounded-xl overflow-hidden cursor-pointer"
+                                  className="w-16 h-16 md:w-20 md:h-20 lg:w-24 lg:h-24 rounded-lg md:rounded-xl overflow-hidden border border-stone-200 cursor-pointer hover:opacity-90 transition-opacity"
                                 >
                                   <img
                                     src={img}
                                     alt=""
                                     className="w-full h-full object-cover"
                                   />
-                                  <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
-                                    <span className="text-white font-bold text-lg md:text-xl">
-                                      +{remainingCount}
-                                    </span>
-                                  </div>
                                 </div>
                               );
-                            }
-
-                            // Standard Image Display
-                            return (
-                              <div
-                                key={index}
-                                onClick={() => {
-                                  setLightboxImages(review.images);
-                                  setLightboxIndex(index);
-                                }}
-                                className="w-16 h-16 md:w-20 md:h-20 lg:w-24 lg:h-24 rounded-lg md:rounded-xl overflow-hidden border border-stone-200 cursor-pointer hover:opacity-90 transition-opacity"
-                              >
-                                <img
-                                  src={img}
-                                  alt=""
-                                  className="w-full h-full object-cover"
-                                />
-                              </div>
-                            );
-                          })}
+                            })}
                         </div>
                       )}
                       {/* --- End Review Images --- */}
