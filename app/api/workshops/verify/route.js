@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { prisma } from '@/lib/prisma';
 import { sendWorkshopConfirmationEmail } from '@/lib/mailer'; // We will create this next
+import { triggerNotification } from '@/lib/socketTrigger';
 
 export async function POST(req) {
   try {
@@ -28,6 +29,30 @@ export async function POST(req) {
       },
       include: { WorkshopSession: { include: { Workshop: true } } }
     });
+
+if (updatedReg.userId) {
+  try {
+    // Create database notification
+    await prisma.notification.create({
+      data: {
+        userId: updatedReg.userId,
+        title: 'Workshop Booking Confirmed',
+        message: `Your seat for "${updatedReg.WorkshopSession.Workshop.title}" is confirmed.`,
+        type: 'WORKSHOP',
+        link: '/profile/workshops',
+      },
+    });
+
+    // Trigger real-time socket notification
+    await triggerNotification(updatedReg.userId, 'notification', {
+      title: 'Workshop Booked!',
+      message: 'Your payment was successful. See you there!',
+      link: '/profile/workshops',
+    });
+  } catch (notifError) {
+    console.error('Workshop notification failed:', notifError);
+  }
+}
 
     // 3. Update Session Spots (Decrement available spots)
     await prisma.workshopSession.update({

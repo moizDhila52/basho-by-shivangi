@@ -154,10 +154,15 @@ export async function PUT(req) {
           },
         });
 
-        await triggerNotification(updatedOrder.userId, 'notification', {
-          title: 'Order Confirmed!',
-          message: 'Payment successful.',
-        });
+        try {
+  await triggerNotification(updatedOrder.userId, 'notification', {
+    title: 'Order Confirmed!',
+    message: 'Payment successful.',
+  });
+} catch (socketError) {
+  console.error('Socket notification failed (non-critical):', socketError);
+  // Don't throw - let payment succeed even if notification fails
+}
       }
 
       await notifyAdminNewOrder({

@@ -17,17 +17,16 @@ export async function POST(req) {
     const order = await prisma.order.create({
       data: {
         orderNumber: `ORD-${Date.now()}`,
-
         customerName: customerName,
         customerEmail: userEmail,
-
         customerGst: customerGst || null,
-
         address: address,
         total: total,
         status: paymentId ? 'PROCESSING' : 'PENDING',
         paymentId: paymentId || null,
-
+        ...(userId && { 
+            user: { connect: { id: userId } } 
+        }),
         items: {
           create: items.map((item) => ({
             product: { connect: { id: item.id } },

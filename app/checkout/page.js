@@ -511,6 +511,20 @@ export default function CheckoutPage() {
       return;
     }
     console.log('DEBUG USER OBJECT:', user);
+
+    
+  // 🔴 FIX 1: Get database user ID
+  let dbUserId = null;
+  try {
+    const userRes = await fetch('/api/user/me');
+    if (userRes.ok) {
+      const dbUser = await userRes.json();
+      dbUserId = dbUser?.id;
+      console.log('DEBUG - Database user ID:', dbUserId);
+    }
+  } catch (err) {
+    console.error('Failed to fetch user ID:', err);
+  }
     setLoading(true);
     try {
       await fetch('/api/user/sync', {
@@ -556,7 +570,7 @@ export default function CheckoutPage() {
             pincode: formData.pincode,
           },
           userEmail: user.email,
-          userId: user.id || user.uid || user.sub || user.userId || null,
+           userId: dbUserId,
           customerName: formData.name,
           customerGst: formData.gst,
         }),

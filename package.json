@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "node server.js",
+    "dev": "next dev",
     "build": "prisma generate && next build",
     "start": "node server.js",
     "lint": "eslint",
@@ -27,6 +27,7 @@
     "multer": "^2.0.2",
     "next": "16.0.10",
     "next-cloudinary": "^6.17.5",
+    "node-fetch": "^3.3.2",
     "nodemailer": "^7.0.12",
     "prisma": "^5.22.0",
     "razorpay": "^2.9.6",

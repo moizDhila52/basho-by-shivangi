@@ -52,6 +52,9 @@ export async function PUT(req) {
     if (newStatus !== oldStatus) {
       // Only attempt notifications if there is a User ID linked (Not for Guest Guest with no ID)
       if (updatedOrder.userId) {
+         console.log('DEBUG - User ID for notification:', updatedOrder.userId);
+  console.log('DEBUG - Order Number:', updatedOrder.orderNumber);
+  console.log('DEBUG - New Status:', newStatus);
         try {
           // A. Create Persistent Notification in DB
           await prisma.notification.create({

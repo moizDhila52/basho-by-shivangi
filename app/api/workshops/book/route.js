@@ -58,23 +58,9 @@ export async function POST(req) {
       // A. Send Email (To everyone)
       await sendWorkshopConfirmationEmail(result);
 
-      // B. In-App Notification (Only for logged-in users)
-      if (sessionAuth?.userId) {
-        await prisma.notification.create({
-          data: {
-            userId: sessionAuth.userId,
-            title: 'Booking Confirmed',
-            message: `Your seat for "${result.WorkshopSession.Workshop.title}" is secured. See you there!`,
-            type: 'WORKSHOP',
-            link: '/profile/workshops',
-          },
-        });
+     
 
-        await triggerNotification(sessionAuth.userId, 'notification', {
-          title: 'Workshop Booked!',
-          message: 'See you at the studio.',
-        });
-      }
+      
     } catch (notifyError) {
       console.error('Workshop Notification Failed:', notifyError);
       // We do not throw error here, because the booking was successful.

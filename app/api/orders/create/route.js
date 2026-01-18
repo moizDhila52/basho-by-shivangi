@@ -13,6 +13,36 @@ export async function POST(req) {
     // 1. Extract customerName here 👇
     const { items, address, userEmail, userId, customerName } = body;
 
+     console.log('DEBUG - Received userId:', userId);
+    console.log('DEBUG - Received userEmail:', userEmail);
+
+     // 🔴 FIX 2: Find user by email if userId not valid
+    let dbUserId = userId;
+    
+    // If no userId provided, try to find user by email
+    if (!dbUserId && userEmail) {
+      const existingUser = await prisma.user.findUnique({
+        where: { email: userEmail },
+      });
+      if (existingUser) {
+        dbUserId = existingUser.id;
+        console.log('DEBUG - Found user by email:', dbUserId);
+      }
+    }
+    
+    // If userId is Firebase UID (not a UUID), find by firebaseUid
+    if (dbUserId && dbUserId.length < 28 && !dbUserId.includes('-')) {
+      const firebaseUser = await prisma.user.findUnique({
+        where: { firebaseUid: dbUserId },
+      });
+      if (firebaseUser) {
+        dbUserId = firebaseUser.id;
+        console.log('DEBUG - Converted Firebase UID to DB ID:', dbUserId);
+      }
+    }
+    
+    console.log('DEBUG - Final dbUserId for order:', dbUserId);
+
     const settings = (await prisma.storeSettings.findFirst()) || {
       shippingBaseRate: 50,
       shippingPerKgRate: 40,
@@ -79,9 +109,11 @@ export async function POST(req) {
     const newOrder = await prisma.order.create({
       data: {
         orderNumber: `ORD-${Date.now()}`,
-        userId: userId || null,
+         ...(dbUserId && {
+          User: { connect: { id: dbUserId } },
+        }),
         customerEmail: userEmail,
-        customerName: customerName, // <--- 2. Save it here!
+        customerName: customerName,
         customerGst: body.customerGst || null,
         address: address,
         subtotal: subtotal,
