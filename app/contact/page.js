@@ -4,18 +4,12 @@ import React, { useState } from 'react';
 import {
   Gift,
   Users,
-  Handshake,
   Mail,
   Phone,
   MapPin,
   Instagram,
-  Facebook,
-  Linkedin,
-  Twitter,
   Send,
-  Check,
   Loader2,
-  ArrowRight,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useToast } from '@/components/ToastProvider';
@@ -206,10 +200,10 @@ export default function ConnectPage() {
                       Write to us
                     </p>
                     <a
-                      href="mailto:corporate@basho.com"
-                      className="text-base md:text-lg hover:text-white transition-colors"
+                      href="mailto:bashobyyshivangi@gmail.com"
+                      className="text-base md:text-lg hover:text-white transition-colors break-all"
                     >
-                      corporate@basho.com
+                      bashobyyshivangi@gmail.com
                     </a>
                   </div>
                 </div>
@@ -220,7 +214,12 @@ export default function ConnectPage() {
                     <p className="text-xs font-bold uppercase tracking-wider text-white/50">
                       Call us
                     </p>
-                    <p className="text-base md:text-lg">+91 98765 43210</p>
+                    <a 
+                      href="tel:+919879575601"
+                      className="text-base md:text-lg hover:text-white transition-colors"
+                    >
+                      +91 98795 75601
+                    </a>
                   </div>
                 </div>
 
@@ -231,9 +230,8 @@ export default function ConnectPage() {
                       Studio
                     </p>
                     <p className="text-base md:text-lg">
-                      123 Artisan Lane,
-                      <br />
-                      Surat, Gujarat
+                      311, Silent Zone, Gavier,<br />
+                      Dumas Road, Surat-395007
                     </p>
                   </div>
                 </div>
@@ -243,10 +241,14 @@ export default function ConnectPage() {
             {/* Socials */}
             <div className="relative z-10 mt-12 pt-12 border-t border-white/10">
               <div className="flex gap-4">
-                {[Instagram, Facebook, Linkedin, Twitter].map((Icon, i) => (
+                {[
+                  { Icon: Instagram, href: "https://www.instagram.com/bashobyyshivangi/" },
+                ].map(({ Icon, href }, i) => (
                   <a
                     key={i}
-                    href="#"
+                    href={href}
+                    target="_blank"
+                    rel="noopener noreferrer"
                     className="p-2 bg-white/5 rounded-lg hover:bg-[#C85428] hover:text-white transition-colors"
                   >
                     <Icon size={18} className="md:w-5 md:h-5" />

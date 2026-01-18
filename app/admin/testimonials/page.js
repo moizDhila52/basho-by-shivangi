@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from "react";
 import {
   Search,
-  Filter,
   CheckCircle,
   XCircle,
   Star,
@@ -13,20 +12,22 @@ import {
   ThumbsDown,
   MessageSquare,
   Video,
-  User,
   Image as ImageIcon,
   ExternalLink,
   PlayCircle,
-  EyeOff, // New Import
-  Eye     // New Import
+  EyeOff,
+  Eye,
+  Upload,   // Added
+  Loader2,  // Added
+  X         // Added
 } from "lucide-react";
-import { toast } from "react-hot-toast"; 
+import { toast } from "react-hot-toast";
 
 export default function AdminTestimonialsPage() {
   const [testimonials, setTestimonials] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState("pending"); // 'pending', 'approved', 'all'
+  const [statusFilter, setStatusFilter] = useState("pending");
   const [selectedTestimonial, setSelectedTestimonial] = useState(null);
 
   useEffect(() => {
@@ -36,7 +37,6 @@ export default function AdminTestimonialsPage() {
   const fetchTestimonials = async () => {
     try {
       setLoading(true);
-      // Admin fetches ALL testimonials (no approved=true filter)
       const response = await fetch(`/api/testimonials`);
       const data = await response.json();
 
@@ -134,7 +134,7 @@ export default function AdminTestimonialsPage() {
 
     if (statusFilter === "pending") return !t.approved && matchesSearch;
     if (statusFilter === "approved") return t.approved && matchesSearch;
-    return matchesSearch; // 'all'
+    return matchesSearch;
   });
 
   return (
@@ -226,10 +226,9 @@ export default function AdminTestimonialsPage() {
                 {filteredTestimonials.map((t) => (
                   <tr key={t.id} className="hover:bg-stone-50 transition-colors">
                     
-                    {/* 1. USER INFO (With Anonymous Badge) */}
+                    {/* 1. USER INFO */}
                     <td className="py-4 px-6">
                       <div className="flex items-center gap-3">
-                        {/* Avatar Logic */}
                         <div className="relative">
                            {t.image && !t.image.includes('cloudinary') ? (
                               <img src={t.image} alt={t.customerName} className="w-10 h-10 rounded-full object-cover border border-[#EDD8B4]" />
@@ -238,7 +237,6 @@ export default function AdminTestimonialsPage() {
                                 {t.customerName.charAt(0).toUpperCase()}
                               </div>
                            )}
-                           {/* Small Anon Indicator on Avatar */}
                            {t.isAnonymous && (
                               <div className="absolute -bottom-1 -right-1 bg-stone-800 text-white rounded-full p-0.5 border-2 border-white" title="Anonymous User">
                                  <EyeOff size={10} />
@@ -252,7 +250,6 @@ export default function AdminTestimonialsPage() {
                           </p>
                           <p className="text-xs text-stone-500">{t.customerRole || "Customer"}</p>
                           
-                          {/* Explicit Text Indicator */}
                           {t.isAnonymous && (
                              <span className="inline-flex items-center gap-1 text-[10px] bg-stone-100 text-stone-600 px-1.5 py-0.5 rounded border border-stone-200 mt-1">
                                 <EyeOff size={8} /> Hidden Publicly
@@ -408,7 +405,7 @@ export default function AdminTestimonialsPage() {
   );
 }
 
-// --- EDIT MODAL COMPONENT ---
+// --- EDIT MODAL COMPONENT (WITH CLOUDINARY UPLOAD) ---
 function TestimonialModal({ testimonial, onClose, onSuccess }) {
   const [formData, setFormData] = useState({
     customerName: testimonial.customerName,
@@ -420,9 +417,52 @@ function TestimonialModal({ testimonial, onClose, onSuccess }) {
     source: testimonial.source || "Website",
     approved: testimonial.approved,
     featured: testimonial.featured,
-    isAnonymous: testimonial.isAnonymous || false, // Added Anonymous State
+    isAnonymous: testimonial.isAnonymous || false,
   });
+  
   const [loading, setLoading] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [uploadingVideo, setUploadingVideo] = useState(false);
+
+  // CLOUDINARY UPLOAD HELPER
+  const handleFileUpload = async (e, type) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (type === 'image') setUploadingImage(true);
+    else setUploadingVideo(true);
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('upload_preset', process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET);
+      // Ensure resource_type handles videos correctly if uploading video
+      const resourceType = type === 'video' ? 'video' : 'image';
+
+      const res = await fetch(
+        `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/${resourceType}/upload`,
+        { method: 'POST', body: formData }
+      );
+
+      const data = await res.json();
+
+      if (data.secure_url) {
+        setFormData(prev => ({
+          ...prev,
+          [type === 'image' ? 'image' : 'videoUrl']: data.secure_url
+        }));
+        toast.success(`${type === 'image' ? 'Image' : 'Video'} uploaded successfully`);
+      } else {
+        throw new Error('Upload failed');
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error(`Failed to upload ${type}`);
+    } finally {
+      if (type === 'image') setUploadingImage(false);
+      else setUploadingVideo(false);
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -515,41 +555,93 @@ function TestimonialModal({ testimonial, onClose, onSuccess }) {
             />
           </div>
 
-          {/* Media Links */}
+          {/* CLOUDINARY UPLOAD SECTION */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-stone-50 p-4 rounded-xl border border-stone-200">
+            
+            {/* IMAGE UPLOAD */}
             <div>
-              <label className="block text-xs font-semibold text-stone-500 uppercase mb-2">Image URL</label>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={formData.image}
-                  onChange={(e) => setFormData({ ...formData, image: e.target.value })}
-                  className="w-full px-3 py-2 text-sm rounded border border-stone-300 outline-none"
-                  placeholder="https://..."
-                />
-                {formData.image && (
-                   <a href={formData.image} target="_blank" rel="noreferrer" className="p-2 bg-white border border-stone-300 rounded hover:bg-stone-100">
-                     <ExternalLink size={16} />
-                   </a>
-                )}
-              </div>
+              <label className="block text-xs font-semibold text-stone-500 uppercase mb-2">Image</label>
+              {formData.image ? (
+                <div className="relative w-full h-32 rounded-lg border border-stone-300 bg-white overflow-hidden group">
+                  <img src={formData.image} alt="Preview" className="w-full h-full object-cover" />
+                  <button 
+                    type="button"
+                    onClick={() => setFormData({...formData, image: ""})}
+                    className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
+                  >
+                    <X size={14} />
+                  </button>
+                  <a 
+                    href={formData.image} 
+                    target="_blank" 
+                    rel="noreferrer" 
+                    className="absolute bottom-2 right-2 p-1 bg-black/50 text-white rounded hover:bg-black/70"
+                  >
+                    <ExternalLink size={14} />
+                  </a>
+                </div>
+              ) : (
+                <label className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-stone-300 rounded-lg cursor-pointer bg-white hover:bg-stone-50 transition-colors ${uploadingImage ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                  <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                    {uploadingImage ? (
+                      <Loader2 className="w-8 h-8 text-[#8E5022] animate-spin mb-2" />
+                    ) : (
+                      <Upload className="w-8 h-8 text-stone-400 mb-2" />
+                    )}
+                    <p className="text-xs text-stone-500">{uploadingImage ? 'Uploading...' : 'Click to upload image'}</p>
+                  </div>
+                  <input 
+                    type="file" 
+                    className="hidden" 
+                    accept="image/*"
+                    onChange={(e) => handleFileUpload(e, 'image')}
+                    disabled={uploadingImage}
+                  />
+                </label>
+              )}
             </div>
+
+            {/* VIDEO UPLOAD */}
             <div>
-              <label className="block text-xs font-semibold text-stone-500 uppercase mb-2">Video URL</label>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={formData.videoUrl}
-                  onChange={(e) => setFormData({ ...formData, videoUrl: e.target.value })}
-                  className="w-full px-3 py-2 text-sm rounded border border-stone-300 outline-none"
-                  placeholder="https://..."
-                />
-                {formData.videoUrl && (
-                   <a href={formData.videoUrl} target="_blank" rel="noreferrer" className="p-2 bg-white border border-stone-300 rounded hover:bg-stone-100">
-                     <PlayCircle size={16} />
-                   </a>
-                )}
-              </div>
+              <label className="block text-xs font-semibold text-stone-500 uppercase mb-2">Video</label>
+              {formData.videoUrl ? (
+                <div className="relative w-full h-32 rounded-lg border border-stone-300 bg-black overflow-hidden flex items-center justify-center group">
+                  <Video className="w-8 h-8 text-white/50" />
+                  <button 
+                    type="button"
+                    onClick={() => setFormData({...formData, videoUrl: ""})}
+                    className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors z-10"
+                  >
+                    <X size={14} />
+                  </button>
+                  <a 
+                    href={formData.videoUrl} 
+                    target="_blank" 
+                    rel="noreferrer" 
+                    className="absolute bottom-2 right-2 p-1 bg-white/20 text-white rounded hover:bg-white/30 z-10"
+                  >
+                    <ExternalLink size={14} />
+                  </a>
+                </div>
+              ) : (
+                <label className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-stone-300 rounded-lg cursor-pointer bg-white hover:bg-stone-50 transition-colors ${uploadingVideo ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                  <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                    {uploadingVideo ? (
+                      <Loader2 className="w-8 h-8 text-[#8E5022] animate-spin mb-2" />
+                    ) : (
+                      <Video className="w-8 h-8 text-stone-400 mb-2" />
+                    )}
+                    <p className="text-xs text-stone-500">{uploadingVideo ? 'Uploading...' : 'Click to upload video'}</p>
+                  </div>
+                  <input 
+                    type="file" 
+                    className="hidden" 
+                    accept="video/*"
+                    onChange={(e) => handleFileUpload(e, 'video')}
+                    disabled={uploadingVideo}
+                  />
+                </label>
+              )}
             </div>
           </div>
 
@@ -598,7 +690,7 @@ function TestimonialModal({ testimonial, onClose, onSuccess }) {
                 </button>
                 <button
                   type="submit"
-                  disabled={loading}
+                  disabled={loading || uploadingImage || uploadingVideo}
                   className="px-6 py-2.5 rounded-lg bg-[#442D1C] text-white hover:bg-[#2B1B12] font-medium transition-colors disabled:opacity-50"
                 >
                   {loading ? "Saving..." : "Save Changes"}

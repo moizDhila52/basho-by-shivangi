@@ -7,7 +7,6 @@ import { motion } from 'framer-motion';
 import { useToast } from '@/components/ToastProvider';
 import {
   Instagram,
-  Facebook,
   Mail,
   MapPin,
   Phone,
@@ -91,10 +90,8 @@ export default function Footer() {
           className="max-w-7xl mx-auto"
         >
           {/* Main Footer Content */}
-          {/* CHANGED: grid-cols-2 by default so we can put Explore/Company side-by-side */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
             {/* Brand Column */}
-            {/* CHANGED: col-span-2 ensures this takes full width on mobile */}
             <motion.div
               variants={fadeInUp}
               className="col-span-2 lg:col-span-1"
@@ -124,8 +121,8 @@ export default function Footer() {
                 <div className="flex items-center gap-3">
                   {[
                     { Icon: Instagram, href: 'https://www.instagram.com/bashobyyshivangi/' },
-                    { Icon: Facebook, href: 'https://facebook.com' },
-                    { Icon: Mail, href: 'mailto:hello@bashoceramics.com' },
+                    // Removed generic Facebook link
+                    { Icon: Mail, href: 'mailto:bashobyyshivangi@gmail.com' },
                   ].map(({ Icon, href }, idx) => (
                     <motion.a
                       key={idx}
@@ -142,7 +139,7 @@ export default function Footer() {
               </div>
             </motion.div>
 
-            {/* Quick Links (Explore) - Takes 1 column (half width on mobile) */}
+            {/* Quick Links (Explore) */}
             <motion.div variants={fadeInUp} className="col-span-1">
               <h3 className="font-serif text-lg text-[#442D1C] mb-4 flex items-center gap-2">
                 <Sparkles className="h-4 w-4 text-[#C85428]" />
@@ -169,7 +166,7 @@ export default function Footer() {
               </ul>
             </motion.div>
 
-            {/* Company - Takes 1 column (half width on mobile) */}
+            {/* Company */}
             <motion.div variants={fadeInUp} className="col-span-1">
               <h3 className="font-serif text-lg text-[#442D1C] mb-4 flex items-center gap-2">
                 <Leaf className="h-4 w-4 text-[#C85428]" />
@@ -195,7 +192,6 @@ export default function Footer() {
             </motion.div>
 
             {/* Contact Info */}
-            {/* CHANGED: col-span-2 ensures this takes full width on mobile */}
             <motion.div
               variants={fadeInUp}
               className="col-span-2 lg:col-span-1"
@@ -208,18 +204,19 @@ export default function Footer() {
                     <p className="text-stone-600 text-sm font-medium">
                       Studio Bashō
                     </p>
-                    <p className="text-xs text-stone-500">
-                      Surat, Gujarat, India
+                    <p className="text-xs text-stone-500 leading-relaxed">
+                      311, Silent Zone, Gavier,<br />
+                      Dumas Road, Surat-395007
                     </p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
                   <Phone className="h-4 w-4 text-[#8E5022] flex-shrink-0" />
                   <a
-                    href="tel:+911234567890"
+                    href="tel:+919879575601"
                     className="text-stone-600 text-sm hover:text-[#C85428] transition-colors"
                   >
-                    +91 12345 67890
+                    +91 98795 75601
                   </a>
                 </div>
 
@@ -295,7 +292,6 @@ export default function Footer() {
           onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
           whileHover={{ y: -3 }}
           whileTap={{ scale: 0.9 }}
-          // 👇 CHANGED: Added 'hidden md:flex' so it vanishes on mobile
           className="hidden md:flex fixed bottom-8 right-8 w-12 h-12 rounded-full bg-[#442D1C] text-[#EDD8B4] shadow-lg items-center justify-center z-[60] hover:shadow-2xl hover:bg-[#652810] transition-all border border-[#EDD8B4]/20"
           aria-label="Scroll to top"
         >

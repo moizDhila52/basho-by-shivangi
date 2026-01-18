@@ -1,19 +1,20 @@
-    import { db } from "@/lib/db";
+import { prisma } from "@/lib/db";
 
 export default async function sitemap() {
-  // 1. Define your base URL (Change this to your actual domain)
+  // 1. Define your base URL
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://basho-by-shivangi.vercel.app';
 
   // 2. Fetch all dynamic data from Prisma
-  // We only need the slug and update time to build the URL
-  const products = await db.product.findMany({
+  // FIXED: Changed 'db' to 'prisma' here
+  const products = await prisma.product.findMany({
     select: {
       slug: true,
       updatedAt: true,
     },
   });
 
-  const workshops = await db.workshop.findMany({
+  // FIXED: Changed 'db' to 'prisma' here
+  const workshops = await prisma.workshop.findMany({
     select: {
       slug: true,
       updatedAt: true,
@@ -25,7 +26,7 @@ export default async function sitemap() {
     url: `${baseUrl}/products/${product.slug}`,
     lastModified: product.updatedAt,
     changeFrequency: 'weekly',
-    priority: 0.8, // Products are high priority
+    priority: 0.8,
   }));
 
   // 4. Create the Workshop URLs
@@ -33,17 +34,16 @@ export default async function sitemap() {
     url: `${baseUrl}/workshops/${workshop.slug}`,
     lastModified: workshop.updatedAt,
     changeFrequency: 'weekly',
-    priority: 0.9, // Workshops are very high priority (high value)
+    priority: 0.9,
   }));
 
-  // 5. Define your Static Pages (Main Navigation)
-  // These are pages that exist as folders in your app directory
+  // 5. Define your Static Pages
   const staticRoutes = [
     {
       url: `${baseUrl}`,
       lastModified: new Date(),
       changeFrequency: 'daily',
-      priority: 1.0, // Homepage is King
+      priority: 1.0,
     },
     {
       url: `${baseUrl}/products`,
@@ -58,7 +58,7 @@ export default async function sitemap() {
       priority: 0.9,
     },
     {
-      url: `${baseUrl}/about`, // About page
+      url: `${baseUrl}/about`,
       lastModified: new Date(),
       changeFrequency: 'monthly',
       priority: 0.7,
@@ -83,12 +83,6 @@ export default async function sitemap() {
     },
     {
       url: `${baseUrl}/custom-order`,
-      lastModified: new Date(),
-      changeFrequency: 'monthly',
-      priority: 0.6,
-    },
-    {
-      url: `${baseUrl}/contact`,
       lastModified: new Date(),
       changeFrequency: 'monthly',
       priority: 0.6,

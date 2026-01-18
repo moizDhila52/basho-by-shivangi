@@ -1,37 +1,57 @@
 // import { Inter, Noto_Serif_JP } from 'next/font/google';
 import { AuthProvider } from '@/components/AuthProvider';
 import { CartProvider } from '@/context/CartContext';
-import { WishlistProvider } from '@/context/WishlistContext'; // <-- Import this
+import { WishlistProvider } from '@/context/WishlistContext';
 import Header from '@/components/layout/Header';
-import Footer from '@/components/layout/Footer'; // <--- 1. Imported Footer
+import Footer from '@/components/layout/Footer';
 import { Toaster } from 'react-hot-toast';
-import OfflineWrapper from '@/components/OfflineWrapper'; // Ensure this path is correct
+import OfflineWrapper from '@/components/OfflineWrapper';
 import { ToastProvider } from '@/components/ToastProvider';
 import './globals.css';
-// These appear to be custom local fonts/icons you added
 import '../public/fonts/fonts.css';
 import '../public/icons/material-symbols.css';
 import { SocketProvider } from '@/context/SocketContext';
 import SessionSync from '@/components/SessionSync';
-import { Car } from 'lucide-react';
 
-/*
-const inter = Inter({ 
-  subsets: ['latin'],
-  variable: '--font-inter',
-  display: 'swap',
-});
-
-const notoSerif = Noto_Serif_JP({
-  weight: ['400', '700'],
-  subsets: ['latin'],
-  variable: '--font-noto-serif',
-  display: 'swap',
-});
-*/
 export const metadata = {
-  title: 'Basho Pottery | Handcrafted Japanese Ceramics',
-  description: 'Artisanal pottery by Shivangi.',
+  // 1. Set the Base URL (Important for SEO/Social Sharing)
+  metadataBase: new URL('https://basho-by-shivangi.vercel.app'),
+
+  // 2. Dynamic Title Configuration
+  title: {
+    default: 'Basho Pottery | Handcrafted Japanese Ceramics', // Shows on Home Page
+    template: '%s | Basho Pottery', // Shows on other pages (e.g., "Shop | Basho Pottery")
+  },
+
+  description: 'Artisanal pottery by Shivangi. Handcrafted ceramics made in Surat.',
+
+  // 3. Add Logo to Browser Tab (Favicon)
+  icons: {
+    icon: '/images/Basho - logotm-03.jpg',
+    shortcut: '/images/Basho - logotm-03.jpg',
+    apple: '/images/Basho - logotm-03.jpg', // Icon for iPhone home screen
+  },
+
+  // 4. Google Verification (From previous steps)
+  verification: {
+    google: 'google6cf62926745e2122',
+  },
+
+  openGraph: {
+    type: 'website',
+    locale: 'en_IN',
+    siteName: 'Basho Pottery',
+    title: 'Basho Pottery | Handcrafted Japanese Ceramics',
+    description: 'Artisanal pottery by Shivangi.',
+    images: [
+      {
+        url: '/images/Basho - logotm-03.jpg',
+        width: 800,
+        height: 600,
+        alt: 'Basho Pottery Logo',
+      },
+    ],
+  },
 };
 
 export default function RootLayout({ children }) {
@@ -42,7 +62,6 @@ export default function RootLayout({ children }) {
           <AuthProvider>
             <SessionSync />
             <SocketProvider>
-              {/* Header is inside AuthProvider so it can check login state */}
               <CartProvider>
                 <WishlistProvider>
                   <Header />
@@ -53,7 +72,6 @@ export default function RootLayout({ children }) {
                     </OfflineWrapper>
                   </main>
 
-                  {/* <--- 2. Added Footer Here */}
                   <Footer />
                 </WishlistProvider>
               </CartProvider>
