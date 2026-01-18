@@ -1141,21 +1141,12 @@ export default function CheckoutPage() {
                       </div>
                     )}
 
-                {/* Container: Stack vertically on mobile (flex-col), Side-by-side on desktop (md:flex-row) */}
+                {/* Container: Stack vertically on mobile, Side-by-side on desktop */}
 <div className="flex flex-col md:flex-row gap-3 md:gap-4 mt-6 md:mt-8">
   <button
     type="button"
     onClick={prevStep}
-    // Updated Back Button: Full width on mobile, matching height/text size
-    className="
-      w-full md:w-auto md:flex-1 
-      bg-white border-2 border-stone-200 text-stone-700 
-      py-3.5 md:py-4 
-      rounded-xl 
-      font-medium text-sm md:text-base
-      hover:border-[#8E5022] hover:text-[#8E5022] 
-      transition-all
-    "
+    className="w-full md:w-auto md:flex-1 bg-white border-2 border-stone-200 text-stone-700 py-3.5 md:py-4 rounded-xl font-medium text-sm md:text-base hover:border-[#8E5022] hover:text-[#8E5022] transition-all"
   >
     Back
   </button>
@@ -1164,19 +1155,7 @@ export default function CheckoutPage() {
     <button
       type="button"
       onClick={nextStep}
-      // Continue Button (Your existing logic + specific mobile sizing)
-      className={`
-        w-full md:w-auto md:flex-1
-        bg-[#8E5022] text-white 
-        py-3.5 md:py-4
-        rounded-xl 
-        text-sm md:text-base font-medium
-        hover:bg-[#652810] 
-        active:scale-[0.98]
-        transition-all 
-        flex items-center justify-center gap-2 
-        shadow-lg hover:shadow-xl
-      `}
+      className="w-full md:w-auto md:flex-1 bg-[#8E5022] text-white py-3.5 md:py-4 rounded-xl text-sm md:text-base font-medium hover:bg-[#652810] active:scale-[0.98] transition-all flex items-center justify-center gap-2 shadow-lg hover:shadow-xl"
     >
       Continue to Payment
       <ArrowRight className="w-4 h-4 md:w-5 md:h-5" />{" "}
