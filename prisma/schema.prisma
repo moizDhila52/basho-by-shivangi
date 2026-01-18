@@ -142,11 +142,14 @@ model CustomOrder {
   paymentId           String?
   paymentStatus       String?           @default("PENDING")
   razorpayOrderId     String?
+  completedAt         DateTime?         
+  showcaseWorthy      Boolean           @default(false)
   User                User?             @relation(fields: [userId], references: [id])
 
   @@index([userId])
   @@index([status])
   @@index([createdAt])
+  @@index([completedAt])
 }
 
 model Product {
