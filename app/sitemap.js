@@ -1,4 +1,4 @@
-    import { db } from "@/lib/db";
+import { prisma } from "@/lib/db";
 
 export default async function sitemap() {
   // 1. Define your base URL (Change this to your actual domain)
