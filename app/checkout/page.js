@@ -1,12 +1,12 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import React from 'react';
-import { useAuth } from '@/components/AuthProvider';
-import { loadRazorpayScript } from '@/lib/razorpay';
-import { useRouter } from 'next/navigation';
-import { useCart } from '@/context/CartContext';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useState, useEffect } from "react";
+import React from "react";
+import { useAuth } from "@/components/AuthProvider";
+import { loadRazorpayScript } from "@/lib/razorpay";
+import { useRouter } from "next/navigation";
+import { useCart } from "@/context/CartContext";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Truck,
   ShieldCheck,
@@ -26,28 +26,28 @@ import {
   Check,
   XCircle,
   CheckCircle2,
-} from 'lucide-react';
-import toast from 'react-hot-toast';
-import Link from 'next/link';
+} from "lucide-react";
+import toast from "react-hot-toast";
+import Link from "next/link";
 
 const validators = {
   name: (value) => {
-    if (!value.trim()) return 'Name is required';
-    if (value.trim().length < 2) return 'Name must be at least 2 characters';
-    if (!/^[a-zA-Z\s'-]+$/.test(value)) return 'Name can only contain letters';
-    return '';
+    if (!value.trim()) return "Name is required";
+    if (value.trim().length < 2) return "Name must be at least 2 characters";
+    if (!/^[a-zA-Z\s'-]+$/.test(value)) return "Name can only contain letters";
+    return "";
   },
   phone: (value) => {
-    if (!value) return 'Phone is required';
-    const cleaned = value.replace(/\D/g, '');
-    if (cleaned.length < 10) return 'Phone number must be at least 10 digits';
-    if (cleaned.length > 10) return 'Phone number is too long';
-    return '';
+    if (!value) return "Phone is required";
+    const cleaned = value.replace(/\D/g, "");
+    if (cleaned.length < 10) return "Phone number must be at least 10 digits";
+    if (cleaned.length > 10) return "Phone number is too long";
+    return "";
   },
   pincode: (value) => {
-    if (!value) return 'Pincode is required';
-    if (!/^\d{6}$/.test(value)) return 'Pincode must be exactly 6 digits';
-    return '';
+    if (!value) return "Pincode is required";
+    if (!/^\d{6}$/.test(value)) return "Pincode must be exactly 6 digits";
+    return "";
   },
 };
 
@@ -61,7 +61,7 @@ const PaymentOverlay = ({ status }) => {
     >
       <div className="bg-white p-6 md:p-8 rounded-3xl shadow-2xl border border-stone-100 max-w-sm w-full text-center relative overflow-hidden">
         <div className="flex flex-col items-center gap-6 py-4">
-          {status === 'processing' && (
+          {status === "processing" && (
             <>
               <div className="relative">
                 <motion.div
@@ -84,7 +84,7 @@ const PaymentOverlay = ({ status }) => {
             </>
           )}
 
-          {status === 'success' && (
+          {status === "success" && (
             <>
               <motion.div
                 initial={{ scale: 0 }}
@@ -125,14 +125,14 @@ export default function CheckoutPage() {
   } = useCart();
 
   const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    gst: '',
-    street: '',
-    city: '',
-    state: '',
-    pincode: '',
+    name: "",
+    email: "",
+    phone: "",
+    gst: "",
+    street: "",
+    city: "",
+    state: "",
+    pincode: "",
   });
 
   const [settings, setSettings] = useState({
@@ -148,7 +148,7 @@ export default function CheckoutPage() {
   const [editingAddress, setEditingAddress] = useState(null);
   const [isLoadingAddresses, setIsLoadingAddresses] = useState(true);
   const [isPaymentSuccess, setIsPaymentSuccess] = useState(false);
-  const [paymentStatus, setPaymentStatus] = useState('idle');
+  const [paymentStatus, setPaymentStatus] = useState("idle");
 
   const [touched, setTouched] = useState({});
   const [errors, setErrors] = useState({});
@@ -179,20 +179,20 @@ export default function CheckoutPage() {
   useEffect(() => {
     if (!user) return;
     if (cartItems.length === 0 && !cartLoading && !isPaymentSuccess) {
-      router.replace('/cart');
+      router.replace("/cart");
     }
   }, [user, cartItems.length, router, cartLoading, isPaymentSuccess]);
 
   useEffect(() => {
     const fetchSettings = async () => {
       try {
-        const res = await fetch('/api/settings');
+        const res = await fetch("/api/settings");
         if (res.ok) {
           const data = await res.json();
           setSettings(data);
         }
       } catch (error) {
-        console.error('Failed to load settings');
+        console.error("Failed to load settings");
       }
     };
     fetchSettings();
@@ -203,14 +203,14 @@ export default function CheckoutPage() {
     const fetchUserProfile = async () => {
       if (!user) return;
       try {
-        const res = await fetch('/api/user/me');
+        const res = await fetch("/api/user/me");
         if (res.ok) {
           const profile = await res.json();
           setFormData((prev) => ({
             ...prev,
-            name: profile.name || user.displayName || '',
-            email: profile.email || user.email || '',
-            phone: profile.phone || '',
+            name: profile.name || user.displayName || "",
+            email: profile.email || user.email || "",
+            phone: profile.phone || "",
           }));
           if (profile.isSubscribed) {
             setAlreadySubscribed(true);
@@ -218,7 +218,7 @@ export default function CheckoutPage() {
           }
         }
       } catch (error) {
-        console.error('Error fetching profile:', error);
+        console.error("Error fetching profile:", error);
       }
     };
     fetchUserProfile();
@@ -229,24 +229,24 @@ export default function CheckoutPage() {
     const fetchUserProfile = async () => {
       if (!user) return;
       try {
-        const res = await fetch('/api/user/me');
+        const res = await fetch("/api/user/me");
         if (res.ok) {
           const profile = await res.json();
           setFormData((prev) => ({
             ...prev,
-            name: profile.name || user.displayName || '',
-            email: profile.email || user.email || '',
-            phone: profile.phone || '',
+            name: profile.name || user.displayName || "",
+            email: profile.email || user.email || "",
+            phone: profile.phone || "",
           }));
         } else {
           setFormData((prev) => ({
             ...prev,
-            name: user.displayName || '',
-            email: user.email || '',
+            name: user.displayName || "",
+            email: user.email || "",
           }));
         }
       } catch (error) {
-        console.error('Error fetching profile:', error);
+        console.error("Error fetching profile:", error);
       }
     };
     fetchUserProfile();
@@ -257,7 +257,7 @@ export default function CheckoutPage() {
     const fetchAddresses = async () => {
       if (!user) return;
       try {
-        const res = await fetch('/api/address');
+        const res = await fetch("/api/address");
         if (res.ok) {
           const data = await res.json();
           setSavedAddresses(data);
@@ -276,7 +276,7 @@ export default function CheckoutPage() {
           }
         }
       } catch (error) {
-        console.error('Failed to load addresses');
+        console.error("Failed to load addresses");
       } finally {
         setIsLoadingAddresses(false);
       }
@@ -287,10 +287,10 @@ export default function CheckoutPage() {
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     let processedValue = value;
-    if (name === 'phone' || name === 'pincode') {
+    if (name === "phone" || name === "pincode") {
       processedValue = value
-        .replace(/\D/g, '')
-        .slice(0, name === 'pincode' ? 6 : 15);
+        .replace(/\D/g, "")
+        .slice(0, name === "pincode" ? 6 : 15);
     }
     setFormData((prev) => ({ ...prev, [name]: processedValue }));
     if (touched[name] && validators[name]) {
@@ -308,7 +308,7 @@ export default function CheckoutPage() {
   };
 
   const handleAddressPincodeChange = (e) => {
-    const value = e.target.value.replace(/\D/g, '').slice(0, 6);
+    const value = e.target.value.replace(/\D/g, "").slice(0, 6);
     e.target.value = value;
     if (touched.addressPincode) {
       const error = validators.pincode(value);
@@ -324,42 +324,42 @@ export default function CheckoutPage() {
 
   const handleAddressSubmit = async (e) => {
     e.preventDefault();
-    const formEl = e.target.closest('form');
+    const formEl = e.target.closest("form");
     const formDataObj = new FormData(formEl);
-    const pincodeVal = formDataObj.get('pincode');
+    const pincodeVal = formDataObj.get("pincode");
     const pincodeError = validators.pincode(pincodeVal);
 
     if (pincodeError) {
       setErrors((prev) => ({ ...prev, addressPincode: pincodeError }));
       setTouched((prev) => ({ ...prev, addressPincode: true }));
-      toast.error('Please fix the Pincode error');
+      toast.error("Please fix the Pincode error");
       return;
     }
 
     const payload = {
-      street: formDataObj.get('street'),
-      city: formDataObj.get('city'),
-      state: formDataObj.get('state'),
-      pincode: formDataObj.get('pincode'),
-      isDefault: formDataObj.get('isDefault') === 'on',
+      street: formDataObj.get("street"),
+      city: formDataObj.get("city"),
+      state: formDataObj.get("state"),
+      pincode: formDataObj.get("pincode"),
+      isDefault: formDataObj.get("isDefault") === "on",
     };
 
-    const method = editingAddress ? 'PUT' : 'POST';
+    const method = editingAddress ? "PUT" : "POST";
     if (editingAddress) payload.id = editingAddress.id;
 
     try {
-      const res = await fetch('/api/address', {
+      const res = await fetch("/api/address", {
         method,
-        headers: { 'Content-Type': 'application/json' },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to save');
-      toast.success(editingAddress ? 'Address updated' : 'Address saved');
+      if (!res.ok) throw new Error(data.error || "Failed to save");
+      toast.success(editingAddress ? "Address updated" : "Address saved");
       let updatedList;
       if (editingAddress) {
         updatedList = savedAddresses.map((addr) =>
-          addr.id === data.id ? data : addr,
+          addr.id === data.id ? data : addr
         );
       } else {
         updatedList = [...savedAddresses, data];
@@ -382,26 +382,26 @@ export default function CheckoutPage() {
 
   const executeDelete = async (id) => {
     try {
-      const res = await fetch(`/api/address?id=${id}`, { method: 'DELETE' });
+      const res = await fetch(`/api/address?id=${id}`, { method: "DELETE" });
       if (res.ok) {
-        toast.success('Address removed');
+        toast.success("Address removed");
         setSavedAddresses((prev) => prev.filter((addr) => addr.id !== id));
         if (selectedAddressId === id) {
           setSelectedAddressId(null);
           setFormData((prev) => ({
             ...prev,
-            street: '',
-            city: '',
-            state: '',
-            pincode: '',
+            street: "",
+            city: "",
+            state: "",
+            pincode: "",
           }));
         }
       } else {
-        toast.error('Failed to delete');
+        toast.error("Failed to delete");
       }
     } catch (error) {
       console.error(error);
-      toast.error('Error deleting address');
+      toast.error("Error deleting address");
     }
   };
 
@@ -434,14 +434,14 @@ export default function CheckoutPage() {
       ),
       {
         duration: 5000,
-        position: 'top-center',
+        position: "top-center",
         style: {
-          background: '#fff',
-          borderRadius: '12px',
-          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
-          border: '1px solid #E7E5E4',
+          background: "#fff",
+          borderRadius: "12px",
+          boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)",
+          border: "1px solid #E7E5E4",
         },
-      },
+      }
     );
   };
 
@@ -479,13 +479,13 @@ export default function CheckoutPage() {
         isValid = false;
       }
       if (!formData.street || !formData.city || !formData.state) {
-        toast.error('Please complete all address fields');
+        toast.error("Please complete all address fields");
         return false;
       }
     }
     setErrors((prev) => ({ ...prev, ...newErrors }));
     if (!isValid) {
-      toast.error('Please fix the errors before proceeding');
+      toast.error("Please fix the errors before proceeding");
     }
     return isValid;
   };
@@ -507,15 +507,15 @@ export default function CheckoutPage() {
       return;
     }
     if (!user) {
-      toast.error('Please login to continue');
+      toast.error("Please login to continue");
       return;
     }
-    console.log('DEBUG USER OBJECT:', user);
+    console.log("DEBUG USER OBJECT:", user);
     setLoading(true);
     try {
-      await fetch('/api/user/sync', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      await fetch("/api/user/sync", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           email: user.email,
           name: formData.name,
@@ -531,9 +531,9 @@ export default function CheckoutPage() {
       });
 
       if (!alreadySubscribed && subscribeNewsletter) {
-        await fetch('/api/newsletter/subscribe', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+        await fetch("/api/newsletter/subscribe", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             email: user.email,
             isSubscribed: true,
@@ -542,11 +542,11 @@ export default function CheckoutPage() {
       }
 
       const isLoaded = await loadRazorpayScript();
-      if (!isLoaded) throw new Error('Razorpay SDK failed to load');
+      if (!isLoaded) throw new Error("Razorpay SDK failed to load");
 
-      const orderRes = await fetch('/api/orders/create', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const orderRes = await fetch("/api/orders/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           items: cartItems,
           address: {
@@ -564,22 +564,22 @@ export default function CheckoutPage() {
 
       const orderData = await orderRes.json();
       if (!orderRes.ok)
-        throw new Error(orderData.error || 'Order creation failed');
+        throw new Error(orderData.error || "Order creation failed");
 
       const options = {
         key: orderData.key,
         amount: orderData.amount * 100,
         currency: orderData.currency,
-        name: 'Bashō Ceramics',
-        description: 'Artisan Pottery Checkout',
-        image: '/brand/logo-basho.png',
+        name: "Bashō byy Shivangi",
+        description: "Artisan Pottery Checkout",
+        image: "/brand/logo-basho.png",
         order_id: orderData.razorpayOrderId,
         handler: async function (response) {
-          setPaymentStatus('processing');
+          setPaymentStatus("processing");
           try {
-            const verifyRes = await fetch('/api/razorpay', {
-              method: 'PUT',
-              headers: { 'Content-Type': 'application/json' },
+            const verifyRes = await fetch("/api/razorpay", {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
                 razorpay_payment_id: response.razorpay_payment_id,
                 razorpay_order_id: response.razorpay_order_id,
@@ -589,18 +589,18 @@ export default function CheckoutPage() {
             const verifyData = await verifyRes.json();
             if (verifyData.success) {
               setIsPaymentSuccess(true);
-              setPaymentStatus('success');
+              setPaymentStatus("success");
               clearCart();
               setTimeout(() => {
                 router.push(`/success?orderId=${verifyData.orderId}`);
               }, 2000);
             } else {
-              setPaymentStatus('idle');
-              toast.error('Payment verification failed');
+              setPaymentStatus("idle");
+              toast.error("Payment verification failed");
             }
           } catch (err) {
-            setPaymentStatus('idle');
-            toast.error('Verification error');
+            setPaymentStatus("idle");
+            toast.error("Verification error");
           }
         },
         prefill: {
@@ -608,7 +608,7 @@ export default function CheckoutPage() {
           email: formData.email,
           contact: formData.phone,
         },
-        theme: { color: '#C85428' },
+        theme: { color: "#C85428" },
         modal: {
           ondismiss: function () {
             setLoading(false);
@@ -627,17 +627,17 @@ export default function CheckoutPage() {
   const steps = [
     {
       number: 1,
-      title: 'Contact',
+      title: "Contact",
       icon: <ShieldCheck className="w-4 h-4 md:w-5 md:h-5" />,
     },
     {
       number: 2,
-      title: 'Shipping',
+      title: "Shipping",
       icon: <MapPin className="w-4 h-4 md:w-5 md:h-5" />,
     },
     {
       number: 3,
-      title: 'Payment',
+      title: "Payment",
       icon: <CreditCard className="w-4 h-4 md:w-5 md:h-5" />,
     },
   ];
@@ -656,7 +656,7 @@ export default function CheckoutPage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#FDFBF7] to-[#EDD8B4]/10 pt-24 pb-24 md:pb-16 px-4">
       <AnimatePresence>
-        {paymentStatus !== 'idle' && <PaymentOverlay status={paymentStatus} />}
+        {paymentStatus !== "idle" && <PaymentOverlay status={paymentStatus} />}
       </AnimatePresence>
       <div className="max-w-7xl mx-auto">
         {/* Header */}
@@ -687,8 +687,8 @@ export default function CheckoutPage() {
                   <div
                     className={`w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center transition-all duration-300 ${
                       currentStep >= step.number
-                        ? 'bg-[#8E5022] text-white shadow-lg scale-110'
-                        : 'bg-white text-stone-400 border-2 border-stone-200'
+                        ? "bg-[#8E5022] text-white shadow-lg scale-110"
+                        : "bg-white text-stone-400 border-2 border-stone-200"
                     }`}
                   >
                     {currentStep > step.number ? (
@@ -700,8 +700,8 @@ export default function CheckoutPage() {
                   <span
                     className={`text-[10px] md:text-sm mt-2 font-medium whitespace-nowrap ${
                       currentStep >= step.number
-                        ? 'text-[#442D1C]'
-                        : 'text-stone-400'
+                        ? "text-[#442D1C]"
+                        : "text-stone-400"
                     }`}
                   >
                     {step.title}
@@ -711,8 +711,8 @@ export default function CheckoutPage() {
                   <div
                     className={`h-0.5 flex-1 mx-2 md:mx-4 mb-6 transition-all duration-300 ${
                       currentStep > step.number
-                        ? 'bg-[#8E5022]'
-                        : 'bg-stone-200'
+                        ? "bg-[#8E5022]"
+                        : "bg-stone-200"
                     }`}
                   />
                 )}
@@ -760,7 +760,7 @@ export default function CheckoutPage() {
                             onClick={() => logout()}
                             className="text-xs text-stone-500 hover:text-red-600 flex items-center gap-1 transition-colors"
                           >
-                            Not {user?.displayName?.split(' ')[0]}?{' '}
+                            Not {user?.displayName?.split(" ")[0]}?{" "}
                             <span className="font-medium">Log out</span>
                             <LogOut className="w-3 h-3" />
                           </button>
@@ -785,13 +785,13 @@ export default function CheckoutPage() {
                             name="name"
                             value={formData.name}
                             onChange={handleInputChange}
-                            onBlur={() => handleBlur('name')}
+                            onBlur={() => handleBlur("name")}
                             className={`w-full px-4 py-3 bg-white border rounded-xl focus:outline-none transition-all text-sm md:text-base ${
                               touched.name && errors.name
-                                ? 'border-red-400 focus:border-red-500'
+                                ? "border-red-400 focus:border-red-500"
                                 : touched.name && !errors.name
-                                ? 'border-green-500 focus:border-green-600'
-                                : 'border-stone-200 focus:border-[#8E5022]'
+                                ? "border-green-500 focus:border-green-600"
+                                : "border-stone-200 focus:border-[#8E5022]"
                             }`}
                             placeholder="John Doe"
                           />
@@ -813,15 +813,15 @@ export default function CheckoutPage() {
                             name="phone"
                             value={formData.phone}
                             onChange={handleInputChange}
-                            onBlur={() => handleBlur('phone')}
+                            onBlur={() => handleBlur("phone")}
                             className={`w-full px-4 py-3 bg-white border rounded-xl focus:outline-none transition-all text-sm md:text-base ${
                               touched.phone && errors.phone
-                                ? 'border-red-400 focus:border-red-500'
+                                ? "border-red-400 focus:border-red-500"
                                 : touched.phone &&
                                   !errors.phone &&
                                   formData.phone.length >= 10
-                                ? 'border-green-500 focus:border-green-600'
-                                : 'border-stone-200 focus:border-[#8E5022]'
+                                ? "border-green-500 focus:border-green-600"
+                                : "border-stone-200 focus:border-[#8E5022]"
                             }`}
                             placeholder="9876543210"
                           />
@@ -931,8 +931,8 @@ export default function CheckoutPage() {
                               onClick={() => handleSelectAddress(addr)}
                               className={`relative p-4 md:p-5 rounded-2xl border-2 transition-all cursor-pointer group ${
                                 selectedAddressId === addr.id
-                                  ? 'border-[#8E5022] bg-[#FDFBF7]'
-                                  : 'border-stone-100 hover:border-[#EDD8B4]'
+                                  ? "border-[#8E5022] bg-[#FDFBF7]"
+                                  : "border-stone-100 hover:border-[#EDD8B4]"
                               }`}
                             >
                               <div className="flex justify-between items-start">
@@ -940,8 +940,8 @@ export default function CheckoutPage() {
                                   <div
                                     className={`mt-1 w-5 h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${
                                       selectedAddressId === addr.id
-                                        ? 'border-[#8E5022]'
-                                        : 'border-stone-300'
+                                        ? "border-[#8E5022]"
+                                        : "border-stone-300"
                                     }`}
                                   >
                                     {selectedAddressId === addr.id && (
@@ -1023,8 +1023,8 @@ export default function CheckoutPage() {
                             <div className="flex justify-between items-center mb-4">
                               <h3 className="font-serif text-lg text-[#442D1C]">
                                 {editingAddress
-                                  ? 'Edit Address'
-                                  : 'New Address'}
+                                  ? "Edit Address"
+                                  : "New Address"}
                               </h3>
                               {savedAddresses.length > 0 && (
                                 <button
@@ -1092,11 +1092,11 @@ export default function CheckoutPage() {
                                   className={`w-full p-3 rounded-xl border focus:outline-none transition-all text-sm md:text-base ${
                                     touched.addressPincode &&
                                     errors.addressPincode
-                                      ? 'border-red-400 focus:border-red-500 bg-red-50/50'
+                                      ? "border-red-400 focus:border-red-500 bg-red-50/50"
                                       : touched.addressPincode &&
                                         !errors.addressPincode
-                                      ? 'border-green-500 focus:border-green-600'
-                                      : 'border-stone-200 focus:border-[#8E5022]'
+                                      ? "border-green-500 focus:border-green-600"
+                                      : "border-stone-200 focus:border-[#8E5022]"
                                   }`}
                                   placeholder="123456"
                                 />
@@ -1132,8 +1132,8 @@ export default function CheckoutPage() {
                                 className="w-full bg-[#8E5022] text-white py-4 rounded-xl font-medium hover:bg-[#652810] transition-colors"
                               >
                                 {editingAddress
-                                  ? 'Update Address'
-                                  : 'Save & Deliver Here'}
+                                  ? "Update Address"
+                                  : "Save & Deliver Here"}
                               </button>
                             </div>
                           </div>
@@ -1153,10 +1153,22 @@ export default function CheckoutPage() {
                         <button
                           type="button"
                           onClick={nextStep}
-                          className="flex-1 bg-[#8E5022] text-white py-4 rounded-xl font-medium hover:bg-[#652810] transition-all flex items-center justify-center gap-2 shadow-lg hover:shadow-xl"
+                          className="
+      w-full md:w-auto md:flex-1          /* Full width on mobile, flexible on desktop */
+      bg-[#8E5022] text-white 
+      py-3 md:py-4                        /* Slightly more compact vertically on mobile */
+      rounded-xl 
+      text-sm md:text-base font-medium    /* Readable text scaling */
+      hover:bg-[#652810] 
+      active:scale-[0.98]                 /* Adds a 'press' effect for touch devices */
+      transition-all 
+      flex items-center justify-center gap-2 
+      shadow-lg hover:shadow-xl
+    "
                         >
                           Continue to Payment
-                          <ArrowRight className="w-5 h-5" />
+                          <ArrowRight className="w-4 h-4 md:w-5 md:h-5" />{" "}
+                          {/* Icon scales with screen size */}
                         </button>
                       )}
                     </div>
@@ -1208,7 +1220,7 @@ export default function CheckoutPage() {
                         <div className="flex justify-between text-stone-600">
                           <span>Ship to:</span>
                           <span className="font-medium text-stone-800 text-right pl-4">
-                            {formData.street}, {formData.city}, {formData.state}{' '}
+                            {formData.street}, {formData.city}, {formData.state}{" "}
                             - {formData.pincode}
                           </span>
                         </div>
@@ -1321,7 +1333,7 @@ export default function CheckoutPage() {
                     </span>
                     <span className="font-medium">
                       {shippingCost === 0
-                        ? 'Free'
+                        ? "Free"
                         : `₹${shippingCost.toFixed(2)}`}
                     </span>
                   </div>
