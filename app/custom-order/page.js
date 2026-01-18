@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect } from "react";
 
-import { motion } from 'framer-motion';
+import { motion } from "framer-motion";
 
 import {
   Upload,
@@ -23,28 +23,28 @@ import {
   ChevronRight,
   Loader2,
   AlertCircle,
-} from 'lucide-react';
+} from "lucide-react";
 
-import Link from 'next/link';
+import Link from "next/link";
 
-import { useAuth } from '@/components/AuthProvider';
+import { useAuth } from "@/components/AuthProvider";
 
-import toast from 'react-hot-toast';
+import toast from "react-hot-toast";
 
 // Brand Colors
 
 const COLORS = {
-  dark: '#442D1C',
+  dark: "#442D1C",
 
-  brown: '#652810',
+  brown: "#652810",
 
-  clay: '#8E5022',
+  clay: "#8E5022",
 
-  terracotta: '#C85428',
+  terracotta: "#C85428",
 
-  cream: '#EDD8B4',
+  cream: "#EDD8B4",
 
-  background: '#FDFBF7',
+  background: "#FDFBF7",
 };
 
 // Animation Variants
@@ -82,135 +82,65 @@ const staggerContainer = {
 // Material Options
 
 const MATERIAL_OPTIONS = [
-  { id: 'stoneware', name: 'Stoneware', color: '#8B7355' },
+  { id: "stoneware", name: "Stoneware", color: "#8B7355" },
 
-  { id: 'porcelain', name: 'Porcelain', color: '#F5F5F5' },
+  { id: "porcelain", name: "Porcelain", color: "#F5F5F5" },
 
-  { id: 'raku', name: 'Raku', color: '#5D4037' },
+  { id: "raku", name: "Raku", color: "#5D4037" },
 
-  { id: 'terracotta', name: 'Terracotta', color: '#C85428' },
+  { id: "terracotta", name: "Terracotta", color: "#C85428" },
 
-  { id: 'earthenware', name: 'Earthenware', color: '#A0522D' },
+  { id: "earthenware", name: "Earthenware", color: "#A0522D" },
 
-  { id: 'unglazed', name: 'Unglazed Clay', color: '#8E5022' },
+  { id: "unglazed", name: "Unglazed Clay", color: "#8E5022" },
 ];
 
 // Glaze Options
 
 const GLAZE_OPTIONS = [
-  { id: 'matt', name: 'Matt Finish' },
+  { id: "matt", name: "Matt Finish" },
 
-  { id: 'glossy', name: 'Glossy Finish' },
+  { id: "glossy", name: "Glossy Finish" },
 
-  { id: 'crackle', name: 'Crackle Glaze' },
+  { id: "crackle", name: "Crackle Glaze" },
 
-  { id: 'celadon', name: 'Celadon' },
+  { id: "celadon", name: "Celadon" },
 
-  { id: 'tenmoku', name: 'Tenmoku' },
+  { id: "tenmoku", name: "Tenmoku" },
 
-  { id: 'shino', name: 'Shino' },
+  { id: "shino", name: "Shino" },
 
-  { id: 'ash', name: 'Ash Glaze' },
+  { id: "ash", name: "Ash Glaze" },
 
-  { id: 'cobalt', name: 'Cobalt Blue' },
+  { id: "cobalt", name: "Cobalt Blue" },
 
-  { id: 'copper', name: 'Copper Red' },
+  { id: "copper", name: "Copper Red" },
 ];
 
 // Product Types
 
 const PRODUCT_TYPES = [
-  'Tea Bowl (Chawan)',
+  "Tea Bowl (Chawan)",
 
-  'Coffee Mug',
+  "Coffee Mug",
 
-  'Dinner Plate',
+  "Dinner Plate",
 
-  'Salad Bowl',
+  "Salad Bowl",
 
-  'Vase',
+  "Vase",
 
-  'Jug/Pitcher',
+  "Jug/Pitcher",
 
-  'Teapot',
+  "Teapot",
 
-  'Serving Bowl',
+  "Serving Bowl",
 
-  'Sake Set',
+  "Sake Set",
 
-  'Incense Holder',
+  "Incense Holder",
 
-  'Other',
-];
-
-// Mock custom orders for showcase
-
-const PREVIOUS_CUSTOM_ORDERS = [
-  {
-    id: 1,
-
-    title: 'Wedding Dinner Set',
-
-    description: 'Custom 12-piece dinnerware set with gold leaf accents',
-
-    images: [
-      'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=800&auto=format&fit=crop',
-
-      'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w-800&auto=format&fit=crop',
-    ],
-
-    material: 'Porcelain',
-
-    glaze: 'Matt with Gold Leaf',
-
-    timeline: '6 weeks',
-
-    customer: 'Sarah & James',
-  },
-
-  {
-    id: 2,
-
-    title: 'Restaurant Tableware',
-
-    description: 'Custom stoneware plates for farm-to-table restaurant',
-
-    images: [
-      'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=800&auto=format&fit=crop',
-
-      'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w-800&auto=format&fit=crop',
-    ],
-
-    material: 'Stoneware',
-
-    glaze: 'Ash Glaze',
-
-    timeline: '8 weeks',
-
-    customer: 'Farmhouse Kitchen',
-  },
-
-  {
-    id: 3,
-
-    title: 'Anniversary Vase',
-
-    description: 'Hand-thrown vase with personalized inscription',
-
-    images: [
-      'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=800&auto=format&fit=crop',
-
-      'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w-800&auto=format&fit=crop',
-    ],
-
-    material: 'Raku',
-
-    glaze: 'Crackle Glaze',
-
-    timeline: '4 weeks',
-
-    customer: 'Michael R.',
-  },
+  "Other",
 ];
 
 export default function CustomOrderPage() {
@@ -220,38 +150,41 @@ export default function CustomOrderPage() {
 
   const [uploadedFiles, setUploadedFiles] = useState([]);
 
+  const [previousOrders, setPreviousOrders] = useState([]);
+  const [ordersLoading, setOrdersLoading] = useState(true);
+
   const [formData, setFormData] = useState({
-    productType: '',
+    productType: "",
 
     quantity: 1,
 
-    material: '',
+    material: "",
 
-    glaze: '',
+    glaze: "",
 
     dimensions: {
-      height: '',
+      height: "",
 
-      width: '',
+      width: "",
 
-      depth: '',
+      depth: "",
     },
 
-    colorPreferences: '',
+    colorPreferences: "",
 
-    specialRequirements: '',
+    specialRequirements: "",
 
-    deadline: '',
+    deadline: "",
 
-    budgetRange: '',
+    budgetRange: "",
 
-    contactName: '',
+    contactName: "",
 
-    contactEmail: '',
+    contactEmail: "",
 
-    contactPhone: '',
+    contactPhone: "",
 
-    notes: '',
+    notes: "",
   });
 
   const fileInputRef = React.useRef(null);
@@ -263,14 +196,39 @@ export default function CustomOrderPage() {
       setFormData((prev) => ({
         ...prev,
 
-        contactName: user.name || '',
+        contactName: user.name || "",
 
-        contactEmail: user.email || '',
+        contactEmail: user.email || "",
 
-        contactPhone: user.phone || '',
+        contactPhone: user.phone || "",
       }));
     }
   }, [user, authLoading]);
+
+  // Fetch previous custom orders for showcase
+  useEffect(() => {
+    async function fetchPreviousOrders() {
+      try {
+        setOrdersLoading(true);
+        const response = await fetch("/api/custom-orders/showcase?limit=3");
+
+        if (response.ok) {
+          const data = await response.json();
+          setPreviousOrders(data);
+        } else {
+          console.error("Failed to fetch previous orders");
+          setPreviousOrders([]);
+        }
+      } catch (error) {
+        console.error("Error fetching previous orders:", error);
+        setPreviousOrders([]);
+      } finally {
+        setOrdersLoading(false);
+      }
+    }
+
+    fetchPreviousOrders();
+  }, []);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -303,14 +261,14 @@ export default function CustomOrderPage() {
       const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
 
       if (!cloudName || !uploadPreset) {
-        throw new Error('Missing Cloudinary configuration');
+        throw new Error("Missing Cloudinary configuration");
       }
 
       const formData = new FormData();
 
-      formData.append('file', file);
+      formData.append("file", file);
 
-      formData.append('upload_preset', uploadPreset);
+      formData.append("upload_preset", uploadPreset);
 
       // Direct upload to Cloudinary API
 
@@ -318,25 +276,25 @@ export default function CustomOrderPage() {
         `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
 
         {
-          method: 'POST',
+          method: "POST",
 
           body: formData,
-        },
+        }
       );
 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error?.message || 'Upload failed');
+        throw new Error(data.error?.message || "Upload failed");
       }
 
       // Cloudinary returns 'secure_url'
 
       return data.secure_url;
     } catch (error) {
-      console.error('Upload error:', error);
+      console.error("Upload error:", error);
 
-      toast.error(error.message || 'Failed to upload file');
+      toast.error(error.message || "Failed to upload file");
 
       return null;
     }
@@ -384,13 +342,13 @@ export default function CustomOrderPage() {
     e.preventDefault();
 
     if (authLoading) {
-      toast.error('Please wait while we verify your session');
+      toast.error("Please wait while we verify your session");
 
       return;
     }
 
     if (!user) {
-      toast.error('Please login to submit a custom order');
+      toast.error("Please login to submit a custom order");
 
       return;
     }
@@ -398,19 +356,19 @@ export default function CustomOrderPage() {
     // Validation
 
     if (!formData.productType) {
-      toast.error('Please select a product type');
+      toast.error("Please select a product type");
 
       return;
     }
 
     if (!formData.material) {
-      toast.error('Please select a material');
+      toast.error("Please select a material");
 
       return;
     }
 
     if (!formData.contactName || !formData.contactEmail) {
-      toast.error('Please provide your contact information');
+      toast.error("Please provide your contact information");
 
       return;
     }
@@ -432,11 +390,11 @@ export default function CustomOrderPage() {
 
       // Send to API
 
-      const response = await fetch('/api/custom-orders', {
-        method: 'POST',
+      const response = await fetch("/api/custom-orders", {
+        method: "POST",
 
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
 
         body: JSON.stringify(orderData),
@@ -445,54 +403,54 @@ export default function CustomOrderPage() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'Submission failed');
+        throw new Error(data.error || "Submission failed");
       }
 
       toast.success(
-        "Custom order submitted successfully! We'll contact you within 24 hours.",
+        "Custom order submitted successfully! We'll contact you within 24 hours."
       );
 
       // Reset form
 
       setFormData({
-        productType: '',
+        productType: "",
 
         quantity: 1,
 
-        material: '',
+        material: "",
 
-        glaze: '',
+        glaze: "",
 
         dimensions: {
-          height: '',
+          height: "",
 
-          width: '',
+          width: "",
 
-          depth: '',
+          depth: "",
         },
 
-        colorPreferences: '',
+        colorPreferences: "",
 
-        specialRequirements: '',
+        specialRequirements: "",
 
-        deadline: '',
+        deadline: "",
 
-        budgetRange: '',
+        budgetRange: "",
 
-        contactName: user?.name || '',
+        contactName: user?.name || "",
 
-        contactEmail: user?.email || '',
+        contactEmail: user?.email || "",
 
-        contactPhone: user?.phone || '',
+        contactPhone: user?.phone || "",
 
-        notes: '',
+        notes: "",
       });
 
       setUploadedFiles([]);
     } catch (error) {
-      console.error('Error submitting custom order:', error);
+      console.error("Error submitting custom order:", error);
 
-      toast.error(error.message || 'Failed to submit order. Please try again.');
+      toast.error(error.message || "Failed to submit order. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -523,13 +481,13 @@ export default function CustomOrderPage() {
               key={i}
               className="absolute rounded-full bg-[#8E5022]"
               style={{
-                width: Math.random() * 80 + 20 + 'px',
+                width: Math.random() * 80 + 20 + "px",
 
-                height: Math.random() * 80 + 20 + 'px',
+                height: Math.random() * 80 + 20 + "px",
 
-                left: Math.random() * 100 + '%',
+                left: Math.random() * 100 + "%",
 
-                top: Math.random() * 100 + '%',
+                top: Math.random() * 100 + "%",
 
                 opacity: Math.random() * 0.2 + 0.1,
               }}
@@ -637,7 +595,7 @@ export default function CustomOrderPage() {
                           </span>
 
                           <p className="text-sm text-stone-500 mt-1">
-                            {formData.quantity === 1 ? 'piece' : 'pieces'}
+                            {formData.quantity === 1 ? "piece" : "pieces"}
                           </p>
                         </div>
 
@@ -679,8 +637,8 @@ export default function CustomOrderPage() {
                           }
                           className={`p-4 rounded-xl border-2 transition-all flex flex-col items-center gap-2 ${
                             formData.material === material.id
-                              ? 'border-[#8E5022] bg-[#FDFBF7]'
-                              : 'border-stone-200 hover:border-stone-300'
+                              ? "border-[#8E5022] bg-[#FDFBF7]"
+                              : "border-stone-200 hover:border-stone-300"
                           }`}
                         >
                           <div
@@ -716,13 +674,13 @@ export default function CustomOrderPage() {
                             setFormData((prev) => ({
                               ...prev,
 
-                              glaze: prev.glaze === glaze.id ? '' : glaze.id,
+                              glaze: prev.glaze === glaze.id ? "" : glaze.id,
                             }))
                           }
                           className={`px-4 py-2 rounded-full border transition-all ${
                             formData.glaze === glaze.id
-                              ? 'bg-[#8E5022] text-white border-[#8E5022]'
-                              : 'bg-white text-stone-600 border-stone-300 hover:border-stone-400'
+                              ? "bg-[#8E5022] text-white border-[#8E5022]"
+                              : "bg-white text-stone-600 border-stone-300 hover:border-stone-400"
                           }`}
                         >
                           {glaze.name}
@@ -748,7 +706,7 @@ export default function CustomOrderPage() {
                           type="number"
                           value={formData.dimensions.height}
                           onChange={(e) =>
-                            handleDimensionChange('height', e.target.value)
+                            handleDimensionChange("height", e.target.value)
                           }
                           placeholder="e.g., 15"
                           className="w-full px-4 py-3 bg-stone-50 border-2 border-stone-200 rounded-xl focus:border-[#8E5022] focus:outline-none"
@@ -764,7 +722,7 @@ export default function CustomOrderPage() {
                           type="number"
                           value={formData.dimensions.width}
                           onChange={(e) =>
-                            handleDimensionChange('width', e.target.value)
+                            handleDimensionChange("width", e.target.value)
                           }
                           placeholder="e.g., 20"
                           className="w-full px-4 py-3 bg-stone-50 border-2 border-stone-200 rounded-xl focus:border-[#8E5022] focus:outline-none"
@@ -780,7 +738,7 @@ export default function CustomOrderPage() {
                           type="number"
                           value={formData.dimensions.depth}
                           onChange={(e) =>
-                            handleDimensionChange('depth', e.target.value)
+                            handleDimensionChange("depth", e.target.value)
                           }
                           placeholder="e.g., 10"
                           className="w-full px-4 py-3 bg-stone-50 border-2 border-stone-200 rounded-xl focus:border-[#8E5022] focus:outline-none"
@@ -986,7 +944,7 @@ export default function CustomOrderPage() {
                           onChange={(e) => {
                             // Only allow numbers
 
-                            const value = e.target.value.replace(/\D/g, '');
+                            const value = e.target.value.replace(/\D/g, "");
 
                             setFormData((prev) => ({
                               ...prev,
@@ -1042,7 +1000,7 @@ export default function CustomOrderPage() {
 
                         <Link
                           href={`/login?returnUrl=${encodeURIComponent(
-                            '/custom-order',
+                            "/custom-order"
                           )}`}
                           className="inline-block bg-[#8E5022] text-white px-8 py-3 rounded-xl font-medium hover:bg-[#652810] transition-colors"
                         >
@@ -1194,7 +1152,6 @@ export default function CustomOrderPage() {
               </motion.div>
 
               {/* Previous Orders Showcase */}
-
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -1204,36 +1161,64 @@ export default function CustomOrderPage() {
                   Previous Custom Orders
                 </h3>
 
-                <div className="space-y-6">
-                  {PREVIOUS_CUSTOM_ORDERS.map((order) => (
-                    <div
-                      key={order.id}
-                      className="bg-white rounded-2xl p-4 shadow-lg hover:shadow-xl transition-shadow"
-                    >
-                      <div className="aspect-video rounded-xl overflow-hidden mb-4">
-                        <img
-                          src={order.images[0]}
-                          alt={order.title}
-                          className="w-full h-full object-cover"
-                        />
+                {ordersLoading ? (
+                  // Loading skeleton
+                  <div className="space-y-6">
+                    {[...Array(3)].map((_, i) => (
+                      <div
+                        key={i}
+                        className="bg-white rounded-2xl p-4 shadow-lg animate-pulse"
+                      >
+                        <div className="aspect-video rounded-xl bg-stone-200 mb-4" />
+                        <div className="h-6 bg-stone-200 rounded w-3/4 mb-2" />
+                        <div className="h-4 bg-stone-200 rounded w-full mb-3" />
+                        <div className="flex items-center justify-between">
+                          <div className="h-3 bg-stone-200 rounded w-1/4" />
+                          <div className="h-3 bg-stone-200 rounded w-1/4" />
+                        </div>
                       </div>
+                    ))}
+                  </div>
+                ) : previousOrders.length > 0 ? (
+                  // Display orders
+                  <div className="space-y-6">
+                    {previousOrders.map((order) => (
+                      <div
+                        key={order.id}
+                        className="bg-white rounded-2xl p-4 shadow-lg hover:shadow-xl transition-shadow"
+                      >
+                        <div className="aspect-video rounded-xl overflow-hidden mb-4">
+                          <img
+                            src={order.images[0]}
+                            alt={order.title}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
 
-                      <h4 className="font-serif text-lg text-[#442D1C] mb-2">
-                        {order.title}
-                      </h4>
+                        <h4 className="font-serif text-lg text-[#442D1C] mb-2">
+                          {order.title}
+                        </h4>
 
-                      <p className="text-sm text-stone-600 mb-3">
-                        {order.description}
-                      </p>
+                        <p className="text-sm text-stone-600 mb-3">
+                          {order.description}
+                        </p>
 
-                      <div className="flex items-center justify-between text-xs text-stone-500">
-                        <span>{order.material}</span>
-
-                        <span>{order.timeline}</span>
+                        <div className="flex items-center justify-between text-xs text-stone-500">
+                          <span>{order.material}</span>
+                          <span>{order.timeline}</span>
+                        </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                ) : (
+                  // Empty state - no orders yet
+                  <div className="bg-stone-50 rounded-2xl p-8 text-center">
+                    <Sparkles className="w-12 h-12 text-stone-300 mx-auto mb-4" />
+                    <p className="text-stone-600 text-sm">
+                      Be the first to commission a custom piece!
+                    </p>
+                  </div>
+                )}
               </motion.div>
             </div>
           </div>

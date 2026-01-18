@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from "react";
 import {
   ArrowLeft,
   DollarSign,
@@ -9,6 +9,7 @@ import {
   Send,
   Printer,
   User,
+  Star,
   Mail,
   Phone,
   Calendar,
@@ -19,11 +20,11 @@ import {
   CheckCircle,
   MapPin,
   CreditCard,
-} from 'lucide-react';
-import Link from 'next/link';
-import { useParams, useRouter } from 'next/navigation';
-import { useAuth } from '@/components/AuthProvider';
-import toast from 'react-hot-toast';
+} from "lucide-react";
+import Link from "next/link";
+import { useParams, useRouter } from "next/navigation";
+import { useAuth } from "@/components/AuthProvider";
+import toast from "react-hot-toast";
 
 export default function AdminCustomOrderDetailPage() {
   const params = useParams();
@@ -35,28 +36,31 @@ export default function AdminCustomOrderDetailPage() {
   const [isUpdating, setIsUpdating] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
 
+  const [showcaseWorthy, setShowcaseWorthy] = useState(false);
+
   // Form States
-  const [adminNotes, setAdminNotes] = useState('');
-  const [estimatedPrice, setEstimatedPrice] = useState('');
-  const [actualPrice, setActualPrice] = useState('');
-  const [estimatedCompletion, setEstimatedCompletion] = useState('');
-  const [status, setStatus] = useState('PENDING');
+  const [adminNotes, setAdminNotes] = useState("");
+  const [estimatedPrice, setEstimatedPrice] = useState("");
+  const [actualPrice, setActualPrice] = useState("");
+  const [estimatedCompletion, setEstimatedCompletion] = useState("");
+  const [status, setStatus] = useState("PENDING");
 
   // NEW: Payment States
-  const [paymentStatus, setPaymentStatus] = useState('PENDING');
-  const [paymentId, setPaymentId] = useState('');
+  const [paymentStatus, setPaymentStatus] = useState("PENDING");
+  const [paymentId, setPaymentId] = useState("");
 
   const statusOptions = [
-    'PENDING',
-    'REVIEWED',
-    'QUOTED',
-    'APPROVED',
-    'IN_PROGRESS',
-    'COMPLETED',
-    'SHIPPED',
-    'CANCELLED',
+    "PENDING",
+    "REVIEWED",
+    "QUOTED",
+    "APPROVED",
+    "IN_PROGRESS",
+    "COMPLETED",
+    "SHIPPED",
+    "CANCELLED",
   ];
 
+  // Find your loadOrder function and update it to include these lines:
   const loadOrder = useCallback(async () => {
     try {
       setLoading(true);
@@ -64,39 +68,42 @@ export default function AdminCustomOrderDetailPage() {
 
       if (!response.ok) {
         if (response.status === 404) {
-          router.push('/admin/custom-orders');
-          toast.error('Order not found');
+          router.push("/admin/custom-orders");
+          toast.error("Order not found");
           return;
         }
-        throw new Error('Failed to load order');
+        throw new Error("Failed to load order");
       }
 
       const data = await response.json();
       setOrder(data);
 
-      setAdminNotes(data.adminNotes || '');
-      setEstimatedPrice(data.estimatedPrice || '');
-      setActualPrice(data.actualPrice || '');
-      setEstimatedCompletion(data.estimatedCompletion || '');
-      setStatus(data.status || 'PENDING');
+      setAdminNotes(data.adminNotes || "");
+      setEstimatedPrice(data.estimatedPrice || "");
+      setActualPrice(data.actualPrice || "");
+      setEstimatedCompletion(data.estimatedCompletion || "");
+      setStatus(data.status || "PENDING");
 
       // Load Payment Info
-      setPaymentStatus(data.paymentStatus || 'PENDING');
-      setPaymentId(data.paymentId || '');
+      setPaymentStatus(data.paymentStatus || "PENDING");
+      setPaymentId(data.paymentId || "");
+
+      // ⭐ ADD THIS LINE
+      setShowcaseWorthy(data.showcaseWorthy || false);
     } catch (error) {
-      console.error('Error loading order:', error);
-      toast.error('Failed to load order details');
+      console.error("Error loading order:", error);
+      toast.error("Failed to load order details");
     } finally {
       setLoading(false);
     }
   }, [params.id, router]);
-
   useEffect(() => {
-    if (user && user.role === 'ADMIN') {
+    if (user && user.role === "ADMIN") {
       loadOrder();
     }
   }, [user, loadOrder]);
 
+  // Update your handleUpdate function:
   const handleUpdate = async () => {
     if (!order) return;
 
@@ -107,30 +114,31 @@ export default function AdminCustomOrderDetailPage() {
         status,
         adminNotes,
         estimatedCompletion,
-        paymentStatus, // Send Payment Status
-        paymentId, // Send Transaction ID
+        paymentStatus,
+        paymentId,
+        showcaseWorthy, // ⭐ ADD THIS LINE
         ...(estimatedPrice && { estimatedPrice: parseFloat(estimatedPrice) }),
         ...(actualPrice && { actualPrice: parseFloat(actualPrice) }),
       };
 
       const response = await fetch(`/api/custom-orders/${params.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(updateData),
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'Update failed');
+        throw new Error(data.error || "Update failed");
       }
 
-      toast.success('Order updated successfully');
+      toast.success("Order updated successfully");
       setIsEditing(false);
       loadOrder();
     } catch (error) {
-      console.error('Error updating order:', error);
-      toast.error(error.message || 'Failed to update order');
+      console.error("Error updating order:", error);
+      toast.error(error.message || "Failed to update order");
     } finally {
       setIsUpdating(false);
     }
@@ -138,7 +146,7 @@ export default function AdminCustomOrderDetailPage() {
 
   const handleSendQuote = async () => {
     if (!order || !estimatedPrice) {
-      toast.error('Please enter an estimated price');
+      toast.error("Please enter an estimated price");
       return;
     }
 
@@ -146,7 +154,7 @@ export default function AdminCustomOrderDetailPage() {
       setIsUpdating(true);
 
       const updateData = {
-        status: 'QUOTED',
+        status: "QUOTED",
         estimatedPrice: parseFloat(estimatedPrice),
         actualPrice: actualPrice
           ? parseFloat(actualPrice)
@@ -156,19 +164,19 @@ export default function AdminCustomOrderDetailPage() {
       };
 
       const response = await fetch(`/api/custom-orders/${params.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(updateData),
       });
 
-      if (!response.ok) throw new Error('Failed to send quote');
+      if (!response.ok) throw new Error("Failed to send quote");
 
       toast.success(`Quote of ₹${estimatedPrice} sent`);
       setIsEditing(false);
       loadOrder();
     } catch (error) {
-      console.error('Error sending quote:', error);
-      toast.error('Failed to send quote');
+      console.error("Error sending quote:", error);
+      toast.error("Failed to send quote");
     } finally {
       setIsUpdating(false);
     }
@@ -180,20 +188,20 @@ export default function AdminCustomOrderDetailPage() {
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'PENDING':
-        return 'bg-yellow-50 text-yellow-800 border-yellow-100';
-      case 'REVIEWED':
-        return 'bg-blue-50 text-blue-800 border-blue-100';
-      case 'QUOTED':
-        return 'bg-purple-50 text-purple-800 border-purple-100';
-      case 'APPROVED':
-        return 'bg-green-50 text-green-800 border-green-100';
-      case 'IN_PROGRESS':
-        return 'bg-indigo-50 text-indigo-800 border-indigo-100';
-      case 'COMPLETED':
-        return 'bg-emerald-50 text-emerald-800 border-emerald-100';
+      case "PENDING":
+        return "bg-yellow-50 text-yellow-800 border-yellow-100";
+      case "REVIEWED":
+        return "bg-blue-50 text-blue-800 border-blue-100";
+      case "QUOTED":
+        return "bg-purple-50 text-purple-800 border-purple-100";
+      case "APPROVED":
+        return "bg-green-50 text-green-800 border-green-100";
+      case "IN_PROGRESS":
+        return "bg-indigo-50 text-indigo-800 border-indigo-100";
+      case "COMPLETED":
+        return "bg-emerald-50 text-emerald-800 border-emerald-100";
       default:
-        return 'bg-stone-50 text-stone-800 border-stone-100';
+        return "bg-stone-50 text-stone-800 border-stone-100";
     }
   };
 
@@ -203,14 +211,13 @@ export default function AdminCustomOrderDetailPage() {
         <Loader2 className="animate-spin text-[#8E5022]" />
       </div>
     );
-  if (!user || user.role !== 'ADMIN')
+  if (!user || user.role !== "ADMIN")
     return <div className="p-8 text-center">Access Denied</div>;
   if (!order) return <div className="p-8 text-center">Order not found</div>;
 
   return (
     <div className="min-h-screen bg-[#FDFBF7] p-4 md:p-6 print:p-0 print:bg-white">
       <div className="max-w-7xl mx-auto print:hidden">
-        
         {/* Responsive Header */}
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-6 md:mb-8">
           <div className="flex items-start gap-3 md:gap-4 w-full md:w-auto">
@@ -227,15 +234,17 @@ export default function AdminCustomOrderDetailPage() {
                 </h1>
                 <span
                   className={`px-3 py-1 rounded-full text-[10px] md:text-xs font-bold uppercase tracking-wider border whitespace-nowrap ${getStatusColor(
-                    order.status,
+                    order.status
                   )}`}
                 >
-                  {order.status.replace('_', ' ')}
+                  {order.status.replace("_", " ")}
                 </span>
               </div>
               <p className="text-[#8E5022] text-xs md:text-sm mt-1 flex items-center gap-2">
                 <Calendar size={14} className="shrink-0" />
-                <span>Placed on {new Date(order.createdAt).toLocaleDateString()}</span>
+                <span>
+                  Placed on {new Date(order.createdAt).toLocaleDateString()}
+                </span>
               </p>
             </div>
           </div>
@@ -260,10 +269,8 @@ export default function AdminCustomOrderDetailPage() {
 
         {/* Main Grid Content */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
-          
           {/* Left Column (Details & Actions) */}
           <div className="lg:col-span-2 space-y-6 md:space-y-8">
-            
             {/* Request Details */}
             <div className="bg-white p-5 md:p-6 rounded-2xl border border-[#EDD8B4] shadow-sm">
               <h3 className="font-serif text-lg md:text-xl font-bold text-[#442D1C] mb-4 md:mb-6 flex items-center gap-2">
@@ -301,11 +308,11 @@ export default function AdminCustomOrderDetailPage() {
                         Dimensions
                       </p>
                       <div className="flex flex-wrap gap-2 md:gap-3 text-sm text-[#442D1C] bg-[#FDFBF7] p-3 rounded-lg border border-[#EDD8B4]/50">
-                        <span>H: {order.dimensions.height || '-'}</span>
+                        <span>H: {order.dimensions.height || "-"}</span>
                         <span className="text-[#EDD8B4]">|</span>
-                        <span>W: {order.dimensions.width || '-'}</span>
+                        <span>W: {order.dimensions.width || "-"}</span>
                         <span className="text-[#EDD8B4]">|</span>
-                        <span>D: {order.dimensions.depth || '-'}</span>
+                        <span>D: {order.dimensions.depth || "-"}</span>
                       </div>
                     </div>
                   )}
@@ -327,8 +334,8 @@ export default function AdminCustomOrderDetailPage() {
             <div
               className={`bg-white p-5 md:p-6 rounded-2xl border shadow-sm transition-all ${
                 isEditing
-                  ? 'border-[#C85428] ring-1 ring-[#C85428]/20'
-                  : 'border-[#EDD8B4]'
+                  ? "border-[#C85428] ring-1 ring-[#C85428]/20"
+                  : "border-[#EDD8B4]"
               }`}
             >
               <div className="flex justify-between items-center mb-6">
@@ -359,7 +366,7 @@ export default function AdminCustomOrderDetailPage() {
                       >
                         {statusOptions.map((opt) => (
                           <option key={opt} value={opt}>
-                            {opt.replace('_', ' ')}
+                            {opt.replace("_", " ")}
                           </option>
                         ))}
                       </select>
@@ -394,7 +401,7 @@ export default function AdminCustomOrderDetailPage() {
                         <option value="FAILED">Failed</option>
                       </select>
                     </div>
-                    {paymentStatus === 'PAID' && (
+                    {paymentStatus === "PAID" && (
                       <div>
                         <label className="block text-xs font-bold text-[#8E5022] uppercase mb-2">
                           Transaction ID
@@ -452,9 +459,9 @@ export default function AdminCustomOrderDetailPage() {
                       disabled={isUpdating}
                       className="flex-1 bg-[#442D1C] text-[#EDD8B4] py-3 rounded-xl font-bold hover:bg-[#2c1d12] transition-colors disabled:opacity-70 active:scale-95"
                     >
-                      {isUpdating ? 'Saving...' : 'Save Changes'}
+                      {isUpdating ? "Saving..." : "Save Changes"}
                     </button>
-                    {status === 'QUOTED' && (
+                    {status === "QUOTED" && (
                       <button
                         onClick={handleSendQuote}
                         disabled={isUpdating || !estimatedPrice}
@@ -473,7 +480,7 @@ export default function AdminCustomOrderDetailPage() {
                         Est. Price
                       </p>
                       <p className="text-lg font-bold text-[#442D1C]">
-                        {estimatedPrice ? `₹${estimatedPrice}` : '-'}
+                        {estimatedPrice ? `₹${estimatedPrice}` : "-"}
                       </p>
                     </div>
                     <div>
@@ -481,7 +488,7 @@ export default function AdminCustomOrderDetailPage() {
                         Final Price
                       </p>
                       <p className="text-lg font-bold text-[#442D1C]">
-                        {actualPrice ? `₹${actualPrice}` : '-'}
+                        {actualPrice ? `₹${actualPrice}` : "-"}
                       </p>
                     </div>
                     <div className="sm:col-span-2 md:col-span-1">
@@ -489,7 +496,7 @@ export default function AdminCustomOrderDetailPage() {
                         Completion
                       </p>
                       <p className="text-[#442D1C]">
-                        {estimatedCompletion || '-'}
+                        {estimatedCompletion || "-"}
                       </p>
                     </div>
                   </div>
@@ -503,7 +510,7 @@ export default function AdminCustomOrderDetailPage() {
             </div>
 
             {/* Payment Information Card (Shows when PAID) */}
-            {order.paymentStatus === 'PAID' && (
+            {order.paymentStatus === "PAID" && (
               <div className="bg-green-50 border border-green-200 rounded-2xl p-5 md:p-6 shadow-sm">
                 <div className="flex items-start sm:items-center gap-3 mb-4">
                   <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center text-green-700 shrink-0">
@@ -533,12 +540,12 @@ export default function AdminCustomOrderDetailPage() {
                     </p>
                     <div className="flex items-center gap-2">
                       <p className="text-green-800 font-mono truncate">
-                        {order.paymentId || 'Manual'}
+                        {order.paymentId || "Manual"}
                       </p>
                       <button
                         onClick={() => {
                           navigator.clipboard.writeText(order.paymentId);
-                          toast.success('Copied ID');
+                          toast.success("Copied ID");
                         }}
                         className="text-green-500 hover:text-green-700 shrink-0"
                       >
@@ -549,18 +556,135 @@ export default function AdminCustomOrderDetailPage() {
                 </div>
               </div>
             )}
+
+            {/* Add this right after the Payment Information Card */}
+            {/* Showcase Toggle - Only show for COMPLETED orders */}
+            {order.status === "COMPLETED" && (
+              <div className="bg-purple-50 border-2 border-purple-200 rounded-2xl p-5 md:p-6 shadow-sm">
+                <div className="flex items-start gap-4">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Star
+                        className={`w-6 h-6 ${
+                          showcaseWorthy
+                            ? "text-purple-600 fill-purple-600"
+                            : "text-purple-300"
+                        }`}
+                      />
+                      <h3 className="font-bold text-purple-800 text-lg">
+                        Customer Showcase
+                      </h3>
+                    </div>
+                    <p className="text-purple-600 text-sm mb-4">
+                      {showcaseWorthy
+                        ? "This order is currently displayed in the customer showcase gallery"
+                        : "Enable to display this completed order on the custom order page"}
+                    </p>
+
+                    <label className="flex items-center gap-3 cursor-pointer group">
+                      <div className="relative">
+                        <input
+                          type="checkbox"
+                          checked={showcaseWorthy}
+                          onChange={async (e) => {
+                            const newValue = e.target.checked;
+                            setShowcaseWorthy(newValue);
+
+                            try {
+                              const response = await fetch(
+                                `/api/custom-orders/${params.id}`,
+                                {
+                                  method: "PUT",
+                                  headers: {
+                                    "Content-Type": "application/json",
+                                  },
+                                  body: JSON.stringify({
+                                    status: order.status,
+                                    showcaseWorthy: newValue,
+                                    adminNotes: order.adminNotes,
+                                    estimatedPrice: order.estimatedPrice,
+                                    actualPrice: order.actualPrice,
+                                    estimatedCompletion:
+                                      order.estimatedCompletion,
+                                    paymentStatus: order.paymentStatus,
+                                    paymentId: order.paymentId,
+                                  }),
+                                }
+                              );
+
+                              if (response.ok) {
+                                toast.success(
+                                  newValue
+                                    ? "✨ Added to showcase gallery"
+                                    : "Removed from showcase gallery"
+                                );
+                                loadOrder(); // Refresh order data
+                              } else {
+                                // Revert on failure
+                                setShowcaseWorthy(!newValue);
+                                toast.error("Failed to update showcase status");
+                              }
+                            } catch (error) {
+                              console.error("Error updating showcase:", error);
+                              setShowcaseWorthy(!newValue); // Revert on error
+                              toast.error("Error updating showcase status");
+                            }
+                          }}
+                          className="sr-only"
+                        />
+                        <div
+                          className={`w-12 h-6 rounded-full transition-colors ${
+                            showcaseWorthy ? "bg-purple-600" : "bg-gray-300"
+                          }`}
+                        >
+                          <div
+                            className={`w-5 h-5 bg-white rounded-full shadow-md transform transition-transform ${
+                              showcaseWorthy
+                                ? "translate-x-6"
+                                : "translate-x-0.5"
+                            } mt-0.5`}
+                          ></div>
+                        </div>
+                      </div>
+                      <span className="font-medium text-purple-800 group-hover:text-purple-900">
+                        {showcaseWorthy
+                          ? "Featured in Gallery"
+                          : "Add to Gallery"}
+                      </span>
+                    </label>
+                  </div>
+
+                  {showcaseWorthy && (
+                    <div className="bg-purple-100 px-3 py-1 rounded-full text-xs font-bold text-purple-700 uppercase tracking-wider shrink-0">
+                      Live
+                    </div>
+                  )}
+                </div>
+
+                {showcaseWorthy && (
+                  <div className="mt-4 p-3 bg-white rounded-lg border border-purple-100">
+                    <p className="text-xs text-purple-600 font-medium flex items-center gap-2">
+                      <CheckCircle size={14} />
+                      Customers can now see this project on the custom order
+                      page
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Right Column (Customer & Meta) */}
           <div className="space-y-6">
-            
             {/* Customer Details */}
             <div className="bg-white p-5 md:p-6 rounded-2xl border border-[#EDD8B4] shadow-sm">
               <h3 className="font-serif text-lg font-bold text-[#442D1C] mb-4 flex items-center gap-2">
                 <User size={18} /> Customer
               </h3>
               <div className="mb-4">
-                <p className="font-bold text-[#442D1C] text-lg">{order.contactName}</p>
+                <p className="font-bold text-[#442D1C] text-lg">
+                  {order.contactName}
+                </p>
                 <a
                   href={`mailto:${order.contactEmail}`}
                   className="text-sm text-[#C85428] hover:underline block break-all"
@@ -583,7 +707,7 @@ export default function AdminCustomOrderDetailPage() {
                 <button
                   onClick={() => {
                     navigator.clipboard.writeText(order.id);
-                    toast.success('Order ID copied');
+                    toast.success("Order ID copied");
                   }}
                   className="w-full flex items-center gap-3 p-3 bg-white/5 hover:bg-white/10 rounded-xl transition-colors text-sm active:bg-white/20"
                 >
@@ -594,7 +718,7 @@ export default function AdminCustomOrderDetailPage() {
                     window.open(
                       `mailto:${
                         order.contactEmail
-                      }?subject=Re: Custom Order #${order.id.slice(0, 8)}`,
+                      }?subject=Re: Custom Order #${order.id.slice(0, 8)}`
                     )
                   }
                   className="w-full flex items-center gap-3 p-3 bg-white/5 hover:bg-white/10 rounded-xl transition-colors text-sm active:bg-white/20"
@@ -713,7 +837,7 @@ export default function AdminCustomOrderDetailPage() {
               </td>
               <td className="py-4 px-4 align-top text-sm text-stone-600">
                 <p>
-                  Material:{' '}
+                  Material:{" "}
                   <span className="font-medium text-[#442D1C] capitalize">
                     {order.material}
                   </span>
